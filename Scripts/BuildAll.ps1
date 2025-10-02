@@ -47,6 +47,7 @@ $solutionOrder = @(
     "DiGi.Log\DiGi.Log.sln",
     "DiGi.SQLite\DiGi.SQLite.sln",
     "DiGi.Scripting\DiGi.Scripting.sln",
+    "DiGi.Scripting.Rhino\DiGi.Scripting.Rhino.sln",
     "DiGi.Translate\DiGi.Translate.sln",
     "DiGi.HttpQuery\DiGi.HttpQuery.sln",
     "DiGi.AssemblyResolver\DiGi.AssemblyResolver.sln",
