@@ -1,0 +1,82 @@
+﻿using DiGi.Maintenance.Classes;
+using System.Windows.Controls;
+
+namespace DiGi.Maintenance.UI.Controls
+{
+    /// <summary>
+    /// Interaction logic for SolutionControl.xaml
+    /// </summary>
+    public partial class SolutionControl : UserControl
+    {
+        private Solution? solution;
+
+        public SolutionControl()
+        {
+            InitializeComponent();
+        }
+
+        public Solution? Solution
+        {
+            get
+            {
+                if(solution is null)
+                {
+                    return null;
+                }
+
+                solution.Version = Version;
+
+                return solution;
+            }
+
+            set
+            {
+                solution = value;
+
+                TextBox_Name.Text = solution?.GetName();
+
+                Version = solution?.Version;
+            }
+        }
+
+        public Version? Version
+        {
+            get
+            {
+                if (!Core.Query.TryConvert(TextBox_Version_Major.Text, out int major))
+                {
+                    major = -1;
+                }
+
+                if (!Core.Query.TryConvert(TextBox_Version_Minor.Text, out int minor))
+                {
+                    major = -1;
+                }
+
+                if (!Core.Query.TryConvert(TextBox_Version_Build.Text, out int build))
+                {
+                    major = -1;
+                }
+
+                return new Version(major, minor, build);
+            }
+
+            set
+            {
+                if (value != null)
+                {
+                    TextBox_Version_Major.Text = value.Major == -1 ? string.Empty : value.Major.ToString();
+                    TextBox_Version_Minor.Text = value.Minor == -1 ? string.Empty : value.Minor.ToString();
+                    TextBox_Version_Build.Text = value.Build == -1 ? string.Empty : value.Build.ToString();
+                }
+                else
+                {
+                    TextBox_Version_Major.Text = string.Empty;
+                    TextBox_Version_Minor.Text = string.Empty;
+                    TextBox_Version_Build.Text = string.Empty;
+                }
+            }
+        }
+
+    }
+}

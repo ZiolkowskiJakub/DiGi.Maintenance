@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<OutputPath>..\bin\</OutputPath>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<NoWarn>$(NoWarn);MSB3277</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Folder Include="Windows\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="System.Text.Json" Version="9.0.6" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DiGi.Maintenance\DiGi.Maintenance.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="DiGi.Core">
+	    <HintPath>..\..\DiGi.Core\bin\DiGi.Core.dll</HintPath>
+	  </Reference>
+	  <Reference Include="DiGi.UI.WPF.Core">
+	    <HintPath>..\..\DiGi.UI.WPF\bin\DiGi.UI.WPF.Core.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+</Project>

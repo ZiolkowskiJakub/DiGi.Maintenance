@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<LangVersion>12.0</LangVersion>
+		<OutputPath>..\bin\</OutputPath>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<NoWarn>$(NoWarn);MSB3277</NoWarn>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- Redirect AssemblyAttributes.cs so each project has its own -->
+		<TargetFrameworkMonikerAssemblyAttributesPath>$(IntermediateOutputPath)$(MSBuildProjectName).AssemblyAttributes.cs</TargetFrameworkMonikerAssemblyAttributesPath>
+		<!-- Avoid duplicate TargetFrameworkAttribute -->
+		<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- Prevent duplicate 'Compile' inclusion of the generated AssemblyAttributes.cs -->
+		<Compile Remove="$(IntermediateOutputPath)$(MSBuildProjectName).AssemblyAttributes.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="System.Text.Json" Version="9.0.6" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="DiGi.Core">
+	    <HintPath>..\..\DiGi.Core\bin\DiGi.Core.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+
+</Project>

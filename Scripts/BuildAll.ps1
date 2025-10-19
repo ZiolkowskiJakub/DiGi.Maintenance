@@ -77,6 +77,7 @@ $solutionOrder = @(
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.sln",
 	"DiGi.SAM\DiGi.SAM.sln",
 	"DiGi.Tas\DiGi.Tas.sln"
+	"DiGi.Maintenance\DiGi.Maintenance.sln"
 	# add more in the order you need
 )
 
