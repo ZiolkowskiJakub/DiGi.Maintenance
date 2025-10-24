@@ -24,13 +24,13 @@
         <Label Grid.Row="1" Grid.Column="0" Content="Version"/>
 
         <Label Grid.Row="2" Grid.Column="0" Content="Major:"/>
-        <TextBox x:Name="TextBox_Version_Major" Grid.Row="2" Grid.Column="1" Margin="0,5,150,5"/>
+        <TextBox x:Name="TextBox_Version_Major" Grid.Row="2" Grid.Column="1" Margin="0,5,100,5"/>
 
         <Label Grid.Row="3" Grid.Column="0" Content="Minor:"/>
-        <TextBox x:Name="TextBox_Version_Minor" Grid.Row="3" Grid.Column="1" Margin="0,5,150,5"/>
+        <TextBox x:Name="TextBox_Version_Minor" Grid.Row="3" Grid.Column="1" Margin="0,5,100,5"/>
 
         <Label Grid.Row="4" Grid.Column="0" Content="Build:"/>
-        <TextBox x:Name="TextBox_Version_Build" Grid.Row="4" Grid.Column="1" Margin="0,5,150,5"/>
+        <TextBox x:Name="TextBox_Version_Build" Grid.Row="4" Grid.Column="1" Margin="0,5,100,5"/>
 
     </Grid>
 </UserControl>

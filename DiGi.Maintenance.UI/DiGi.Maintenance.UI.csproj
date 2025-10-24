@@ -15,10 +15,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Folder Include="Windows\" />
-	</ItemGroup>
-
-	<ItemGroup>
+	  <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
 	  <PackageReference Include="System.Text.Json" Version="9.0.6" />
 	</ItemGroup>
 
@@ -30,9 +27,16 @@
 	  <Reference Include="DiGi.Core">
 	    <HintPath>..\..\DiGi.Core\bin\DiGi.Core.dll</HintPath>
 	  </Reference>
+	  <Reference Include="DiGi.GitHub">
+	    <HintPath>..\..\DiGi.GitHub\bin\DiGi.GitHub.dll</HintPath>
+	  </Reference>
 	  <Reference Include="DiGi.UI.WPF.Core">
 	    <HintPath>..\..\DiGi.UI.WPF\bin\DiGi.UI.WPF.Core.dll</HintPath>
 	  </Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Constans\" />
 	</ItemGroup>
 
 </Project>

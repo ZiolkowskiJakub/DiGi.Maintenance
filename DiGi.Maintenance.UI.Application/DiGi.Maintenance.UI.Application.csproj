@@ -17,12 +17,19 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
 	  <PackageReference Include="System.Text.Json" Version="9.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\DiGi.Maintenance.UI\DiGi.Maintenance.UI.csproj" />
 	  <ProjectReference Include="..\DiGi.Maintenance\DiGi.Maintenance.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="DiGi.GitHub">
+	    <HintPath>..\..\DiGi.GitHub\bin\DiGi.GitHub.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 </Project>

@@ -4,11 +4,11 @@ namespace DiGi.Maintenance.Classes
 {
     public class Solution
     {
-        public string Path { get; }
+        public string? Path { get; }
 
         public Version? Version { get; set; }
 
-        public Solution(string path, Version version)
+        public Solution(string? path, Version? version)
         {
             Path = path;
             Version = version;
@@ -22,6 +22,16 @@ namespace DiGi.Maintenance.Classes
             }
 
             return System.IO.Path.GetFileNameWithoutExtension(Path);
+        }
+
+        public string? GetDirectory()
+        {
+            if (string.IsNullOrWhiteSpace(Path))
+            {
+                return null;
+            }
+
+            return System.IO.Path.GetDirectoryName(Path);
         }
     }
 }

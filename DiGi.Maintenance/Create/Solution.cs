@@ -21,10 +21,16 @@ namespace DiGi.Maintenance
 
             System.Version? version = null;
 
-            path = System.IO.Path.Combine(directory, "Directory.Build.props");
-            if(System.IO.File.Exists(path))
+            string path_Properties = System.IO.Path.Combine(directory, "Directory.Build.props");
+            if(System.IO.File.Exists(path_Properties))
             {
-                XDocument xDocument = XDocument.Parse(path);
+                // Read file text (trim whitespace to handle BOM/leading whitespace)
+                string xmlText = System.IO.File.ReadAllText(path_Properties).Trim();
+
+                // Parse it as XML
+                XDocument xDocument = XDocument.Parse(xmlText);
+
+                //XDocument xDocument = XDocument.Parse(path);
 
                 Dictionary<string, string>? dictionary = xDocument?.Descendants("PropertyGroup").Elements().ToDictionary(e => e.Name.LocalName, e => e.Value);
                 if(dictionary != null)
@@ -43,7 +49,7 @@ namespace DiGi.Maintenance
                         minor = -1;
                     }
 
-                    if (!dictionary.TryGetValue("Patch", out value) || !int.TryParse(value, out build))
+                    if (!dictionary.TryGetValue("Build", out value) || !int.TryParse(value, out build))
                     {
                         build = -1;
                     }
@@ -52,9 +58,7 @@ namespace DiGi.Maintenance
                 }
             }
 
-            version ??= new System.Version();
-
-            return new Solution(name, version);
+            return new Solution(path!, version);
         }
     }
 }

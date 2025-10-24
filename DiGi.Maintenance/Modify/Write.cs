@@ -1,0 +1,63 @@
+﻿using DiGi.Maintenance.Classes;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Xml.Linq;
+
+namespace DiGi.Maintenance
+{
+
+    public static partial class Modify
+    {
+        public static bool Write(this Solution solution)
+        {
+            if (solution.Path is not string path || string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
+            {
+                return false;
+            }
+
+            string? directory = System.IO.Path.GetDirectoryName(path);
+
+            if(solution.Version is System.Version version)
+            {
+                string path_Properties = System.IO.Path.Combine(directory, "Directory.Build.props");
+                if (System.IO.File.Exists(path_Properties))
+                {
+                    // Read file text (trim whitespace to handle BOM/leading whitespace)
+                    string xmlText = System.IO.File.ReadAllText(path_Properties).Trim();
+
+                    // Parse it as XML
+                    if (XDocument.Parse(xmlText) is XDocument xDocument)
+                    {
+                        if (xDocument.Root?.Element("PropertyGroup") is XElement xElement)
+                        {
+                            xElement.Element("Major").Value = version.Major.ToString();
+                            xElement.Element("Minor").Value = version.Minor.ToString();
+                            xElement.Element("Build").Value = version.Build.ToString();
+                        }
+
+                        xDocument.Save(path_Properties);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public static bool Write(this MaintenanceConfigurationFile maintenanceConfigurationFile)
+        {
+            if (maintenanceConfigurationFile is null)
+            {
+                return false;
+            }
+
+            if (System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) is not string directory)
+            {
+                return false;
+            }
+
+            string path = System.IO.Path.Combine(directory, Constans.FileName.ConfigurationFile);
+
+            return maintenanceConfigurationFile.Write(path);
+        }
+    }
+}

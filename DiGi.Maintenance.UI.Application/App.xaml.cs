@@ -1,5 +1,5 @@
 ﻿using System.Windows;
-using DiGi.Maintenance.UI.Application.Windows;
+using DiGi.Maintenance.UI.Windows;
 
 namespace DiGi.Maintenance.UI.Application
 {
@@ -10,8 +10,8 @@ namespace DiGi.Maintenance.UI.Application
     {
         void App_Startup(object sender, StartupEventArgs e)
         {
-            MainWindow mainWindow = new();
-            mainWindow.ShowDialog();
+            SolutionsWindow solutionsWindow = new();
+            solutionsWindow.ShowDialog();
 
             Shutdown();
         }

@@ -2,21 +2,21 @@
   <PropertyGroup>
     <Major>0</Major>
     <Minor>8</Minor>
-    <Patch>0</Patch>
+	<Build>0</Build>
 
     <!-- Assembly binding version (keep stable for compatibility) -->
-    <AssemblyVersion>$(Major).$(Minor).$(Patch)</AssemblyVersion>
+    <AssemblyVersion>$(Major).$(Minor).$(Build)</AssemblyVersion>
 
     <!-- NuGet package version -->
-    <Version>$(Major).$(Minor).$(Patch)</Version>
+    <Version>$(Major).$(Minor).$(Build)</Version>
 
     <!-- File version (changes every build) -->
-    <FileVersion>$(Major).$(Minor).$(Patch)</FileVersion>
+    <FileVersion>$(Major).$(Minor).$(Build)</FileVersion>
 
     <!-- Build = yyyyMMdd.HHmm (UTC) -->
-	<Build>$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</Build>
+	<Revision>$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</Revision>
 
     <!-- Informational version (human-readable, can include git commit later) -->
-    <InformationalVersion>$(Major).$(Minor).$(Patch).$(Build)</InformationalVersion>
+    <InformationalVersion>$(Major).$(Minor).$(Build).$(Revision)</InformationalVersion>
   </PropertyGroup>
 </Project>
