@@ -41,6 +41,7 @@
                 <Button x:Name="Button_Load" Content="Load" HorizontalAlignment="Stretch" Margin="0,0,0,5" Click="Button_Load_Click"/>
                 <Button x:Name="Button_UpdateSolution" Content="Update Solution" HorizontalAlignment="Stretch" Margin="0,0,0,5" Click="Button_UpdateSolution_Click"/>
                 <Button x:Name="Button_Sync" Content="Sync with GitHub" HorizontalAlignment="Stretch" Margin="0,0,0,5" Click="Button_Sync_Click"/>
+                <Button x:Name="Button_CleanDirectories" Content="Clean Directories" HorizontalAlignment="Stretch" Margin="0,0,0,5" Click="Button_CleanDirectories_Click"/>
                 <Button x:Name="Button_Test" Content="Test" HorizontalAlignment="Stretch" Margin="0,0,0,0" Click="Button_Test_Click"/>
 
             </StackPanel>

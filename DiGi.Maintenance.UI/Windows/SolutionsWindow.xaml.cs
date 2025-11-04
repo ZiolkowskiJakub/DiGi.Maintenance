@@ -16,6 +16,35 @@ namespace DiGi.Maintenance.UI.Windows
             InitializeComponent();
         }
 
+        private void Button_CleanDirectories_Click(object sender, RoutedEventArgs e)
+        {
+            bool? result;
+
+            OpenFolderDialog openFolderDialog;
+
+            openFolderDialog = new OpenFolderDialog
+            {
+                Title = "Select directory"
+            };
+
+            result = openFolderDialog.ShowDialog(this);
+            if (result == null || !result.HasValue || !result.Value)
+            {
+                return;
+            }
+
+            string directory = openFolderDialog.FolderName;
+
+            HashSet<string>? directories = Maintenance.Modify.CleanDirectories(directory);
+
+            if(directories == null)
+            {
+                directories = [];
+            }
+
+            File.WriteAllLines(Path.Combine(directory, "report.txt"), directories);
+        }
+
         private void Button_Load_Click(object sender, RoutedEventArgs e)
         {
             bool? result;
