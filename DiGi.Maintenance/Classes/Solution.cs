@@ -16,7 +16,7 @@ namespace DiGi.Maintenance.Classes
 
         public string? GetName()
         {
-            if(string.IsNullOrWhiteSpace(Path))
+            if (string.IsNullOrWhiteSpace(Path))
             {
                 return null;
             }
@@ -35,4 +35,3 @@ namespace DiGi.Maintenance.Classes
         }
     }
 }
-

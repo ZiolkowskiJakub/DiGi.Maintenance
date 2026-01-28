@@ -19,6 +19,5 @@ namespace DiGi.Maintenance.UI
 
             return GitHub.Modify.Sync(gitHubConfigurationFile, System.IO.Path.GetDirectoryName(path), solution.Version?.ToString(), commitMessage);
         }
-
     }
 }

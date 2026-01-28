@@ -5,4 +5,3 @@
         public const string ConfigurationFile = "DiGi.Maintenance.conf";
     }
 }
-

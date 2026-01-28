@@ -1,36 +1,35 @@
 ﻿<UserControl x:Class="DiGi.Maintenance.UI.Controls.SolutionControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:DiGi.Maintenance.UI.Controls"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="150" d:DesignWidth="300">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="50"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="50" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
-        <Label Grid.Row="0" Grid.Column="0" Content="Name:"/>
-        <TextBox x:Name="TextBox_Name" Grid.Row="0" Grid.Column="1" Margin="0,5,0,5" IsReadOnly="True"/>
+        <Label Grid.Row="0" Grid.Column="0" Content="Name:" />
+        <TextBox x:Name="TextBox_Name" Grid.Row="0" Grid.Column="1" Margin="0,5,0,5" IsReadOnly="True" />
 
-        <Label Grid.Row="1" Grid.Column="0" Content="Version"/>
+        <Label Grid.Row="1" Grid.Column="0" Content="Version" />
 
-        <Label Grid.Row="2" Grid.Column="0" Content="Major:"/>
-        <TextBox x:Name="TextBox_Version_Major" Grid.Row="2" Grid.Column="1" Margin="0,5,100,5"/>
+        <Label Grid.Row="2" Grid.Column="0" Content="Major:" />
+        <TextBox x:Name="TextBox_Version_Major" Grid.Row="2" Grid.Column="1" Margin="0,5,100,5" />
 
-        <Label Grid.Row="3" Grid.Column="0" Content="Minor:"/>
-        <TextBox x:Name="TextBox_Version_Minor" Grid.Row="3" Grid.Column="1" Margin="0,5,100,5"/>
+        <Label Grid.Row="3" Grid.Column="0" Content="Minor:" />
+        <TextBox x:Name="TextBox_Version_Minor" Grid.Row="3" Grid.Column="1" Margin="0,5,100,5" />
 
-        <Label Grid.Row="4" Grid.Column="0" Content="Build:"/>
-        <TextBox x:Name="TextBox_Version_Build" Grid.Row="4" Grid.Column="1" Margin="0,5,100,5"/>
-
+        <Label Grid.Row="4" Grid.Column="0" Content="Build:" />
+        <TextBox x:Name="TextBox_Version_Build" Grid.Row="4" Grid.Column="1" Margin="0,5,100,5" />
     </Grid>
 </UserControl>

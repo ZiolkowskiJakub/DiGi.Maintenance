@@ -13,17 +13,17 @@ namespace DiGi.Maintenance
             }
 
             string[] paths = System.IO.Directory.GetFiles(directory, "*.sln");
-            if(paths == null)
+            if (paths == null)
             {
                 return null;
             }
 
             List<Solution> result = [];
 
-            foreach(string path in paths)
+            foreach (string path in paths)
             {
                 Solution? solution = Solution(path);
-                if(solution == null)
+                if (solution == null)
                 {
                     continue;
                 }

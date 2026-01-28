@@ -6,16 +6,13 @@ namespace DiGi.Maintenance.Classes
     public class MaintenanceConfigurationFile : ConfigurationFile
     {
         public MaintenanceConfigurationFile(ConfigurationFile? configurationFile)
-            :base(configurationFile)
+            : base(configurationFile)
         {
-
         }
 
         public MaintenanceConfigurationFile(JsonObject? jsonObject)
             : base(jsonObject)
         {
-
         }
     }
 }
-

@@ -19,7 +19,7 @@ namespace DiGi.Maintenance.UI.Controls
         {
             get
             {
-                if(solution is null)
+                if (solution is null)
                 {
                     return null;
                 }
@@ -77,6 +77,5 @@ namespace DiGi.Maintenance.UI.Controls
                 }
             }
         }
-
     }
 }

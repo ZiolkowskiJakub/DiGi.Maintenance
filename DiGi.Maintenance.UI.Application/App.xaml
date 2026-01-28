@@ -4,6 +4,5 @@
              xmlns:local="clr-namespace:DiGi.Maintenance.UI.Application"
              Startup="App_Startup">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>

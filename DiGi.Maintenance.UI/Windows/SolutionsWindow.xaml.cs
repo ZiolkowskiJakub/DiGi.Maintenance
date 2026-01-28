@@ -1,5 +1,4 @@
-﻿using DiGi.Core;
-using DiGi.Maintenance.Classes;
+﻿using DiGi.Maintenance.Classes;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;
@@ -37,7 +36,7 @@ namespace DiGi.Maintenance.UI.Windows
 
             HashSet<string>? directories = Maintenance.Modify.CleanDirectories(directory);
 
-            if(directories == null)
+            if (directories == null)
             {
                 directories = [];
             }
@@ -126,9 +125,9 @@ namespace DiGi.Maintenance.UI.Windows
             DiGi.UI.WPF.Core.Windows.TextBoxWindow textBoxWindow = new("Commit", "Commit message:");
 
             bool? showDialog = textBoxWindow.ShowDialog();
-            if(showDialog is not null && showDialog.HasValue)
+            if (showDialog is not null && showDialog.HasValue)
             {
-                if(!string.IsNullOrWhiteSpace(textBoxWindow.Value))
+                if (!string.IsNullOrWhiteSpace(textBoxWindow.Value))
                 {
                     commitMessage = textBoxWindow.Value;
                 }
@@ -145,13 +144,11 @@ namespace DiGi.Maintenance.UI.Windows
             DiGi.UI.WPF.Core.Windows.TextBoxWindow textBoxWindow = new("Commit", "Commit message:");
             textBoxWindow.Validation = new Func<string, bool>(x => { return x.All(char.IsDigit); });
 
-
             bool? showDialog = textBoxWindow.ShowDialog();
             if (showDialog is not null && showDialog.HasValue)
             {
                 if (!string.IsNullOrWhiteSpace(textBoxWindow.Value))
                 {
-            
                 }
             }
         }
@@ -232,7 +229,7 @@ namespace DiGi.Maintenance.UI.Windows
 
             e.Name = solution.GetName();
         }
-        
+
         private void ListBoxControl_Solutions_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             List<Solution>? solutions = ListBoxControl_Solutions.GetItems<Solution>(true);
@@ -277,7 +274,6 @@ namespace DiGi.Maintenance.UI.Windows
             }
 
             SolutionControl_Main.Solution = new Solution(path, new Version(major, minor, build));
-
         }
 
         private void LoadSolutions()

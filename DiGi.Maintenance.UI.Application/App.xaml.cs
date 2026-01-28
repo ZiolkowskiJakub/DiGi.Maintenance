@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using DiGi.Maintenance.UI.Windows;
+﻿using DiGi.Maintenance.UI.Windows;
+using System.Windows;
 
 namespace DiGi.Maintenance.UI.Application
 {
@@ -8,7 +8,7 @@ namespace DiGi.Maintenance.UI.Application
     /// </summary>
     public partial class App : System.Windows.Application
     {
-        void App_Startup(object sender, StartupEventArgs e)
+        private void App_Startup(object sender, StartupEventArgs e)
         {
             SolutionsWindow solutionsWindow = new();
             solutionsWindow.ShowDialog();
@@ -16,5 +16,4 @@ namespace DiGi.Maintenance.UI.Application
             Shutdown();
         }
     }
-
 }

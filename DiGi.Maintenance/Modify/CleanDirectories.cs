@@ -3,18 +3,17 @@ using System.IO;
 
 namespace DiGi.Maintenance
 {
-
     public static partial class Modify
     {
         public static HashSet<string>? CleanDirectories(this string directory)
         {
-            if(string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
             {
                 return null;
             }
 
             string[] directories = Directory.GetDirectories(directory, "*", SearchOption.AllDirectories);
-            if(directories == null || directories.Length == 0)
+            if (directories == null || directories.Length == 0)
             {
                 return null;
             }
@@ -22,7 +21,7 @@ namespace DiGi.Maintenance
             HashSet<string> result = [];
             int count = -1;
 
-            while(result.Count != count)
+            while (result.Count != count)
             {
                 count = result.Count;
 

@@ -5,7 +5,6 @@ using System.Xml.Linq;
 
 namespace DiGi.Maintenance
 {
-
     public static partial class Create
     {
         public static Solution? Solution(string? path)
@@ -22,7 +21,7 @@ namespace DiGi.Maintenance
             System.Version? version = null;
 
             string path_Properties = System.IO.Path.Combine(directory, "Directory.Build.props");
-            if(System.IO.File.Exists(path_Properties))
+            if (System.IO.File.Exists(path_Properties))
             {
                 // Read file text (trim whitespace to handle BOM/leading whitespace)
                 string xmlText = System.IO.File.ReadAllText(path_Properties).Trim();
@@ -33,7 +32,7 @@ namespace DiGi.Maintenance
                 //XDocument xDocument = XDocument.Parse(path);
 
                 Dictionary<string, string>? dictionary = xDocument?.Descendants("PropertyGroup").Elements().ToDictionary(e => e.Name.LocalName, e => e.Value);
-                if(dictionary != null)
+                if (dictionary != null)
                 {
                     int major = -1;
                     int minor = -1;

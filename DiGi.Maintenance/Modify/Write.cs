@@ -1,11 +1,9 @@
 ﻿using DiGi.Maintenance.Classes;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Xml.Linq;
 
 namespace DiGi.Maintenance
 {
-
     public static partial class Modify
     {
         public static bool Write(this Solution solution)
@@ -17,7 +15,7 @@ namespace DiGi.Maintenance
 
             string? directory = System.IO.Path.GetDirectoryName(path);
 
-            if(solution.Version is System.Version version)
+            if (solution.Version is System.Version version)
             {
                 string path_Properties = System.IO.Path.Combine(directory, "Directory.Build.props");
                 if (System.IO.File.Exists(path_Properties))
