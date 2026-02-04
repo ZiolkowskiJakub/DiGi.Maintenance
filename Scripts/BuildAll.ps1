@@ -35,59 +35,59 @@ Write-Host "Using MSBuild at: $VsMsbuildPath"
 
 # --- Define solution order ---
 $solutionOrder = @(
-	"DiGi.Core\DiGi.Core.sln",
-	"DiGi.BDL\DiGi.BDL.sln",
-	"DiGi.EPW\DiGi.EPW.sln",
-	"DiGi.GML\DiGi.GML.sln",
-	"DiGi.OSM\DiGi.OSM.sln",
-	"DiGi.YOLO\DiGi.YOLO.sln",
-	"DiGi.Math\DiGi.Math.sln",
-	"DiGi.VoTT\DiGi.VoTT.sln",
+	"DiGi.Core\DiGi.Core.slnx",
+	"DiGi.BDL\DiGi.BDL.slnx",
+	"DiGi.EPW\DiGi.EPW.slnx",
+	"DiGi.GML\DiGi.GML.slnx",
+	"DiGi.OSM\DiGi.OSM.slnx",
+	"DiGi.YOLO\DiGi.YOLO.slnx",
+	"DiGi.Math\DiGi.Math.slnx",
+	"DiGi.VoTT\DiGi.VoTT.slnx",
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
-	"DiGi.Typology\DiGi.Typology.sln",
-	"DiGi.Log\DiGi.Log.sln",
-	"DiGi.SQLite\DiGi.SQLite.sln",
-	"DiGi.Scripting\DiGi.Scripting.sln",
-	"DiGi.Scripting.Rhino\DiGi.Scripting.Rhino.sln",
-	"DiGi.Translate\DiGi.Translate.sln",
-	"DiGi.HttpQuery\DiGi.HttpQuery.sln",
-	"DiGi.AssemblyResolver\DiGi.AssemblyResolver.sln",
-	"DiGi.Geometry\DiGi.Geometry.sln",
-	"DiGi.Geometry.Random\DiGi.Geometry.Random.sln",
-	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.sln",
-	"DiGi.UI.WPF\DiGi.UI.WPF.sln",
-	"DiGi.Emgu.CV\DiGi.Emgu.CV.sln",
-	"DiGi.ComputeSharp\DiGi.ComputeSharp.sln",
-	"DiGi.ComputeSharp.Rhino\DiGi.ComputeSharp.Rhino.sln",
-	"DiGi.Solar\DiGi.Solar.sln",
-	"DiGi.Solar.Rhino\DiGi.Solar.Rhino.sln",
-	"DiGi.CityGML\DiGi.CityGML.sln",
-	"DiGi.BDOT10k\DiGi.BDOT10k.sln",
-	"DiGi.BDOT10k.UI\DiGi.BDOT10k.UI.sln",
-	"DiGi.Analytical\DiGi.Analytical.sln",
-	"DiGi.Analytical.Rhino\DiGi.Analytical.Rhino.sln",
-	"DiGi.GIS\DiGi.GIS.sln",
+	"DiGi.Typology\DiGi.Typology.slnx",
+	"DiGi.Log\DiGi.Log.slnx",
+	"DiGi.SQLite\DiGi.SQLite.slnx",
+	"DiGi.Scripting\DiGi.Scripting.slnx",
+	"DiGi.Scripting.Rhino\DiGi.Scripting.Rhino.slnx",
+	"DiGi.Translate\DiGi.Translate.slnx",
+	"DiGi.HttpQuery\DiGi.HttpQuery.slnx",
+	"DiGi.AssemblyResolver\DiGi.AssemblyResolver.slnx",
+	"DiGi.Geometry\DiGi.Geometry.slnx",
+	"DiGi.Geometry.Random\DiGi.Geometry.Random.slnx",
+	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.slnx",
+	"DiGi.UI.WPF\DiGi.UI.WPF.slnx",
+	"DiGi.Emgu.CV\DiGi.Emgu.CV.slnx",
+	"DiGi.ComputeSharp\DiGi.ComputeSharp.slnx",
+	"DiGi.ComputeSharp.Rhino\DiGi.ComputeSharp.Rhino.slnx",
+	"DiGi.Solar\DiGi.Solar.slnx",
+	"DiGi.Solar.Rhino\DiGi.Solar.Rhino.slnx",
+	"DiGi.CityGML\DiGi.CityGML.slnx",
+	"DiGi.BDOT10k\DiGi.BDOT10k.slnx",
+	"DiGi.BDOT10k.UI\DiGi.BDOT10k.UI.slnx",
+	"DiGi.Analytical\DiGi.Analytical.slnx",
+	"DiGi.Analytical.Rhino\DiGi.Analytical.Rhino.slnx",
+	"DiGi.GIS\DiGi.GIS.slnx",
 	"DiGi.GIS.PostgreSQL\DiGi.GIS.PostgreSQL.slnx",
-	"DiGi.GIS.Analytical\DiGi.GIS.Analytical.sln",
-	"DiGi.GIS.Emgu.CV\DiGi.GIS.Emgu.CV.sln",
-	"DiGi.GIS.SQLite\DiGi.GIS.SQLite.sln",
-	"DiGi.GIS.ML\DiGi.GIS.ML.sln",
-	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.sln",
-	"DiGi.GIS.UI\DiGi.GIS.UI.sln",
-	"DiGi.Communication\DiGi.Communication.sln",
-	"DiGi.Rhino\DiGi.Rhino.sln",
-	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.sln",
-	"DiGi.SAM\DiGi.SAM.sln",
-	"DiGi.Tas\DiGi.Tas.sln"
-	"DiGi.Maintenance\DiGi.Maintenance.sln"
+	"DiGi.GIS.Analytical\DiGi.GIS.Analytical.slnx",
+	"DiGi.GIS.Emgu.CV\DiGi.GIS.Emgu.CV.slnx",
+	"DiGi.GIS.SQLite\DiGi.GIS.SQLite.slnx",
+	"DiGi.GIS.ML\DiGi.GIS.ML.slnx",
+	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
+	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
+	"DiGi.Communication\DiGi.Communication.slnx",
+	"DiGi.Rhino\DiGi.Rhino.slnx",
+	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
+	"DiGi.SAM\DiGi.SAM.slnx",
+	"DiGi.Tas\DiGi.Tas.slnx"
+	"DiGi.Maintenance\DiGi.Maintenance.slnx"
 	"DiGi.GIS.PostgreSQL.WebAPI\DiGi.GIS.PostgreSQL.WebAPI.slnx"
 	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
 	# add more in the order you need
 )
 
 $platform_x64 = @(
-	"DiGi.Tas\DiGi.Tas.sln"
+	"DiGi.Tas\DiGi.Tas.slnx"
 )
 
 $count = 0
@@ -98,11 +98,11 @@ foreach ($relativePath in $solutionOrder)
 
 	if (-Not (Test-Path $sln)) 
 	{
-		Write-Host "Solution not found (skipping): $sln" -ForegroundColor Yellow
+		Write-Host "Solution not found (skipping): $slnx" -ForegroundColor Yellow
 		continue
 	}
 
-	Write-Host "Building solution: $sln"
+	Write-Host "Building solution: $slnx"
 
 	# Determine platform parameter
 	if ($platform_x64 -contains $relativePath) 
@@ -119,7 +119,7 @@ foreach ($relativePath in $solutionOrder)
 
 	if ($LASTEXITCODE -ne 0) 
 	{
-		Write-Host "Build failed for $sln" -ForegroundColor Red
+		Write-Host "Build failed for $slnx" -ForegroundColor Red
 		exit $LASTEXITCODE
 	}
 	
