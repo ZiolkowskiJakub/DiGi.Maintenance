@@ -44,6 +44,7 @@ $solutionOrder = @(
 	"DiGi.Math\DiGi.Math.sln",
 	"DiGi.VoTT\DiGi.VoTT.sln",
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
+	"DiGi.WebAPI\DiGi.WebAPI.slnx"
 	"DiGi.Typology\DiGi.Typology.sln",
 	"DiGi.Log\DiGi.Log.sln",
 	"DiGi.SQLite\DiGi.SQLite.sln",
@@ -80,6 +81,8 @@ $solutionOrder = @(
 	"DiGi.SAM\DiGi.SAM.sln",
 	"DiGi.Tas\DiGi.Tas.sln"
 	"DiGi.Maintenance\DiGi.Maintenance.sln"
+	"DiGi.GIS.PostgreSQL.WebAPI\DiGi.GIS.PostgreSQL.WebAPI.slnx"
+	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
 	# add more in the order you need
 )
 
