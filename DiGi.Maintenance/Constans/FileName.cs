@@ -1,4 +1,4 @@
-﻿namespace DiGi.Maintenance.Constans
+﻿namespace DiGi.Maintenance.Constants
 {
     public static class FileName
     {

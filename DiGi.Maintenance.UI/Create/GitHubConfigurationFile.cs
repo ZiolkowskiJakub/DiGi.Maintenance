@@ -13,7 +13,7 @@ namespace DiGi.Maintenance.UI
                 return null;
             }
 
-            string path = System.IO.Path.Combine(directory, GitHub.Constans.FileName.GitHubConfigurationFile);
+            string path = System.IO.Path.Combine(directory, GitHub.Constants.FileName.GitHubConfigurationFile);
 
             ConfigurationFile? configurationFile = Core.Create.ConfigurationFile(path);
             if (configurationFile is null)

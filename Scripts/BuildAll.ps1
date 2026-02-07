@@ -43,6 +43,7 @@ $solutionOrder = @(
 	"DiGi.YOLO\DiGi.YOLO.slnx",
 	"DiGi.Math\DiGi.Math.slnx",
 	"DiGi.VoTT\DiGi.VoTT.slnx",
+	"DiGi.GitHub\DiGi.GitHub.slnx"
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
 	"DiGi.Typology\DiGi.Typology.slnx",

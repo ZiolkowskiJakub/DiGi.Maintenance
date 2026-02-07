@@ -53,7 +53,7 @@ namespace DiGi.Maintenance
                 return false;
             }
 
-            string path = System.IO.Path.Combine(directory, Constans.FileName.ConfigurationFile);
+            string path = System.IO.Path.Combine(directory, Constants.FileName.ConfigurationFile);
 
             return maintenanceConfigurationFile.Write(path);
         }

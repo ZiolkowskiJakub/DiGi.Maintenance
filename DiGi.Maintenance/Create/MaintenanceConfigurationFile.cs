@@ -13,7 +13,7 @@ namespace DiGi.Maintenance
                 return null;
             }
 
-            string path = System.IO.Path.Combine(directory, Constans.FileName.ConfigurationFile);
+            string path = System.IO.Path.Combine(directory, Constants.FileName.ConfigurationFile);
 
             ConfigurationFile? configurationFile = Core.Create.ConfigurationFile(path);
             configurationFile ??= new ConfigurationFile();
