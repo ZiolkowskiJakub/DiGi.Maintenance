@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DiGi.Maintenance.UI.Windows"
-        xmlns:coreControls="clr-namespace:DiGi.UI.WPF.Core.Controls;assembly=DiGi.UI.WPF.Core"
+        xmlns:coreControls="clr-namespace:DiGi.UI.WPF.Controls;assembly=DiGi.UI.WPF"
         xmlns:controls="clr-namespace:DiGi.Maintenance.UI.Controls" x:Class="DiGi.Maintenance.UI.Windows.SolutionsWindow"
         mc:Ignorable="d"
         Title="SolutionsWindow" Height="450" Width="500" Loaded="Window_Loaded">

@@ -36,10 +36,7 @@ namespace DiGi.Maintenance.UI.Windows
 
             HashSet<string>? directories = Maintenance.Modify.CleanDirectories(directory);
 
-            if (directories == null)
-            {
-                directories = [];
-            }
+            directories ??= [];
 
             File.WriteAllLines(Path.Combine(directory, "report.txt"), directories);
         }
@@ -122,7 +119,7 @@ namespace DiGi.Maintenance.UI.Windows
 
             string? commitMessage = null;
 
-            DiGi.UI.WPF.Core.Windows.TextBoxWindow textBoxWindow = new("Commit", "Commit message:");
+            DiGi.UI.WPF.Windows.TextBoxWindow textBoxWindow = new("Commit", "Commit message:");
 
             bool? showDialog = textBoxWindow.ShowDialog();
             if (showDialog is not null && showDialog.HasValue)
@@ -141,8 +138,10 @@ namespace DiGi.Maintenance.UI.Windows
 
         private void Button_Test_Click(object sender, RoutedEventArgs e)
         {
-            DiGi.UI.WPF.Core.Windows.TextBoxWindow textBoxWindow = new("Commit", "Commit message:");
-            textBoxWindow.Validation = new Func<string, bool>(x => { return x.All(char.IsDigit); });
+            DiGi.UI.WPF.Windows.TextBoxWindow textBoxWindow = new("Commit", "Commit message:")
+            {
+                Validation = new Func<string, bool>(x => { return x.All(char.IsDigit); })
+            };
 
             bool? showDialog = textBoxWindow.ShowDialog();
             if (showDialog is not null && showDialog.HasValue)
@@ -184,31 +183,31 @@ namespace DiGi.Maintenance.UI.Windows
                     continue;
                 }
 
-                int major_Solution = -1;
-                int minor_Solution = -1;
-                int build_Solution = -1;
+                //int major_Solution = -1;
+                //int minor_Solution = -1;
+                //int build_Solution = -1;
 
-                if (solution.Version is Version version_Solution)
-                {
-                    major_Solution = version_Solution.Major;
-                    minor_Solution = version_Solution.Minor;
-                    build_Solution = version_Solution.Build;
-                }
+                //if (solution.Version is Version version_Solution)
+                //{
+                //    major_Solution = version_Solution.Major;
+                //    minor_Solution = version_Solution.Minor;
+                //    build_Solution = version_Solution.Build;
+                //}
 
-                if (major != -1)
-                {
-                    major_Solution = major;
-                }
+                //if (major != -1)
+                //{
+                //    major_Solution = major;
+                //}
 
-                if (minor != -1)
-                {
-                    minor_Solution = minor;
-                }
+                //if (minor != -1)
+                //{
+                //    minor_Solution = minor;
+                //}
 
-                if (build != -1)
-                {
-                    build_Solution = build;
-                }
+                //if (build != -1)
+                //{
+                //    build_Solution = build;
+                //}
 
                 if (major == -1 || minor == -1 || build == -1)
                 {
@@ -220,7 +219,7 @@ namespace DiGi.Maintenance.UI.Windows
             }
         }
 
-        private void ListBoxControl_Solutions_ItemAdding(object sender, DiGi.UI.WPF.Core.Classes.ListBoxItemAddingEventArgs e)
+        private void ListBoxControl_Solutions_ItemAdding(object sender, DiGi.UI.WPF.Classes.ListBoxItemAddingEventArgs e)
         {
             if (e.Item is not Solution solution)
             {

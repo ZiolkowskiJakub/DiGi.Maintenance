@@ -30,8 +30,8 @@
 	  <Reference Include="DiGi.GitHub">
 	    <HintPath>..\..\DiGi.GitHub\bin\DiGi.GitHub.dll</HintPath>
 	  </Reference>
-	  <Reference Include="DiGi.UI.WPF.Core">
-	    <HintPath>..\..\DiGi.UI.WPF\bin\DiGi.UI.WPF.Core.dll</HintPath>
+	  <Reference Include="DiGi.UI.WPF">
+	    <HintPath>..\..\DiGi.UI.WPF\bin\DiGi.UI.WPF.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
 
