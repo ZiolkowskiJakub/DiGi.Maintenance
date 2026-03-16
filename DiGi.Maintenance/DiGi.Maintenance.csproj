@@ -13,14 +13,12 @@
 		<NoWarn>$(NoWarn);MSB3277</NoWarn>
 	</PropertyGroup>
 
-	<Target Name="CopyFiles" AfterTargets="Build">
-		<!-- List files to copy -->
-		<ItemGroup Condition="Exists('$(ProjectDir)..\user files\GitHub.conf')">
-			<Files Include="$(ProjectDir)..\user files\GitHub.conf" />
+	<Target Name="CopyUserFiles" AfterTargets="Build">
+		<ItemGroup>
+			<_UserFiles Include="$(ProjectDir)..\user files\**\*.*" />
 		</ItemGroup>
-
-		<!-- Copy them to bin directory -->
-		<Copy SourceFiles="@(Files)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+		<Message Text="Copying all user files from directory..." Importance="high" />
+		<Copy SourceFiles="@(_UserFiles)" DestinationFiles="@(_UserFiles->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 	</Target>
 
 	<PropertyGroup>
