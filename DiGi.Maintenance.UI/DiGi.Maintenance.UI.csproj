@@ -16,7 +16,7 @@
 
 	<ItemGroup>
 	  <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
-	  <PackageReference Include="System.Text.Json" Version="10.0.2" />
+	  <PackageReference Include="System.Text.Json" Version="10.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -36,6 +36,7 @@ Write-Host "Using MSBuild at: $VsMsbuildPath"
 # --- Define solution order ---
 $solutionOrder = @(
 	"DiGi.Core\DiGi.Core.slnx",
+	"DiGi.User\DiGi.User.slnx",
 	"DiGi.BDL\DiGi.BDL.slnx",
 	"DiGi.EPW\DiGi.EPW.slnx",
 	"DiGi.GML\DiGi.GML.slnx",
@@ -46,6 +47,7 @@ $solutionOrder = @(
 	"DiGi.GitHub\DiGi.GitHub.slnx"
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
+	"DiGi.User.WebAPI\DiGi.User.WebAPI.slnx",
 	"DiGi.Typology\DiGi.Typology.slnx",
 	"DiGi.Serilog\DiGi.Serilog.slnx",
 	"DiGi.Log\DiGi.Log.slnx",
