@@ -47,6 +47,7 @@ $solutionOrder = @(
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
 	"DiGi.Typology\DiGi.Typology.slnx",
+	"DiGi.Serilog\DiGi.Serilog.slnx",
 	"DiGi.Log\DiGi.Log.slnx",
 	"DiGi.SQLite\DiGi.SQLite.slnx",
 	"DiGi.Scripting\DiGi.Scripting.slnx",
