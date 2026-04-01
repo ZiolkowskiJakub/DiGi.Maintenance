@@ -120,7 +120,10 @@ foreach ($relativePath in $solutionOrder)
 	}
 
 	# Build the solution
-	& $VsMsbuildPath $sln /p:Configuration=$Configuration $platformParam /m:1 /p:VisualStudioVersion=17.0 /verbosity:minimal
+	#& $VsMsbuildPath $sln /p:Configuration=$Configuration $platformParam /m:1 /p:VisualStudioVersion=17.0 /verbosity:minimal
+	
+	# Build the solution with an explicit restore step
+	& $VsMsbuildPath $sln -restore /p:Configuration=$Configuration $platformParam /m:1 /p:VisualStudioVersion=17.0 /verbosity:minimal
 
 	if ($LASTEXITCODE -ne 0) 
 	{
