@@ -46,20 +46,21 @@ $solutionOrder = @(
 	"DiGi.VoTT\DiGi.VoTT.slnx",
 	"DiGi.GitHub\DiGi.GitHub.slnx"
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
+	"DiGi.Geometry\DiGi.Geometry.slnx",
+	"DiGi.Geometry.Random\DiGi.Geometry.Random.slnx",
+	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
 	"DiGi.User.WebAPI\DiGi.User.WebAPI.slnx",
 	"DiGi.Typology\DiGi.Typology.slnx",
 	"DiGi.Serilog\DiGi.Serilog.slnx",
 	"DiGi.Log\DiGi.Log.slnx",
 	"DiGi.SQLite\DiGi.SQLite.slnx",
+	"DiGi.Rhino\DiGi.Rhino.slnx",
 	"DiGi.Scripting\DiGi.Scripting.slnx",
 	"DiGi.Scripting.Rhino\DiGi.Scripting.Rhino.slnx",
 	"DiGi.Translate\DiGi.Translate.slnx",
 	"DiGi.HttpQuery\DiGi.HttpQuery.slnx",
 	"DiGi.AssemblyResolver\DiGi.AssemblyResolver.slnx",
-	"DiGi.Geometry\DiGi.Geometry.slnx",
-	"DiGi.Geometry.Random\DiGi.Geometry.Random.slnx",
-	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.slnx",
 	"DiGi.UI.WPF\DiGi.UI.WPF.slnx",
 	"DiGi.Emgu.CV\DiGi.Emgu.CV.slnx",
 	"DiGi.ComputeSharp\DiGi.ComputeSharp.slnx",
@@ -82,7 +83,6 @@ $solutionOrder = @(
 	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx"
 	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx"
 	"DiGi.Communication\DiGi.Communication.slnx",
-	"DiGi.Rhino\DiGi.Rhino.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
 	"DiGi.SAM\DiGi.SAM.slnx",
 	"DiGi.Tas\DiGi.Tas.slnx"
