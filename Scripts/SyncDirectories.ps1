@@ -3,6 +3,7 @@ $SyncList = @(
     @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.PostgreSQL.UI\bin";       Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.GIS.PostgreSQL.UI" },
     @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.UI\bin";                  Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.GIS.UI" },
     @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.WebAPI.UI\bin";  Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.GIS.WebAPI.UI" },
+    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.User.WebAPI\bin";  Destination = "C:\Users\jakub\GitHub\DigiProject\DiGi.WebAPI.WindowsService\bin\extensions\user" },
     @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.PostgreSQL.WebAPI\bin";  Destination = "C:\Users\jakub\GitHub\DigiProject\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
     @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.WebAPI.WindowsService\bin";  Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.WebAPI.WindowsService" }
 )
