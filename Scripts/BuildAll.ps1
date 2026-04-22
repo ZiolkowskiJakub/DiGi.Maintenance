@@ -98,6 +98,8 @@ $platform_x64 = @(
 
 $count = 0
 
+$length = $solutionOrder.Count
+
 foreach ($relativePath in $solutionOrder) 
 {
 	$sln = Join-Path $Root $relativePath
@@ -132,12 +134,10 @@ foreach ($relativePath in $solutionOrder)
 		exit $LASTEXITCODE
 	}
 	
-	Write-Host "Building succeeded`n"-ForegroundColor Green
-	
 	$count = $count + 1
+	
+	Write-Host "Building succeeded ($count/$length)`n"-ForegroundColor Green
 }
-
-$length = $solutionOrder.Count
 
 if ($count -eq $length) 
 {
