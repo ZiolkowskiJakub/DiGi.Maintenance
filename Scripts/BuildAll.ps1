@@ -49,6 +49,7 @@ $solutionOrder = @(
 	"DiGi.Geometry\DiGi.Geometry.slnx",
 	"DiGi.Geometry.Random\DiGi.Geometry.Random.slnx",
 	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.slnx",
+	"DiGi.GLTF\DiGi.GLTF.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
 	"DiGi.User.WebAPI\DiGi.User.WebAPI.slnx",
 	"DiGi.Typology\DiGi.Typology.slnx",
