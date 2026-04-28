@@ -63,6 +63,7 @@ $solutionOrder = @(
 	"DiGi.HttpQuery\DiGi.HttpQuery.slnx",
 	"DiGi.AssemblyResolver\DiGi.AssemblyResolver.slnx",
 	"DiGi.UI.WPF\DiGi.UI.WPF.slnx",
+	"DiGi.UI.Windows\DiGi.UI.Windows.slnx",
 	"DiGi.Emgu.CV\DiGi.Emgu.CV.slnx",
 	"DiGi.ComputeSharp\DiGi.ComputeSharp.slnx",
 	"DiGi.ComputeSharp.Rhino\DiGi.ComputeSharp.Rhino.slnx",
@@ -80,15 +81,15 @@ $solutionOrder = @(
 	"DiGi.GIS.SQLite\DiGi.GIS.SQLite.slnx",
 	"DiGi.GIS.ML\DiGi.GIS.ML.slnx",
 	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
-	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
-	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx"
+	"DiGi.GIS.PostgreSQL.WebAPI\DiGi.GIS.PostgreSQL.WebAPI.slnx"
 	"DiGi.Communication\DiGi.Communication.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
 	"DiGi.SAM\DiGi.SAM.slnx",
 	"DiGi.Tas\DiGi.Tas.slnx"
+	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
+	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx"
 	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx"
 	"DiGi.Maintenance\DiGi.Maintenance.slnx"
-	"DiGi.GIS.PostgreSQL.WebAPI\DiGi.GIS.PostgreSQL.WebAPI.slnx"
 	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
 	# add more in the order you need
 )
@@ -107,7 +108,7 @@ foreach ($relativePath in $solutionOrder)
 
 	if (-Not (Test-Path $sln)) 
 	{
-		Write-Host "Solution not found (skipping): $slnx" -ForegroundColor Yellow
+		Write-Host "Solution not found (skipping): $sln" -ForegroundColor Yellow
 		continue
 	}
 
