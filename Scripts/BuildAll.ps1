@@ -50,10 +50,10 @@ $solutionOrder = @(
 	"DiGi.Geometry.Random\DiGi.Geometry.Random.slnx",
 	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.slnx",
 	"DiGi.GLTF\DiGi.GLTF.slnx",
+	"DiGi.Serilog\DiGi.Serilog.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx"
 	"DiGi.User.WebAPI\DiGi.User.WebAPI.slnx",
 	"DiGi.Typology\DiGi.Typology.slnx",
-	"DiGi.Serilog\DiGi.Serilog.slnx",
 	"DiGi.Log\DiGi.Log.slnx",
 	"DiGi.SQLite\DiGi.SQLite.slnx",
 	"DiGi.Rhino\DiGi.Rhino.slnx",
@@ -82,11 +82,11 @@ $solutionOrder = @(
 	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
 	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
 	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx"
-	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx"
 	"DiGi.Communication\DiGi.Communication.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
 	"DiGi.SAM\DiGi.SAM.slnx",
 	"DiGi.Tas\DiGi.Tas.slnx"
+	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx"
 	"DiGi.Maintenance\DiGi.Maintenance.slnx"
 	"DiGi.GIS.PostgreSQL.WebAPI\DiGi.GIS.PostgreSQL.WebAPI.slnx"
 	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
