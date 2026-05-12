@@ -36,13 +36,14 @@ Write-Host "Using MSBuild at: $VsMsbuildPath"
 # --- Define solution order ---
 $solutionOrder = @(
 	"DiGi.Core\DiGi.Core.slnx",
+	"DiGi.Unit\DiGi.Unit.slnx",
+	"DiGi.Math\DiGi.Math.slnx",
 	"DiGi.User\DiGi.User.slnx",
 	"DiGi.BDL\DiGi.BDL.slnx",
 	"DiGi.EPW\DiGi.EPW.slnx",
 	"DiGi.GML\DiGi.GML.slnx",
 	"DiGi.OSM\DiGi.OSM.slnx",
 	"DiGi.YOLO\DiGi.YOLO.slnx",
-	"DiGi.Math\DiGi.Math.slnx",
 	"DiGi.VoTT\DiGi.VoTT.slnx",
 	"DiGi.GitHub\DiGi.GitHub.slnx"
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
