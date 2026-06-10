@@ -61,7 +61,6 @@ $solutionOrder = @(
 	"DiGi.Scripting\DiGi.Scripting.slnx",
 	"DiGi.Scripting.Rhino\DiGi.Scripting.Rhino.slnx",
 	"DiGi.Translate\DiGi.Translate.slnx",
-	"DiGi.HttpQuery\DiGi.HttpQuery.slnx",
 	"DiGi.AssemblyResolver\DiGi.AssemblyResolver.slnx",
 	"DiGi.UI.WPF\DiGi.UI.WPF.slnx",
 	"DiGi.UI.Windows\DiGi.UI.Windows.slnx",
