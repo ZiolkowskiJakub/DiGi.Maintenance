@@ -6,6 +6,11 @@ namespace DiGi.Maintenance
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Writes the version information of the specified solution to the Directory.Build.props file.
+        /// </summary>
+        /// <param name="solution">The solution instance whose version is to be written.</param>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public static bool Write(this Solution solution)
         {
             if (solution.Path is not string path || string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
@@ -41,6 +46,11 @@ namespace DiGi.Maintenance
             return true;
         }
 
+        /// <summary>
+        /// Writes the specified maintenance configuration file to the default configuration path relative to the executing assembly.
+        /// </summary>
+        /// <param name="maintenanceConfigurationFile">The maintenance configuration file instance to write.</param>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public static bool Write(this MaintenanceConfigurationFile maintenanceConfigurationFile)
         {
             if (maintenanceConfigurationFile is null)

@@ -5,6 +5,11 @@ namespace DiGi.Maintenance
 {
     public static partial class Create
     {
+        /// <summary>
+        /// Retrieves a list of solution files from the specified directory.
+        /// </summary>
+        /// <param name="directory">The path to the directory to search for .sln files.</param>
+        /// <returns>A list of <see cref="Solution"/> objects found in the directory, or null if the directory is invalid or does not exist.</returns>
         public static List<Solution>? Solutions(string? directory)
         {
             if (string.IsNullOrEmpty(directory) || !System.IO.Directory.Exists(directory))

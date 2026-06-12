@@ -1,4 +1,4 @@
-﻿using DiGi.Maintenance.Classes;
+using DiGi.Maintenance.Classes;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;
@@ -10,6 +10,9 @@ namespace DiGi.Maintenance.UI.Windows
     /// </summary>
     public partial class SolutionsWindow : Window
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SolutionsWindow"/> class.
+        /// </summary>
         public SolutionsWindow()
         {
             InitializeComponent();

@@ -5,6 +5,11 @@ namespace DiGi.Maintenance
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Recursively removes empty directories within the specified root directory.
+        /// </summary>
+        /// <param name="directory">The path to the root directory to clean.</param>
+        /// <returns>A <see cref="HashSet{T}"/> containing the paths of the deleted directories, or <c>null</c> if the input directory is invalid or no empty directories were found.</returns>
         public static HashSet<string>? CleanDirectories(this string directory)
         {
             if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))

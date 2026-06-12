@@ -26,6 +26,26 @@ The local documentation generation MUST be handled by the MCP tool named `lm_stu
    * Ingest the context from these XML files to ensure accurate cross-referencing, correct terminology, and precise descriptions of external types and method parameters.
 7. **Warning-Free Code (Signature Matching):** Ensure that the generated or updated documentation strictly matches method signatures. Remove `<param>` tags for parameters that no longer exist in the method signature. Add missing `<param>` tags for new parameters. Validate that all parameters, return types (`<returns>`), and type parameters (`<typeparam>`) are correctly and exhaustively documented to prevent XML documentation warnings (e.g., `CS1591`, `CS1573`).
 8. **Single Summary Enforcement (Cleanup):** Strictly verify that each element (class, enum, method, property, field) receives exactly ONE `<summary>` block. When updating existing docs, overwrite the old `<summary>` completely instead of appending a new one. Duplicate tags for the same member are strictly forbidden. Perform a final validation pass on the generated XML structure to remove any redundant tags before outputting the code.
+8. **No Empty Lines:** Strictly avoid empty lines within the XML documentation blocks (e.g., aempty line or line containing only `///`). Empty lines cause incorrect tooltip formatting and rendering issues in Visual Studio IntelliSense. If a paragraph break is necessary for readability, use the `<para>` tag instead.
+
+* **INCORRECT (Do NOT do this):**
+     ```csharp
+     /// <summary>
+     /// Calculates the total volume of the selected Revit elements.
+     
+     /// This operation might take a while on large BIM models.
+     /// </summary>
+     public double CalculateVolume(List<Element> list_Elements)
+     ```
+   
+   * **CORRECT (Do this instead):**
+     ```csharp
+     /// <summary>
+     /// Calculates the total volume of the selected Revit elements.
+     /// <para>This operation might take a while on large BIM models.</para>
+     /// </summary>
+     public double CalculateVolume(List<Element> list_Elements)
+     ```
 
 ---
 

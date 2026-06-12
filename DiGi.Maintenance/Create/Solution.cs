@@ -7,6 +7,11 @@ namespace DiGi.Maintenance
 {
     public static partial class Create
     {
+        /// <summary>
+        /// Creates a <see cref="Solution"/> instance based on the provided file path, attempting to resolve versioning from a 'Directory.Build.props' file in the same directory.
+        /// </summary>
+        /// <param name="path">The path to the solution file.</param>
+        /// <returns>A new <see cref="Solution"/> object if the path is valid and the file exists; otherwise, null.</returns>
         public static Solution? Solution(string? path)
         {
             if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))

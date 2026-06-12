@@ -10,11 +10,17 @@ namespace DiGi.Maintenance.UI.Controls
     {
         private Solution? solution;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SolutionControl"/> class.
+        /// </summary>
         public SolutionControl()
         {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="Solution"/> associated with this control.
+        /// </summary>
         public Solution? Solution
         {
             get
@@ -39,6 +45,9 @@ namespace DiGi.Maintenance.UI.Controls
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="Version"/> of the current solution.
+        /// </summary>
         public Version? Version
         {
             get
