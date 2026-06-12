@@ -19,8 +19,8 @@ If the trigger condition is met, perform the following steps sequentially:
 2. **Calculate Next Version (Patch Bump):** Increment the third digit (patch version) of the current branch name by exactly `1`. 
    *Example:* If the current active branch is `0.8.2`, the target version becomes `0.8.3`.
 3. **Create New Branch:** Create a new branch off `main` using the target version name calculated in Step 2.
-4. **Switch Active Context:** Checkout the newly created branch. You MUST ensure the environment context switches to this new branch seamlessly for both Visual Studio and the Antygravity application workspace.
-5. **Multi-Repository Execution (Antygravity Workspace):** If the active Antygravity project has multiple repository folders assigned to it, you MUST evaluate the active branch for *every single repository*. Apply Steps 1 through 4 to ALL repositories in the workspace that currently meet the `*.*.*` branch naming condition. Do not skip repositories.
+5. **Update Version in Directory.Build.props:** If a `Directory.Build.props` file exists in the repository, update the `<Major>`, `<Minor>`, and `<Build>` XML tags to match the components of the new branch version (e.g., for branch `0.8.1`, set `<Major>0</Major>`, `<Minor>8</Minor>`, `<Build>1</Build>`). Commit this change on the new branch before pushing.
+6. **Publish to GitHub:** Push both the updated `main` branch and the newly created version branch to the remote repository on GitHub (origin).
 
 ---
 
