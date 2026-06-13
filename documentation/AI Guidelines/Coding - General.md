@@ -19,7 +19,7 @@
 3. **Explicit Typing Mandatory:** Strictly avoid implicit typing (`var`). You must use explicit variable types everywhere, unless implicit typing is absolutely enforced by the compiler (e.g., when returning anonymous types).
 4. **Variable Naming Convention:** Variable and object names inside methods and functions MUST start with the object's type name formatted in camelCase. If a more specific name is needed, append a descriptive part after an underscore (`_`). 
    * *Complex Type Examples:* `PointNode pointNode_Base`, `PointNode pointNode_Temp`.
-   * **Plural Naming for Collections:** For collections (such as `IEnumerable`, `List`, `Array`, `HashSet`, etc.), do NOT prefix them with the type name (e.g., do not use `listColumns` or `enumerableStrings`). Instead, use the plural form of the item name directly (e.g., `columns`, `names`, `categories`). If a more specific name is needed, append a descriptive part after an underscore (e.g., `categories_Main`, `categories_Temp`).
+   * **Plural Naming for Collections:** For collections (such as `IEnumerable`, `List`, `Array`, `HashSet`, etc., including properties and variables), do NOT prefix them with the collection type name (e.g., do not use `listConditions` or `arrayGroups`). Instead, keep the full name of the object/type and append the plural suffix (e.g., use `FilterConditions` instead of `Conditions` or `listConditions`, and `FilterGroups` instead of `Groups` or `listGroups`). This rule applies because the collection contains elements of that specific object type.
    * **Property Naming matching Value Type:** In case a value type is fully descriptive and it is unique across a class, try to keep the property name as the value type it represents (e.g., `public AggregateFunction AggregateFunction { get; set; }`).
    * **Exception for Primitive/Simple Types:** For simple types like `double`, `string`, `int`, `bool`, etc., it is acceptable to exclude the type prefix and use standard camelCase naming.
    * *Primitive Type Examples:* `double tolerance`, `string name`, `int count`.
@@ -42,7 +42,7 @@ ALL complex functionalities, including operations on classes, interfaces, and en
 * **Query (Read/Extract):**
     * **Directory:** `/Query`
     * **Class:** `public static partial class Query`
-    * **Purpose:** Complex functionalities that return a result based on a query. Does NOT modify the source object.
+    * **Purpose:** Complex functionalities that return a result based on a query. Does NOT modify the source object (e.g., translating dynamic filter groups into SQL/parameterized commands).
 * **Modify (Update/Mutate):**
     * **Directory:** `/Modify`
     * **Class:** `public static partial class Modify`
