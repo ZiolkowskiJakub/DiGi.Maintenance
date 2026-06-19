@@ -19,12 +19,12 @@ This project strictly separates **Data Models** (anemic schemas) from **Business
 
 ```mermaid
 graph TD
-    subgraph Data Models (Anemic)
+    subgraph "Data Models (Anemic)"
         C[Classes]
         I[Interfaces]
         E[Enums]
     end
-    subgraph Business Logic (Static Extensions)
+    subgraph "Business Logic (Static Extensions)"
         Q[Query Class]
         M[Modify Class]
         Cr[Create Class]
