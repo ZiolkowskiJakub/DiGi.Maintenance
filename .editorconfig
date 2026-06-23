@@ -1,5 +1,10 @@
 root = true
 
+# Global settings for all files in the project
+[*]
+end_of_line = crlf
+charset = utf-8
+
 [*.cs]
 dotnet_diagnostic.IDE0130.severity = none
 dotnet_diagnostic.IDE0290.severity = none
