@@ -14,6 +14,7 @@ To maintain consistency with the project's codebase, all generated test code MUS
 2. **Explicit Typing Mandatory:** Strictly avoid implicit typing (`var`). You MUST use explicit variable types everywhere.
    * *Example:* `double value = 5.0;` instead of `var value = 5.0;`
    * *Example:* `Core.Classes.Address address = new(...);` instead of `var address = new(...);`
+   * **Target-Typed New (`new(...)`):** To avoid IDE0090 analyzer messages, always use target-typed new expressions (`new(...)`) instead of explicit type instantiation when the target type is explicitly declared (e.g., write `Address address = new(...);` instead of `Address address = new Address(...);`).
 3. **Variable Naming Convention:** Variable and object names inside test methods MUST start with the object's type name formatted in camelCase. If a more specific name is needed, append a descriptive part after an underscore (`_`).
    * *Complex Type Examples:* `PointNode pointNode_Base`, `PointNode pointNode_Temp`, `Segment3D segment3D_Inside`.
    * **Plural Naming for Collections:** For collections (such as `List<T>`, `Array`, `IEnumerable<T>`, etc.), do NOT prefix them with the collection type name (e.g., do not use `listPoints` or `arraySegments`). Instead, keep the full name of the element type and append the plural suffix `s` or `es` (e.g., use `point3Ds` instead of `listPoints` or `points`, and `segment3Ds` instead of `listSegments` or `segments`).

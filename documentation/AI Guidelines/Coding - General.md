@@ -17,6 +17,7 @@
 1. **English Only (Code):** All generated code MUST use English naming conventions.
 2. **English Only (Comments):** All code comments MUST be in English.
 3. **Explicit Typing Mandatory:** Strictly avoid implicit typing (`var`). You must use explicit variable types everywhere, unless implicit typing is absolutely enforced by the compiler (e.g., when returning anonymous types).
+   * **Target-Typed New (`new(...)`):** To avoid IDE0090 analyzer messages, always use target-typed new expressions (`new(...)`) instead of explicit type instantiation when the target type is explicitly declared (e.g., write `PointNode pointNode = new();` instead of `PointNode pointNode = new PointNode();`).
 4. **Variable Naming Convention:** Variable and object names inside methods and functions MUST start with the object's type name formatted in camelCase. If a more specific name is needed, append a descriptive part after an underscore (`_`). 
    * *Complex Type Examples:* `PointNode pointNode_Base`, `PointNode pointNode_Temp`.
    * **Plural Naming for Collections:** For collections (such as `IEnumerable`, `List`, `Array`, `HashSet`, etc., including properties and variables), do NOT prefix them with the collection type name (e.g., do not use `listConditions` or `arrayGroups`). Instead, keep the full name of the object/type and append the plural suffix (e.g., use `FilterConditions` instead of `Conditions` or `listConditions`, and `FilterGroups` instead of `Groups` or `listGroups`). This rule applies because the collection contains elements of that specific object type.
@@ -113,7 +114,7 @@ namespace DiGi.Core
     {
         public static PointNode PointNode_ByOffset(this PointNode pointNode, double offset)
         {
-            PointNode result = new PointNode();
+            PointNode result = new();
             result.Name = pointNode.Name + "_Offset";
             result.X = pointNode.X + offset;
             result.Y = pointNode.Y + offset;
