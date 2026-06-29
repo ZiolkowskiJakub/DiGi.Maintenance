@@ -52,6 +52,8 @@ Use standard xUnit assertions to check outcomes:
 Verify that classes serialize and deserialize correctly. 
 * For standard object serialization validation, use: `Query.SerializationCheck(object_Instance);`
 * For string/JSON serialization, use `Convert.ToSystem_String(object)` and deserialization via `Convert.ToDiGi<T>(json)?.FirstOrDefault()`.
+* `SerializationCheck` lives in `DiGi.Core.xUnit`. When the test project's own namespace differs (e.g. `DiGi.EPW.xUnit` testing classes from `DiGi.EPW`), call it fully qualified as `Core.xUnit.Query.SerializationCheck(object_Instance);` — this resolves via the same "innermost-enclosing-namespace" lookup as `Core.Query.Clone(...)` (see Coding - General's Serialization Pattern section), so no explicit `using DiGi.Core.xUnit;` is needed as long as the test namespace nests under `DiGi`.
+* For every class added under the `SerializableObject` pattern (see Coding - General), add one `[Fact]` per class that constructs an instance with realistic values (including `null` for optional fields, and at least one populated nested list/object), asserts the constructor's properties, then calls `SerializationCheck` — this exercises both the JSON round-trip and the `Clone()`/`Core.Query.Clone()` copy-constructor paths in one go.
 
 ### 3. Tolerance Boundaries
 When testing geometric or math operations, verify behavior at the boundary of a given tolerance value (e.g., `1e-3` or `Constants.Tolerance.Distance`):
