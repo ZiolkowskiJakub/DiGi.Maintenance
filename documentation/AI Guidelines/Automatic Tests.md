@@ -39,6 +39,27 @@ To maintain consistency with the project's codebase, all generated test code MUS
 
 ---
 
+## 📂 SHARED TEST DATA FILES (FIXTURES)
+
+When a test needs an on-disk input file (sample `.gmf`, `.json`, `.epw`, etc.), there is **one shared `files` directory used by every test project** — do NOT add a per-project data folder.
+
+1. **Location:** `DiGi.Test/files/` (relative to the `DigiProject` workspace root, where all the `DiGi.*` repos sit side by side). From inside any test project directory `DiGi.Test/<ProjectName>.xUnit/`, the relative path is `../files/`. The test repo root is the `DiGi.Test` solution folder (contains `DiGi.Test.slnx`); this guideline lives in the separate `DiGi.Maintenance` repo, so the path is given relative to the common workspace root rather than to this file.
+2. **Adding a fixture:** Drop the file straight into `DiGi.Test/files/` and reference it by file name only. Files are read **in place** from the repo (they are NOT copied to the build output), so no `<None CopyToOutputDirectory>` entry is needed.
+3. **Resolving the path in a test:** Use the helper `Core.xUnit.Query.FilePath(System.Reflection.Assembly.GetExecutingAssembly(), "<fileName>")`, which returns the absolute path to `DiGi.Test/files/<fileName>`. For the directory itself, use the extension `assembly.FilesDirectory()`. Both live in `DiGi.Core.xUnit/Query/` (`FilePath.cs`, `FilesDirectory.cs`) and resolve `DiGi.Test/files` by walking up from the test assembly's `bin/<ProjectName>.xUnit/` output folder. `FilePath` already `Assert`s the directory resolves, so a `null`/missing result fails the test cleanly.
+4. **Namespace resolution:** Call it as `Core.xUnit.Query.FilePath(...)` with no `using` — it resolves via the same innermost-enclosing-namespace lookup as `Core.xUnit.Query.SerializationCheck(...)`, as long as the test namespace nests under `DiGi`. Add `using System.Reflection;` (or fully qualify `Assembly`).
+5. **Example:**
+   ```csharp
+   using System.Reflection;
+   // ...
+   string? path = Core.xUnit.Query.FilePath(Assembly.GetExecutingAssembly(), "0207_GML.gmf");
+   Assert.False(string.IsNullOrWhiteSpace(path));
+   Assert.True(System.IO.File.Exists(path));
+   ```
+   Existing references for this pattern: `DiGi.GIS.xUnit/Facts/OrtoDatas.cs`, `DiGi.EPW.xUnit/Facts/EPWFile.cs`, `DiGi.Geometry.xUnit/Facts/InRange.cs`.
+6. **Large binary fixtures:** Files like `.gmf` can be multi-megabyte. They are tracked by git (not ignored); prefer a representative-but-minimal sample, and consider Git LFS if size becomes a concern.
+
+---
+
 ## 💡 COMMON TESTING PATTERNS & ASSERTIONS
 
 ### 1. Basic Assertions
