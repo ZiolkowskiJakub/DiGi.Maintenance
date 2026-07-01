@@ -48,7 +48,7 @@ git add .
 $status = git status --porcelain
 if ($status) {
     git commit -m "chore: auto-update API documentation"
-    git push origin master
+    git push origin HEAD
     Write-Host "GitHub Wiki synchronization complete for $repoName!" -ForegroundColor Green
 } else {
     Write-Host "No documentation changes detected for $repoName. Skipping wiki push." -ForegroundColor Yellow
