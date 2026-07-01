@@ -21,7 +21,3 @@ If the trigger conditions are met, perform the following steps sequentially for 
 3. **Create New Branch:** Create a new branch off `main` using the target version name calculated in Step 2.
 4. **Update Version in Directory.Build.props:** If a `Directory.Build.props` file exists in the repository, update the `<Major>`, `<Minor>`, and `<Build>` XML tags to match the components of the new branch version (e.g., for branch `0.8.1`, set `<Major>0</Major>`, `<Minor>8</Minor>`, `<Build>1</Build>`). Commit this change on the new branch before pushing.
 5. **Publish to GitHub & Set Upstream:** Push both the updated `main` branch and the newly created version branch to the remote repository on GitHub (origin). Use the `--set-upstream` (or `-u`) flag when pushing the new version branch so that it tracks properly and displays standard synchronization options in GitHub Desktop (e.g., `git push -u origin <version_branch>`).
-
----
-
-## 📝 OUTPUT FORMAT
