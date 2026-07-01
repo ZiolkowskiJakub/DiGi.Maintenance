@@ -1,0 +1,23 @@
+name: Sync API Docs to Wiki
+
+on: [push]
+
+jobs:
+  build-and-sync:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build and Generate Docs
+        run: dotnet build --configuration Release
+
+      - name: Run Wiki Sync Script (Direct execution)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        shell: pwsh
+        run: ./Scripts/SyncWiki.ps1 -RepoPath ${{ github.workspace }}

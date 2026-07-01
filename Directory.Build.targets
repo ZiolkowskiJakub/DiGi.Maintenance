@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true' And '$(MSBuildProjectExtension)' == '.csproj'">
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true' And '$(MSBuildProjectExtension)' == '.csproj'">
+    <PackageReference Include="DefaultDocumentation" Version="1.2.5" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true' And '$(MSBuildProjectExtension)' == '.csproj'">
+    <DefaultDocumentationFolder>$(MSBuildThisFileDirectory)documentation\API\$(AssemblyName)</DefaultDocumentationFolder>
+    <DefaultDocumentationCleanOutputFolder>true</DefaultDocumentationCleanOutputFolder>
+    <DefaultDocumentationGeneratedPages>Namespaces</DefaultDocumentationGeneratedPages>
+    <DefaultDocumentationConfigurationFile>$(MSBuildThisFileDirectory)DefaultDocumentation.json</DefaultDocumentationConfigurationFile>
+  </PropertyGroup>
+</Project>
