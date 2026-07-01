@@ -21,6 +21,9 @@ if (-not $remoteUrl) {
 
 # Transform main repository URL to wiki URL (e.g., repo.git -> repo.wiki.git)
 $wikiRepoUrl = $remoteUrl -replace '\.git$', '.wiki.git'
+if ($env:GITHUB_TOKEN) {
+    $wikiRepoUrl = $wikiRepoUrl -replace 'https://github.com/', "https://x-access-token:$($env:GITHUB_TOKEN)@github.com/"
+}
 $tempWikiDir = "$env:TEMP\DiGi.WikiTemp_$repoName"
 
 # Ensure local documentation exists

@@ -30,6 +30,8 @@ jobs:
       # AND we are on master/main branch
       - name: Run Wiki Sync Script (Conditional)
         if: steps.checkout-maintenance.outcome == 'success' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
           if (Test-Path ./DiGi.Maintenance/Scripts/SyncWiki.ps1) {

@@ -19,5 +19,7 @@ jobs:
 
       - name: Run Wiki Sync Script (Direct execution)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: ./Scripts/SyncWiki.ps1 -RepoPath ${{ github.workspace }}
