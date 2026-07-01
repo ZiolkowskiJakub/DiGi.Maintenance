@@ -19,8 +19,9 @@ if (-not $remoteUrl) {
     exit 1
 }
 
-# Transform main repository URL to wiki URL (e.g., repo.git -> repo.wiki.git)
-$wikiRepoUrl = $remoteUrl -replace '\.git$', '.wiki.git'
+# Transform main repository URL to wiki URL (handling both .git and non-.git URLs)
+$cleanUrl = $remoteUrl -replace '\.git$', ''
+$wikiRepoUrl = $cleanUrl + ".wiki.git"
 if ($env:GITHUB_TOKEN) {
     $wikiRepoUrl = $wikiRepoUrl -replace 'https://github.com/', "https://x-access-token:$($env:GITHUB_TOKEN)@github.com/"
 }
