@@ -1,3 +1,4 @@
 {
-  "RemoveFileExtensionFromLinks": true
+  "RemoveFileExtensionFromLinks": true,
+  "LogLevel": "Warning"
 }
