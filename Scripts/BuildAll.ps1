@@ -113,7 +113,7 @@ foreach ($relativePath in $solutionOrder)
 		continue
 	}
 
-	Write-Host "Building solution: $slnx"
+	Write-Host "Building solution: $sln"
 
 	# Determine platform parameter
 	if ($platform_x64 -contains $relativePath) 
@@ -133,7 +133,7 @@ foreach ($relativePath in $solutionOrder)
 
 	if ($LASTEXITCODE -ne 0) 
 	{
-		Write-Host "Build failed for $slnx" -ForegroundColor Red
+		Write-Host "Build failed for $sln" -ForegroundColor Red
 		exit $LASTEXITCODE
 	}
 	
