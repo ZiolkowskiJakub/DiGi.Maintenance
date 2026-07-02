@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path="DefaultDocumentation.json" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
   </Folder>
   <Project Path="DiGi.Maintenance.UI.Application/DiGi.Maintenance.UI.Application.csproj" />
   <Project Path="DiGi.Maintenance.UI/DiGi.Maintenance.UI.csproj" />
