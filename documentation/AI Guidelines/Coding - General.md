@@ -53,6 +53,10 @@ ALL complex functionalities, including operations on classes, interfaces, and en
     * **Directory:** `/Create`
     * **Class:** `public static partial class Create`
     * **Purpose:** Complex functionalities that create and return a completely new object based on input data.
+* **Convert (Parse/Format/Transform):**
+    * **Directory:** `/Convert` (organized in `/Convert/To[TargetArea]` subdirectories, e.g., `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`)
+    * **Class:** `public static partial class Convert`
+    * **Purpose:** Complex functionalities that convert, format, or transform an object or raw components into another representation. Extension methods should follow the naming pattern `To[TargetArea]_[TargetType]` (e.g., `ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
 
 ---
 
@@ -250,7 +254,7 @@ namespace DiGi.Core
 }
 ```
 
-**4. Create Example (/Create/PointNode.cs)
+**4. Create Example (/Create/PointNode.cs)**
 ```csharp
 using DiGi.Core.Classes;
 
@@ -266,6 +270,27 @@ namespace DiGi.Core
             result.Y = pointNode.Y + offset;
             
             return result;
+        }
+    }
+}
+```
+
+**5. Convert Example (/Convert/ToSystem/string.cs)**
+```csharp
+using DiGi.Core.Classes;
+
+namespace DiGi.Core
+{
+    public static partial class Convert
+    {
+        public static string? ToSystem_String(this PointNode pointNode)
+        {
+            if (pointNode == null)
+            {
+                return null;
+            }
+
+            return $"{pointNode.Name}: ({pointNode.X}, {pointNode.Y})";
         }
     }
 }
