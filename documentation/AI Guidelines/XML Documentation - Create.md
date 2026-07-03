@@ -1,60 +1,35 @@
 # AI Orchestration Agent Guidelines: XML Documentation
 
-**Role:** You are an expert C# .NET developer acting as an Orchestration Agent.  
-**Task:** Review the C# classes and enums in this project.  
-**Goal:** Implement comprehensive XML documentation (`<summary>` tags) for all public constructors, properties, methods, and enum fields/values.
+**Role:** Expert C# .NET developer / Orchestration Agent.
+**Goal:** Add comprehensive XML `<summary>` documentation to every public constructor, property, method, and enum field/value in the project's C# classes and enums.
 
----
+## Tool access (critical)
+Handle all local documentation generation with the `lm_studio` MCP tool (use the **Gemma 4** model if available) for every file-processing request.
 
-## 🛠️ TOOL ACCESS INSTRUCTION (CRITICAL)
-The local documentation generation MUST be handled by the MCP tool named `lm_studio`. 
-* Use the **Gemma 4** model if available.
-* Use `lm_studio` for **every** file processing request.
+## Constraints
+1. **Code preservation:** Only add missing `<summary>` tags — never edit, refactor, or restructure code.
+2. **Partial classes:** Don't document the class declaration itself when marked `partial`; document only its members.
+3. **Exhaustive coverage:** No public member may be skipped.
+4. **Quality over speed.**
+5. **Reference context:** For each referenced library, ingest its sibling XML doc file (`LibraryName.dll` → `LibraryName.xml`, same directory) for accurate cross-referencing, terminology, and external type/parameter descriptions.
+6. **Warning-free:** Introduce no new compiler/analyzer warnings. Document all `<param>`, `<returns>`, and `<typeparam>` exhaustively to avoid CS1591/CS1573.
+7. **Single summary:** Exactly one `<summary>` per element — no duplicates. Do a final pass to strip any redundant tags before output.
+8. **No empty lines** inside doc blocks (no blank line or bare `///`) — they break Visual Studio IntelliSense tooltip rendering. Use `<para>` for paragraph breaks:
 
----
+   ```csharp
+   // INCORRECT — a blank line splits the block
+   /// <summary>
+   /// Calculates the total volume of the selected Revit elements.
 
-## ⚠️ STRICT CONSTRAINTS
+   /// This operation might take a while on large BIM models.
+   /// </summary>
 
-1. **Code Preservation:** 
-   DO NOT edit, refactor, or restructure the existing code. Only add missing `<summary>` tags.
-2. **Partial Classes:** 
-   Do NOT add `<summary>` to the class declaration if marked `partial`. Document only the members within.
-3. **Exhaustive Coverage:** 
-   Zero-tolerance for skipped public members.
-4. **Quality over Speed:** 
-   Focus on output quality, not on task completion speed.
-5. **Reference Context (XML Documentation):** 
-   To maximize the quality and accuracy of the generated documentation, you must actively search for and utilize existing XML documentation from referenced libraries:
-   * For every referenced library used in the project, locate its corresponding XML documentation file.
-   * The XML file will share the identical base name as the referenced file (e.g., `LibraryName.dll` -> `LibraryName.xml`) and is located in the exact same directory as the reference.
-   * Ingest the context from these XML files to ensure accurate cross-referencing, correct terminology, and precise descriptions of external types and method parameters.
-6. **Warning-Free Code:** 
-   Ensure that the generated documentation does not introduce any new compiler or analyzer warnings in Visual Studio. Validate that all parameters (`<param>`), return types (`<returns>`), and type parameters (`<typeparam>`) are correctly and exhaustively documented to prevent XML documentation warnings (e.g., `CS1591`, `CS1573`).
-7. **Single Summary Enforcement:** 
-   Strictly verify that each element (class, enum, method, property, field) receives exactly ONE `<summary>` block. Duplicate `<summary>` tags for the same member are strictly forbidden. Perform a final validation pass on the generated XML structure to remove any redundant tags before outputting the code.
-8. **No Empty Lines:** 
-   Strictly avoid empty lines within the XML documentation blocks (e.g., aempty line or line containing only `///`). Empty lines cause incorrect tooltip formatting and rendering issues in Visual Studio IntelliSense. If a paragraph break is necessary for readability, use the `<para>` tag instead.
+   // CORRECT — use <para>
+   /// <summary>
+   /// Calculates the total volume of the selected Revit elements.
+   /// <para>This operation might take a while on large BIM models.</para>
+   /// </summary>
+   ```
 
-* **INCORRECT (Do NOT do this):**
-     ```csharp
-     /// <summary>
-     /// Calculates the total volume of the selected Revit elements.
-     
-     /// This operation might take a while on large BIM models.
-     /// </summary>
-     public double CalculateVolume(List<Element> list_Elements)
-     ```
-   
-   * **CORRECT (Do this instead):**
-     ```csharp
-     /// <summary>
-     /// Calculates the total volume of the selected Revit elements.
-     /// <para>This operation might take a while on large BIM models.</para>
-     /// </summary>
-     public double CalculateVolume(List<Element> list_Elements)
-     ```
-
----
-
-## 📝 OUTPUT FORMAT
-Provide ONLY the necessary code edits or file updates. No conversational filler.
+## Output
+Provide only the code edits / file updates — no conversational filler.
