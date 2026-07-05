@@ -12,14 +12,15 @@ any wiki page. For benchmark pages see [`GitHub Wiki - Benchmark.md`](GitHub%20W
   already do.
 
 ## Local layout — `DigiProject/wiki/`
-Wiki clones live under **`C:\Users\jakub\GitHub\DigiProject\wiki\`**, one folder per wiki named
+Wiki clones live under **`wiki/`** under the `DigiProject` workspace root, one folder per wiki named
 `<repo>.wiki` (e.g. `DiGi.Core.wiki/`, `DiGi.Geometry.wiki/`, `DiGi.ComputeSharp.wiki/`,
 `DiGi.Weather.wiki/`). `DigiProject/` is not a git repo, so each clone is standalone (own `.git`,
 URL-based remote); its on-disk location is irrelevant to git and CI, so it can be moved freely. Clone a
 missing wiki here:
 
 ```
-git clone https://github.com/ZiolkowskiJakub/<repo>.wiki.git "C:/Users/jakub/GitHub/DigiProject/wiki/<repo>.wiki"
+# Run from the DigiProject workspace root:
+git clone https://github.com/ZiolkowskiJakub/<repo>.wiki.git "wiki/<repo>.wiki"
 ```
 
 ## Two kinds of page
