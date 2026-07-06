@@ -60,6 +60,8 @@ it before dropping any secret in. Reference implementations: `DiGi.GIS.PostgreSQ
 **Decision rule when placing a runtime asset:** would committing it leak a secret, or break another
 developer's / the server's machine-specific setup? If yes → `user files/`; otherwise → `files/`.
 
+- **Script configurations (PowerShell)**: PowerShell scripts requiring machine-specific, secret, or environment-specific paths (e.g., local backup paths or cloud storage directories) must load these settings from a `.conf` file inside the `user files/` directory, rather than hardcoding them in the scripts or introducing custom `.gitignore` records.
+
 ## Serialization pattern (SerializableObject / ISerializableObject)
 Classes under `/Classes` needing JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject` in this exact shape (reflection-driven — no manual JSON parsing).
 

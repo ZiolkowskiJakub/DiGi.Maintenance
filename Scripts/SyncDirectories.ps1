@@ -1,12 +1,46 @@
-# Define a list of folder pairs using an array of hashtables
+# Get the dynamic base directory relative to this script
+$baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
+
+# Read and parse NEXTCLOUD_DIRECTORY from config file if available
+$confPath = Join-Path $PSScriptRoot "..\user files\Sync_Directories.conf"
+$nextcloudDir = ""
+
+if (Test-Path $confPath) {
+    foreach ($line in Get-Content $confPath) {
+        $line = $line.Trim()
+        if ($line.StartsWith("#") -or $line -eq "") { continue }
+        $index = $line.IndexOf("=")
+        if ($index -ge 0) {
+            $key = $line.Substring(0, $index).Trim()
+            $val = $line.Substring($index + 1).Trim()
+            if ($val.StartsWith('"') -and $val.EndsWith('"')) {
+                $val = $val.Substring(1, $val.Length - 2)
+            }
+            if ($key -eq "NEXTCLOUD_DIRECTORY") {
+                $nextcloudDir = $val
+            }
+        }
+    }
+}
+
+# Define local synchronizations (always run, independent of Nextcloud)
 $SyncList = @(
-    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.PostgreSQL.UI\bin";       Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.GIS.PostgreSQL.UI" },
-    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.UI\bin";                  Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.GIS.UI" },
-    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.WebAPI.UI\bin";  Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.GIS.WebAPI.UI" },
-    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.User.WebAPI\bin";  Destination = "C:\Users\jakub\GitHub\DigiProject\DiGi.WebAPI.WindowsService\bin\extensions\user" },
-    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.GIS.PostgreSQL.WebAPI\bin";  Destination = "C:\Users\jakub\GitHub\DigiProject\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
-    @{ Source = "C:\Users\jakub\GitHub\DigiProject\DiGi.WebAPI.WindowsService\bin";  Destination = "D:\Nextcloud\Work\DigiProject\Software\DiGi.WebAPI.WindowsService" }
+    @{ Source = "$baseDir\DiGi.User.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\user" },
+    @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.WebAPI\bin";           Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
+    @{ Source = "$baseDir\DiGi.GLTF.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gltf" }
 )
+
+# Append Nextcloud synchronizations if Nextcloud directory was successfully parsed
+if (-not [string]::IsNullOrWhiteSpace($nextcloudDir)) {
+    $SyncList += @(
+        @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin";           Destination = "$nextcloudDir\DiGi.GIS.PostgreSQL.UI" },
+        @{ Source = "$baseDir\DiGi.GIS.UI\bin";                      Destination = "$nextcloudDir\DiGi.GIS.UI" },
+        @{ Source = "$baseDir\DiGi.GIS.WebAPI.UI\bin";               Destination = "$nextcloudDir\DiGi.GIS.WebAPI.UI" },
+        @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$nextcloudDir\DiGi.WebAPI.WindowsService" }
+    )
+} else {
+    Write-Host "NEXTCLOUD_DIRECTORY is not set or configuration file is missing. Nextcloud copies will be skipped." -ForegroundColor Yellow
+}
 
 Write-Host "Starting batch synchronization process..." -ForegroundColor Cyan
 Write-Host "==========================================="

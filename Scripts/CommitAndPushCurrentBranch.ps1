@@ -1,6 +1,6 @@
 # C:\Users\jakub\GitHub\DigiProject\DiGi.Maintenance\Scripts\CommitAndPushCurrentBranch.ps1
 
-$baseDir = "c:\Users\jakub\GitHub\DigiProject"
+$baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 $targetDirectories = Get-ChildItem -Path $baseDir -Directory -Filter "DiGi.*"
 
 foreach ($dir in $targetDirectories) {

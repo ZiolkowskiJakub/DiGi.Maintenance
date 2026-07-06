@@ -1,6 +1,13 @@
 # C:\Users\jakub\GitHub\DigiProject\DiGi.Maintenance\Scripts\CheckWikiPages.ps1
 
-$baseDir = "c:\Users\jakub\GitHub\DigiProject"
+$baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
+
+# Get the GitHub owner dynamically from the current repository's remote
+$owner = "ZiolkowskiJakub" # Fallback
+$currentRepoRemote = git config --get remote.origin.url
+if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
+    $owner = $Matches[1]
+}
 $targetDirectories = Get-ChildItem -Path $baseDir -Directory -Filter "DiGi.*"
 
 $hasWiki = [System.Collections.Generic.List[string]]::new()
@@ -49,7 +56,7 @@ Write-Host "Wikis Missing: $($missingWiki.Count)" -ForegroundColor Red
 if ($missingWiki.Count -gt 0) {
     Write-Host "`nRepositories with missing Wikis:" -ForegroundColor Red
     foreach ($repo in $missingWiki) {
-        Write-Host "  - $repo (Wiki URL: https://github.com/ZiolkowskiJakub/$repo/wiki)" -ForegroundColor Yellow
+        Write-Host "  - $repo (Wiki URL: https://github.com/$owner/$repo/wiki)" -ForegroundColor Yellow
     }
 } else {
     Write-Host "`nAll checked repositories have active Wikis!" -ForegroundColor Green

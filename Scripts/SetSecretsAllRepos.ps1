@@ -8,14 +8,21 @@ param(
     [string]$PatToken
 )
 
-$baseDir = "c:\Users\jakub\GitHub\DigiProject"
+$baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
+
+# Get the GitHub owner dynamically from the current repository's remote
+$owner = "ZiolkowskiJakub" # Fallback
+$currentRepoRemote = git config --get remote.origin.url
+if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
+    $owner = $Matches[1]
+}
 $targetDirectories = Get-ChildItem -Path $baseDir -Directory -Filter "DiGi.*"
 
 Write-Host "Setting secret WIKI_SYNC_PAT across all repositories..." -ForegroundColor Cyan
 
 foreach ($dir in $targetDirectories) {
     $repoName = $dir.Name
-    $repoIdentifier = "ZiolkowskiJakub/$repoName"
+    $repoIdentifier = "$owner/$repoName"
     
     Write-Host "Setting secret for $repoIdentifier..." -ForegroundColor Cyan
     gh secret set WIKI_SYNC_PAT --body $PatToken --repo $repoIdentifier
