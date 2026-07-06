@@ -14,7 +14,7 @@
    - **Property matching its value type:** if a value type is fully descriptive and unique in the class, name the property after the type (`public AggregateFunction AggregateFunction { get; set; }`).
    - **Primitives** may use plain camelCase (`double tolerance`, `string name`, `int count`).
 4. **Zero warnings/analyzer messages** — nullability, parameter validation, clean code.
-5. **C# 10+** (`LangVersion` ≥ 10) — modern features (file-scoped namespaces, enhanced pattern matching, etc.) are fine within these architectural constraints.
+5. **C# 10+** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and the `DiGi.Template` `.editorconfig` enforces this (`csharp_style_namespace_declarations = block_scoped`).
 
 ## Architecture — DiGi.Core pattern
 Data models are strictly separated from business logic (anemic models + static extension methods). Follow this structure for all new features.

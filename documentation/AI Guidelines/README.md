@@ -8,6 +8,14 @@ routing table). The files in this folder hold the full detail for specific tasks
 demand** — they are not auto-loaded, so open only the one that matches the task; reading an
 irrelevant one just spends tokens.
 
+## General AI Priorities
+
+Unless explicitly instructed otherwise in the prompt, the AI must strictly adhere to the following hierarchy of priorities when operating on this codebase:
+
+1. **Quality & Guideline Adherence (Highest Priority):** Code correctness, architectural soundness, and strict compliance with the established guidelines (e.g., explicit typing, DI patterns, English-only code) are absolute. Never compromise on the rules.
+2. **Token Efficiency (High Priority):** Minimize token usage by being concise. Output only the necessary code modifications or explanations. Do not read irrelevant guideline markdown files.
+3. **Speed (Lowest Priority):** The speed of generating a response is not important. It can, and should, be sacrificed to ensure maximum quality, deep reasoning, and efficient token usage. 
+
 ## Coding
 | File | Read it when… |
 |------|---------------|
@@ -28,6 +36,7 @@ irrelevant one just spends tokens.
 |------|---------------|
 | [GitHub - Branch Synchronization.md](GitHub%20-%20Branch%20Synchronization.md) | Running the version-branch → `main` merge + patch-bump release workflow. |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing any GitHub wiki page — repo layout, local clones, CI sync mechanics. |
+| [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Creating or editing a repository's Wiki Home page structure. |
 | [GitHub Wiki - Benchmark.md](GitHub%20Wiki%20-%20Benchmark.md) | Creating or updating a repo's `Benchmark` wiki page. |
 
 ---

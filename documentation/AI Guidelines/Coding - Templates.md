@@ -23,6 +23,18 @@ If a task requires a template repository or project configuration that is not cu
 - **Solution Placement:** Always create/scaffold the solution folder **directly under the workspace root** (e.g. `MyNewWebAPI/` inside the workspace root folder) so relative `HintPath` references to `DiGi.Core`, `DiGi.Geometry`, and `DiGi.GLTF` resolve correctly.
 - **Reference Setup:** A pre-configured project template will reference the main DLLs using relative paths (e.g., `..\..\DiGi.Core\bin\DiGi.Core.dll`). Putting the project in a deeper subfolder will break references.
 
+### 2.2 DiGi.Template
+- **Short Name:** N/A (Repository Boilerplate)
+- **Location:** `templates/DiGi.Template/`
+- **Description:** Foundational boilerplate template for all new Visual Studio 2026 solutions. It establishes standard solution-level configurations, coding styles, and build patterns.
+
+#### Key Architectural Rules & Boilerplate Files:
+- **`Directory.Build.props`**: Sets C# 12+ versioning (`<LangVersion>12.0</LangVersion>`), nullable context, implicit usings, warning levels (`TreatWarningsAsErrors`), and automatically enables XML documentation file generation for non-test C# projects.
+- **`Directory.Build.targets`**: Enables build-time `DefaultDocumentation` page generation (suppressing CS1591 only for test projects) and contains centralized targets `CopyFiles` and `CopyUserFiles` to copy runtime assets from `files/` and `user files/` directories directly into the build output path.
+- **`.editorconfig`**: Enforces coding guidelines, making violations of the "no-var" rule, block-scoped namespaces, collection expressions (`[]`), and target-typed `new()` compile as errors.
+- **`DefaultDocumentation.json`**: Configures the API documentation generation schema.
+- **`.gitignore`**: Excludes build logs, user settings, Visual Studio caches, and enforces exclusion of credentials and secrets under the `[Uu]ser [Ff]iles/` directory.
+
 ---
 
 ## 3. Template Management Commands
