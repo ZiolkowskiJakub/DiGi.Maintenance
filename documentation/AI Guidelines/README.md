@@ -1,5 +1,8 @@
 # AI Guidelines — Index
 
+> [!IMPORTANT]
+> **Portability Rule:** All markdown files in this repository (such as guidelines, READMEs, CLAUDE.md, etc.) must use **relative paths** for file references and links. Do not include any machine-specific or absolute user paths (like `C:\Users\...`) to ensure the files remain portable across different systems and prevent leaking user-specific configuration data.
+
 The always-loaded entry point is `DigiProject/CLAUDE.md` (universal coding rules + a task→file
 routing table). The files in this folder hold the full detail for specific tasks and are **read on
 demand** — they are not auto-loaded, so open only the one that matches the task; reading an
@@ -11,7 +14,8 @@ irrelevant one just spends tokens.
 | [Coding - General.md](Coding%20-%20General.md) | Writing or modifying any C# — naming/typing rules, the DiGi.Core `Query`/`Modify`/`Create`/`Convert` architecture, and the `SerializableObject` serialization pattern (with worked examples). |
 | [Coding - API Documentation.md](Coding%20-%20API%20Documentation.md) | Looking up a type's public API — consult the generated `documentation/API/` markdown before opening `.cs` source. |
 | [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) | Writing or adding xUnit tests — `Facts` structure, naming, shared fixtures, and serialization/tolerance/performance patterns. |
-| [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | Building or extending an ASP.NET Core Web API on the `DiGi.GLTF` 3D framework — the decoupled pipeline, onboarding a new consuming project, adding a new 3D object type via the `IGLTFNodeConverter` registry, batching/streaming performance rules, and the `dotnet new` template. |
+| [Coding - Templates.md](Coding%20-%20Templates.md) | Creating a new project/solution from a template, or adding/modifying templates in the workspace's default `templates/` folder. |
+| [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | Building or extending an ASP.NET Core Web API on the `DiGi.GLTF` 3D framework — the decoupled pipeline, onboarding a new consuming project, adding a new 3D object type via the `IGLTFNodeConverter` registry, and batching/streaming performance rules. |
 
 ## XML documentation
 | File | Read it when… |

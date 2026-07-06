@@ -372,50 +372,9 @@ domain panels** (properties, lighting) and reacts to these events; it never fork
 
 ## 5. Visual Studio solution template
 
-A `dotnet new` template scaffolds a ready-to-run generic host with the engine references, the plugin
-registration hook, a generic controller and a sample converter.
+To scaffold a ready-to-run generic host pre-configured with the engine references, response compression, plugin registration hooks, and sample converter, use the template located in the default `templates/` directory.
 
-- **Template name:** `DiGi.WebAPI.GLTF.Template`  **Short name:** `digiwebapigltftemplate`
-- **Location:** `templates\DiGi.WebAPI.GLTF.Template\` under the `DigiProject` workspace root.
-
-### Install
-
-```powershell
-# Run from the DigiProject workspace root:
-dotnet new install "templates\DiGi.WebAPI.GLTF.Template"
-```
-
-### Use — command line
-
-Create the project **directly under the `DigiProject` workspace root** so the relative `HintPath`
-DLL references resolve:
-
-```powershell
-# Run from the DigiProject workspace root:
-dotnet new digiwebapigltftemplate -n MyGLTFHost -o "MyGLTFHost"
-```
-
-### Use — Visual Studio 2026
-
-After installing, `File ▸ New ▸ Project` lists **DiGi.WebAPI.GLTF.Template** (search "glTF" or the
-`digiwebapigltftemplate` short name). Set the project location under the `DigiProject` workspace root so
-the DLL references resolve, then create. Build and run — the generic `gltf/gltfscene/...` endpoints
-are immediately available.
-
-### What you get
-
-- `Program.cs` — controllers, response compression for `model/gltf-binary`, and
-  `DiGi.GLTF.Modify.Register(typeof(Program).Assembly)`.
-- `Controllers/GLTFSceneController.cs` — generic `fromobjects` / `glb/fromobjects` / `glb` endpoints.
-- `Classes/Converter/SampleGLTFNodeConverter.cs` — a worked converter (copy it to add your own type).
-- Project references to `DiGi.Core`, `DiGi.Geometry`, `DiGi.GLTF` and the required NuGet packages.
-
-### Uninstall
-
-```powershell
-# Run from the DigiProject workspace root:
-dotnet new uninstall "templates\DiGi.WebAPI.GLTF.Template"
-```
+Detailed installation, usage scenarios, and command guidelines for this template are documented in the central [Coding - Templates.md](Coding%20-%20Templates.md) guideline.
 
 ---
 
