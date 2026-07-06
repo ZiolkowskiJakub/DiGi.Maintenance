@@ -78,6 +78,38 @@ Data models are strictly separated from business logic (anemic models + static e
 - **`Create`** (`/Create`) — creates and returns a completely new object from input data.
 - **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
 
+## Project assets — `files/` vs `user files/` (NEVER commit secrets)
+Runtime assets a project copies to its output belong in one of two solution-root folders, chosen by
+sensitivity. **Secrets, credentials and machine-specific configuration MUST go in `user files/`,
+never in `files/`.** Both are copied to the build output by a `.csproj` target; the difference is git.
+
+- **`files/`** — committed to source control. Non-sensitive, environment-agnostic deployment assets
+  shared by everyone (e.g. `web.config`, `app_offline.htm.bak`). Copied by a `CopyFiles` target:
+  ```xml
+  <Target Name="CopyFiles" AfterTargets="Build">
+    <ItemGroup>
+      <_Files Include="$(ProjectDir)..\files\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_Files)" DestinationFiles="@(_Files->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+  ```
+- **`user files/`** — git-**ignored**. Fragile / user-specific / secret data: database connection
+  configs (`*.conf` with host/user/password), API keys, local paths, per-machine settings. Copied by
+  a `CopyUserFiles` target with the identical shape but `..\user files\**\*.*`. The consuming code
+  reads these from next to the executing assembly at runtime, so the app works locally and on the
+  server without the secrets ever entering the repo.
+
+**Enforcement:** the solution-root `.gitignore` must contain the case-insensitive rule
+`[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/<file>"` — git must report the rule
+as the reason the file is ignored. If a new solution needs runtime secrets and lacks this rule, add
+it before dropping any secret in. Reference implementations: `DiGi.GIS.PostgreSQL.UI`,
+`DiGi.GIS.PostgreSQL.WebAPI` (both hold `GIS_PostgreSQL_Main.conf` in an ignored `user files/`).
+
+**Decision rule when placing a runtime asset:** would committing it leak a secret, or break another
+developer's / the server's machine-specific setup? If yes → `user files/`; otherwise → `files/`.
+
+- **Script configurations (PowerShell)**: PowerShell scripts requiring machine-specific, secret, or environment-specific paths (e.g., local backup paths or cloud storage directories) must load these settings from a `.conf` file inside the `user files/` directory, rather than hardcoding them in the scripts or introducing custom `.gitignore` records.
+
 ---
 
 ### 3. XML Documentation Standards
