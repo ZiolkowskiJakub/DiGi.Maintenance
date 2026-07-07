@@ -41,10 +41,10 @@ foreach ($dir in $targetDirectories) {
     # 3. Evaluate Highest Version
     $highestBranch = $null
     if ($semverBranches.Count -gt 0) {
-        $sortedBranches = $semverBranches | Sort-Object {
+        $sortedBranches = @($semverBranches | Sort-Object {
             $parts = $_.Split('.')
             [int]$parts[0] * 1000000 + [int]$parts[1] * 1000 + [int]$parts[2]
-        } -Descending
+        } -Descending)
         $highestBranch = $sortedBranches[0]
     }
     
