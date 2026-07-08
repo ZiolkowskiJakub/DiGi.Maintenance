@@ -30,8 +30,13 @@ if (-not (Test-Path -Path $Source)) {
 # Ensure destination directory exists and clear its content
 if (Test-Path -Path $Destination) {
     Write-Host "Cleaning destination folder: $Destination..." -ForegroundColor Cyan
-    # Remove all items inside destination without removing the root folder itself
-    Get-ChildItem -Path $Destination | Remove-Item -Recurse -Force
+    try {
+        # Remove all items inside destination without removing the root folder itself
+        Get-ChildItem -Path $Destination | Remove-Item -Recurse -Force -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Could not completely clean destination folder. Some files may be locked or in use. Error: $_"
+    }
 } else {
     Write-Host "Destination does not exist. Creating directory: $Destination" -ForegroundColor Yellow
     New-Item -ItemType Directory -Path $Destination | Out-Null
@@ -41,8 +46,17 @@ if (Test-Path -Path $Destination) {
 Write-Host "Copying files from $Source to $Destination..." -ForegroundColor Green
 try {
     # Use \* to copy the content of the folder, not the folder itself
-    Copy-Item -Path "$Source\*" -Destination $Destination -Recurse -Force -ErrorAction Stop
-    Write-Host "Success: Synchronization complete." -ForegroundColor Green
+    $copiedItems = Copy-Item -Path "$Source\*" -Destination $Destination -Recurse -Force -PassThru -ErrorAction Stop
+    if ($copiedItems) {
+        $files = $copiedItems | Where-Object { -not $_.PSIsContainer }
+        if ($files) {
+            Write-Host "Success: Synchronization complete. Copied $($files.Count) file(s)." -ForegroundColor Green
+        } else {
+            Write-Host "Success: Synchronization complete (no files found to copy)." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "Success: Synchronization complete (no items copied)." -ForegroundColor Yellow
+    }
 }
 catch {
     Write-Error "Failed to copy files. Error: $_"

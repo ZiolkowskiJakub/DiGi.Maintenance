@@ -21,6 +21,9 @@ if (Test-Path $confPath) {
             }
         }
     }
+} else {
+    Write-Warning "Configuration file was not found at: '$confPath'"
+    Write-Warning "To enable Nextcloud sync, copy 'Sync_Directories.conf' to that location and set NEXTCLOUD_DIRECTORY."
 }
 
 # Define local synchronizations (always run, independent of Nextcloud)
@@ -39,7 +42,7 @@ if (-not [string]::IsNullOrWhiteSpace($nextcloudDir)) {
         @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$nextcloudDir\DiGi.WebAPI.WindowsService" }
     )
 } else {
-    Write-Host "NEXTCLOUD_DIRECTORY is not set or configuration file is missing. Nextcloud copies will be skipped." -ForegroundColor Yellow
+    Write-Warning "NEXTCLOUD_DIRECTORY is not set. Nextcloud synchronization will be skipped."
 }
 
 Write-Host "Starting batch synchronization process..." -ForegroundColor Cyan
