@@ -20,6 +20,29 @@ description: Use whenever writing or editing C# code in this project, including 
    - **Primitives** may use plain camelCase (`double tolerance`, `string name`, `int count`).
 4. **Zero warnings/analyzer messages** — nullability, parameter validation, clean code.
 5. **C# 10+** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and the `DiGi.Template` `.editorconfig` enforces this (`csharp_style_namespace_declarations = block_scoped`).
+6. **Line breaks in parameters:** If a method or constructor has fewer than 6 input parameters, do not break lines between parameters.
+   - **Correct:**
+     ```csharp
+     public void Calculate(double centerX, double centerY, double radius, double? storeyHeight = null)
+     {
+     }
+     ```
+   - **Incorrect:**
+     ```csharp
+     public void Calculate(
+         double centerX,
+         double centerY,
+         double radius,
+         double? storeyHeight = null)
+     {
+     }
+     ```
+7. **Async method naming:** All asynchronous method names must end with `Async`.
+   - **Example:**
+     ```csharp
+     public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
+     ```
+
 
 ## Architecture — DiGi.Core pattern
 Data models are strictly separated from business logic (anemic models + static extension methods). Follow this structure for all new features.
