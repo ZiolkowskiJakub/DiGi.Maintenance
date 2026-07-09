@@ -72,11 +72,23 @@ Data models are strictly separated from business logic (anemic models + static e
 - **Interfaces** → `/Interfaces`, ns `[Project].Interfaces`.
 - **Enums** → `/Enums`, ns `[Project].Enums`.
 
-**Business logic** — all complex behavior is an extension method in one of three static partial classes; never create a manager/service class:
+**Business logic** — all complex behavior is an extension method in one of static partial classes; never create a manager/service class:
 - **`Query`** (`/Query`) — returns a result from a query; does NOT modify the source (e.g. translating dynamic filter groups into SQL/parameterized commands).
 - **`Modify`** (`/Modify`) — modifies the state/properties of the existing object.
 - **`Create`** (`/Create`) — creates and returns a completely new object from input data.
 - **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
+
+#### Method Encapsulation and Reusability in Utility Classes
+- **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
+- If a helper method has well-defined inputs, no side effects, and high reusability, implement it as a **public static method** within the appropriate partial class (e.g., `Query`, `Convert`, `Modify`).
+- If a helper method is strictly single-use or specific to a narrow scope, implement it as a **local function (inline method)** directly inside the method you are currently implementing.
+
+#### Naming Conventions for Query Partial Class
+- Enforce a property-like naming convention for methods inside the `Query` class.
+- **Do not use verbs as prefixes** (e.g., avoid `Get`, `Find`, `Calculate`).
+  - *Example:* `GetBoundingBox()` must be named `BoundingBox()`.
+- **Exceptions:** Verbs indicating boolean checks or safe-retrieval patterns are required. Allowed prefixes are `Is`, `Has`, and `Try`.
+  - *Examples:* `IsPlanar()`, `HasMaterial()`, `TryConvert()`.
 
 ## Project assets — `files/` vs `user files/` (NEVER commit secrets)
 Runtime assets a project copies to its output belong in one of two solution-root folders, chosen by
