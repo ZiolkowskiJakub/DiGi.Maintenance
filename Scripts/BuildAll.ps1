@@ -85,7 +85,6 @@ $solutionOrder = @(
 	"DiGi.GIS.PostgreSQL.WebAPI\DiGi.GIS.PostgreSQL.WebAPI.slnx"
 	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
 	"DiGi.Communication\DiGi.Communication.slnx",
-	"DiGi.Communication.Propagation\DiGi.Communication.Propagation.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
 	"DiGi.SAM\DiGi.SAM.slnx",
 	"DiGi.Tas\DiGi.Tas.slnx"
