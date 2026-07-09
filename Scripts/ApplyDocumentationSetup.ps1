@@ -18,6 +18,9 @@ $targetsContent = @'
     <DefaultDocumentationCleanOutputFolder>true</DefaultDocumentationCleanOutputFolder>
     <DefaultDocumentationGeneratedPages>Namespaces</DefaultDocumentationGeneratedPages>
     <DefaultDocumentationConfigurationFile>$(MSBuildThisFileDirectory)DefaultDocumentation.json</DefaultDocumentationConfigurationFile>
+    <!-- Without this, multi-namespace assemblies fall back to the generic "index" page name; when a repo has
+         more than one assembly, every assembly's index.md collides in the GitHub wiki's flat page sidebar. -->
+    <DefaultDocumentationAssemblyPageName>$(AssemblyName).Overview</DefaultDocumentationAssemblyPageName>
   </PropertyGroup>
 </Project>
 '@
