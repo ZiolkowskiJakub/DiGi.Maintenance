@@ -30,6 +30,16 @@ git clone https://github.com/ZiolkowskiJakub/<repo>.wiki.git "wiki/<repo>.wiki"
 - **Hand-authored pages** — `Home.md`, `Benchmark.md`, and other guide pages. The sync never touches
   these (it only adds/updates API pages). Edit them directly in the wiki clone.
 
+### Multi-assembly repos need a unique assembly page name
+`DefaultDocumentation` names a multi-namespace assembly's overview page `index.md` unless
+`DefaultDocumentationAssemblyPageName` is set. The wiki sidebar shows only the filename, not the
+folder, so a repo with 2+ assemblies (e.g. `DiGi.Communication` + `DiGi.Communication.ComputeSharp`)
+ends up with multiple pages that all display as the same bare word "index". `Directory.Build.targets`
+(both the shared one written by `ApplyDocumentationSetup.ps1` and `templates/DiGi.Template`'s) sets
+`<DefaultDocumentationAssemblyPageName>$(AssemblyName).Overview</DefaultDocumentationAssemblyPageName>`
+to avoid this — don't remove it, and don't hand-rename the resulting `<Assembly>.Overview.md` pages
+back to `index.md`.
+
 ## CI auto-sync (independent of local clones)
 Each code repo has `.github/workflows/sync-wiki.yml`. On push to `main`/`master` it checks out
 `DiGi.Maintenance` and runs `DiGi.Maintenance/Scripts/SyncWiki.ps1 -RepoPath <workspace>`, which:
