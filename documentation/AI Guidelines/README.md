@@ -34,6 +34,7 @@ Unless explicitly instructed otherwise in the prompt, the AI must strictly adher
 ## GitHub
 | File | Read it when… |
 |------|---------------|
+| [GitHub - Branch Pull.md](GitHub%20-%20Branch%20Pull.md) | Scanning local DiGi repositories, selecting the highest SemVer branch, and pulling/syncing the local machine with the latest remote state. |
 | [GitHub - Branch Synchronization.md](GitHub%20-%20Branch%20Synchronization.md) | Running the version-branch → `main` merge + patch-bump release workflow. |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing any GitHub wiki page — repo layout, local clones, CI sync mechanics. |
 | [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Creating or editing a repository's Wiki Home page structure. |
