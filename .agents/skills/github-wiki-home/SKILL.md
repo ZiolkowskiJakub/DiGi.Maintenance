@@ -1,6 +1,6 @@
 ---
 name: github-wiki-home
-description: Use when creating or updating the landing page (Home.md) of all GitHub Wiki repositories. Covers template structure, landing page architecture, and preservation logic.
+description: Use for tasks related to github-wiki-home.
 ---
 
 # GitHub Wiki — Home Page Template Specification
@@ -78,3 +78,4 @@ To preserve manual edits in **Block 3** and prevent duplicate headers, links, an
    - Ecosystem links: `^\s*\*\s+\[DiGi\.[A-Za-z0-9\.]+\]\(https://github\.com/ZiolkowskiJakub/`
    - Ecosystem category labels: `^\s*\*\s+\*\*Foundational:\*\*`, `^\s*\*\s+\*\*Geometry\s+&\s+Graphics:\*\*`, etc.
    - Core attribution line: `^\s*\*Part of the DiGi software suite`
+

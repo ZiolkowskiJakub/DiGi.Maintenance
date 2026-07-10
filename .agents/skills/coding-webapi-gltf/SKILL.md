@@ -1,6 +1,6 @@
 ---
 name: coding-webapi-gltf
-description: Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D visualization framework. Covers pipeline, project onboarding, converters, batching, ID mapping, and async loading.
+description: Use for tasks related to coding-webapi-gltf.
 ---
 
 # Coding — WebAPI glTF
@@ -68,7 +68,7 @@ Never inline megabytes of base64 into the page.
 
 ## 2. New project onboarding checklist
 
-The fastest path is the `dotnet new` template (see template section). Do the steps below manually only when
+The fastest path is the `dotnet new` template (see section 5). Do the steps below manually only when
 integrating glTF into an existing project.
 
 1. **Location.** Create the solution folder directly under the `DigiProject` workspace root:
@@ -372,3 +372,29 @@ domain panels** (properties, lighting) and reacts to these events; it never fork
 > **Import map + tag helpers gotcha.** With MVC tag helpers active, the `<script type="importmap">`
 > element is rewritten and the `type` attribute is stripped, breaking module resolution. Opt that one
 > element out with the Razor `!` prefix: `<!script type="importmap"> ... </!script>`.
+
+---
+
+## 5. Visual Studio solution template
+
+To scaffold a ready-to-run generic host pre-configured with the engine references, response compression, plugin registration hooks, and sample converter, use the template located in the default `templates/` directory.
+
+Detailed installation, usage scenarios, and command guidelines for this template are documented in the central [Coding - Templates.md](Coding%20-%20Templates.md) guideline.
+
+---
+
+## Checklist summary
+
+- [ ] Solution folder under `DigiProject\` root (two levels above the DLL `HintPath`s).
+- [ ] References: `DiGi.Core`, `DiGi.Geometry`, `DiGi.GLTF` (never a domain library on the engine host).
+- [ ] Re-add transitive NuGet packages (`NetTopologySuite`, `SharpGLTF.Toolkit`, plus `Npgsql` etc. if used).
+- [ ] `DiGi.GLTF.Modify.Register(typeof(Program).Assembly)` at startup.
+- [ ] One `IGLTFNodeConverter` per new domain type — no engine or controller edits.
+- [ ] Converters emit world coordinates; never pre-shift (scene handles the reference point).
+- [ ] `ToSystem_Bytes(scene, batched: true)` for multi-object scenes.
+- [ ] Stream the `.glb`; keep the page a thin shell; enable response compression.
+- [ ] Runtime secrets (e.g. a PostgreSQL `*.conf` for a direct-DB endpoint) go in the git-ignored
+      `user files/`, never the committed `files/` — see the `files/` vs `user files/` rule in
+      `Coding - General.md`.
+- [ ] No `var`; explicit types; English only.
+

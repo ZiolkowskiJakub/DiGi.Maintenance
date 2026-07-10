@@ -1,6 +1,6 @@
 ---
 name: github-branch-synchronization
-description: Use when synchronizing a semantic-version branch with main, bumping patch version, creating a new version branch, and updating Directory.Build.props version components.
+description: Use for tasks related to github-branch-synchronization.
 ---
 
 # AI Orchestration Agent Guidelines: Branch Synchronization & Versioning
@@ -18,3 +18,4 @@ description: Use when synchronizing a semantic-version branch with main, bumping
 3. **Branch off main** using that new version name.
 4. **Update `Directory.Build.props`** (if present): set `<Major>`/`<Minor>`/`<Build>` to the new version's components and commit on the new branch before pushing.
 5. **Push & track:** push both `main` and the new version branch to `origin`, using `-u` on the new branch so it tracks properly (`git push -u origin <version_branch>`).
+

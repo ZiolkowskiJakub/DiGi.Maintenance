@@ -1,6 +1,6 @@
 ---
 name: github-branch-pull
-description: Use when asked to scan local directories, identify DiGi repositories, detect the highest SemVer version branch, and synchronize local machines with remote git state.
+description: Use for tasks related to github-branch-pull.
 ---
 
 # AI Orchestration Agent Guidelines: Local Repository Pull & Synchronization
@@ -25,4 +25,3 @@ Execute the following Git operations sequentially per repository. The agent must
 Update the local metadata to ensure all remote branches are known.
 ```bash
 git fetch --all --prune
-```

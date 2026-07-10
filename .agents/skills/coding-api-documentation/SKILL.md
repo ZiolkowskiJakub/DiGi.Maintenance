@@ -1,6 +1,6 @@
 ---
 name: coding-api-documentation
-description: Use when looking up or exploring type schemas, namespaces, or public APIs in the codebase. Guides on consulting the generated markdown API docs before opening C# source files.
+description: Use for tasks related to coding-api-documentation.
 ---
 
 # AI Guidelines: Workspace API Documentation
@@ -14,3 +14,4 @@ To save tokens, consult the generated Markdown API docs before parsing `.cs` sou
 ## Constraints
 1. **Don't re-read source for signatures:** to see a class's public API, read its namespace markdown. Open `.cs` source only when editing it or when you need internal business logic.
 2. **Synchronized build:** the API docs regenerate on every compilation — after changing code signatures or XML comments, compile so the `.md` files update.
+

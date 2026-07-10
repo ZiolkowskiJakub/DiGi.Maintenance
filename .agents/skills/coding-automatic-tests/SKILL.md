@@ -1,42 +1,30 @@
 ---
 name: coding-automatic-tests
-description: Use when writing or adding xUnit automatic tests for C# classes, structures, or extension methods. Covers naming, Facts partial class structure, shared test-data fixtures, XML docs for tests, and serialization, tolerance, and performance test patterns.
+description: Use for tasks related to coding-automatic-tests.
 ---
 
-# Automatic Tests (xUnit)
+# AI Guidelines: Automatic Tests
 
-**Role:** Expert C# .NET QA and Software Automation Engineer.
-**Task:** Generate automatic unit tests for C# classes, structures, and extension methods in this project.
-**Goal:** Comprehensive, warning-free unit tests using xUnit that verify logic, edge-case tolerance boundaries, serialization correctness, and performance benchmarks.
+**Role:** Expert C# .NET QA / software automation engineer.
+**Goal:** Generate comprehensive, warning-free xUnit tests for the project's classes, structs, and extension methods — covering logic, edge-case tolerance boundaries, serialization correctness, and performance benchmarks.
 
-## Strict Coding Guidelines (alignment with project standards)
+## Coding rules (match production code)
+1. **English only** for all test code and comments.
+2. **Explicit typing — no `var`.** Use target-typed `new(...)` when the type is declared (avoids IDE0090): `double value = 5.0;` and `Address address = new(...);`, not `var value = 5.0;` or `new Address(...)`.
+3. **Variable naming:** start with the type name in camelCase, adding a `_`-suffixed qualifier when needed (`PointNode pointNode_Base`, `PointNode pointNode_Temp`, `Segment3D segment3D_Inside`). For collections, don't prefix with the collection type — use the element type pluralized (`point3Ds`/`segment3Ds`, not `listPoints`/`points`/`listSegments`). Primitives may use plain camelCase (`double tolerance`, `int count`, `double result`).
+4. **Zero warnings/analyzer messages** — honour nullability (`?` and appropriate null handling).
 
-1. **English Only:** All generated test code and comments MUST use English naming/terminology.
-2. **Explicit Typing Mandatory:** Avoid `var`. Use explicit variable types everywhere.
-   * *Example:* `double value = 5.0;` instead of `var value = 5.0;`
-   * *Example:* `Core.Classes.Address address = new(...);` instead of `var address = new(...);`
-   * **Target-Typed New:** use `new(...)` instead of explicit type instantiation when the target type is declared (e.g. `Address address = new(...);` not `new Address(...)`), to avoid IDE0090.
-3. **Variable Naming Convention:** Variable/object names inside test methods MUST start with the object's type name in camelCase; append a descriptive suffix after `_` if needed.
-   * *Complex Type Examples:* `PointNode pointNode_Base`, `PointNode pointNode_Temp`, `Segment3D segment3D_Inside`.
-   * **Plural Naming for Collections:** don't prefix with the collection type (avoid `listPoints`, `arraySegments`); use the element type name pluralized (`point3Ds`, `segment3Ds`).
-   * **Exception for Primitive/Simple Types:** standard camelCase is fine for `double`, `string`, `int`, `bool`, etc. (`double tolerance`, `string name`, `int count`, `double result`).
-4. **Zero Warnings & Messages:** No compiler warnings or analyzer messages; handle nullability (`?`) correctly.
+## xUnit structure
+1. **One test project per project:** `[ProjectName].xUnit` (e.g. `DiGi.Core.xUnit`, `DiGi.Geometry.xUnit`).
+2. **`public partial class Facts`** holds all test methods (one shared class per namespace).
+3. **Files under `/Facts`.**
+4. **Namespace matches the test project** (e.g. `namespace DiGi.Core.xUnit`).
+5. **`Xunit` is global-usinged** by project config — do NOT add `using Xunit;`.
+6. **`[Fact]`** marks test methods.
+7. **Name the method** after the class/property/method under test (`Color()`, `PlanarIntersectionResult_Performance()`).
+8. **XML `<summary>` on every test** describing what is tested — no empty lines inside the block (they break VS tooltips); use `<para>` for paragraph breaks.
 
-## xUnit Testing Standards & Project Structure
-
-1. **Test Project Separation:** test projects follow `[ProjectName].xUnit` (e.g. `DiGi.Core.xUnit`, `DiGi.Geometry.xUnit`).
-2. **Partial Test Class (`Facts`):** all test methods live inside `public partial class Facts`, grouping all tests per namespace.
-3. **Directory Structure:** place test files inside the `/Facts` directory of the test project.
-4. **Namespace Convention:** namespace of the test file matches the test project namespace (e.g. `DiGi.Core.xUnit`, `DiGi.Geometry.xUnit`).
-5. **Global Usings:** `Xunit` is globally imported via project configuration — do NOT add `using Xunit;`.
-6. **Attributes:** use `[Fact]` to mark test methods.
-7. **Method Naming:** name test methods after the class/property/method under test (e.g. `Color()`, `PlanarIntersectionResult_Performance()`).
-8. **XML Documentation for Tests:**
-   * Every test method MUST have a `<summary>` block describing what is tested.
-   * No empty lines within XML doc blocks (causes tooltip rendering issues in Visual Studio) — use `<para>` for paragraph breaks instead.
-
-## Shared Test Data Files (Fixtures)
-
+## Shared test data files (fixtures)
 When a test needs an on-disk input file (`.gmf`, `.json`, `.epw`, …), use the **one shared `files` directory** — do NOT add a per-project data folder.
 
 1. **Location:** `DiGi.Test/files/` (the `DiGi.Test` repo sits beside the other `DiGi.*` repos under the `DigiProject` workspace root; from a `DiGi.Test/<ProjectName>.xUnit/` dir it is `../files/`). The path is given relative to the workspace root because this guideline lives in the separate `DiGi.Maintenance` repo.
@@ -54,31 +42,15 @@ When a test needs an on-disk input file (`.gmf`, `.json`, `.epw`, …), use the 
    References: `DiGi.GIS.xUnit/Facts/OrtoDatas.cs`, `DiGi.EPW.xUnit/Facts/EPWFile.cs`, `DiGi.Geometry.xUnit/Facts/InRange.cs`.
 6. **Large binaries** (multi-MB `.gmf`, etc.) are git-tracked (not ignored) — prefer a representative-but-minimal sample, and consider Git LFS if size becomes a concern.
 
-## Common Testing Patterns & Assertions
+## Testing patterns
+1. **Assertions:** `Assert.Equal(expected, actual)`, `Assert.True`/`False(condition)`, `Assert.NotNull`/`Null(object)`, `Assert.Single(collection)` (exactly one element).
+2. **Serialization round-trip:** `Query.SerializationCheck(instance)` (lives in `DiGi.Core.xUnit`; from another test project call it fully qualified as `Core.xUnit.Query.SerializationCheck(instance)` — same innermost-enclosing-namespace lookup as `Core.Query.Clone(...)`, so no `using DiGi.Core.xUnit;` is needed under the `DiGi` root). For string/JSON, use `Convert.ToSystem_String(object)` and `Convert.ToDiGi<T>(json)?.FirstOrDefault()`. For every class under the `SerializableObject` pattern, add one `[Fact]` that constructs an instance with realistic values (`null` for optional fields, at least one populated nested list/object), asserts the constructor's properties, then calls `SerializationCheck` — this exercises both the JSON round-trip and the `Clone()`/`Core.Query.Clone()` copy-constructor paths in one go.
+3. **Tolerance boundaries:** for geometry/math operations (e.g. `1e-3` or `Constants.Tolerance.Distance`), test cases exactly inside the boundary and exactly outside it.
+4. **Performance benchmarks:** warm up once to trigger JIT, then measure with `System.Diagnostics.Stopwatch.StartNew()` over a large/complex dataset (e.g. a 1000-vertex polyline), then assert the elapsed time is below a stated millisecond threshold.
 
-### 1. Basic Assertions
-`Assert.Equal(expected, actual)`, `Assert.True(condition)` / `Assert.False(condition)`, `Assert.NotNull(object)` / `Assert.Null(object)`, `Assert.Single(collection)`.
+## Code examples
 
-### 2. Serialization and Deserialization Round-Trip
-* Standard object serialization validation: `Query.SerializationCheck(object_Instance);`
-* String/JSON serialization: `Convert.ToSystem_String(object)` and `Convert.ToDiGi<T>(json)?.FirstOrDefault()` for deserialization.
-* `SerializationCheck` lives in `DiGi.Core.xUnit`. When the test project's own namespace differs (e.g. `DiGi.EPW.xUnit` testing classes from `DiGi.EPW`), call it fully qualified as `Core.xUnit.Query.SerializationCheck(object_Instance);` — this relies on the same "innermost-enclosing-namespace" lookup as `Core.Query.Clone(...)` (see Coding - General's Serialization Pattern section), so it resolves without an explicit `using DiGi.Core.xUnit;` as long as the test namespace nests under `DiGi`.
-* For every class added under the `SerializableObject` pattern (see Coding - General skill), add one `[Fact]` per class that constructs an instance with realistic values (including `null` for optional fields, and at least one populated nested list/object), asserts the constructor's properties, then calls `SerializationCheck` — this exercises both JSON round-trip and the `Clone()`/`Core.Query.Clone()` copy-constructor paths in one go.
-
-### 3. Tolerance Boundaries
-For geometric/math operations, test behavior at the boundary of a given tolerance (e.g. `1e-3` or `Constants.Tolerance.Distance`):
-* Case exactly inside the boundary.
-* Case exactly outside the boundary.
-
-### 4. Performance Benchmarks
-* **Warm-up Block:** run the target logic once before measuring, to allow JIT compilation.
-* **Stopwatch Measurement:** `System.Diagnostics.Stopwatch.StartNew()`.
-* **Large Dataset:** use complex/large datasets (e.g. a polyline with 1000 vertices).
-* **Execution Assertion:** assert elapsed time below a threshold (e.g. `Assert.True(stopwatch.ElapsedMilliseconds < 5, ...)`).
-
-## Code Examples
-
-### Example 1: Basic Logic Test (`/Facts/Round.cs`)
+### Example 1: Basic logic test (`/Facts/Round.cs`)
 ```csharp
 namespace DiGi.Core.xUnit
 {
@@ -98,7 +70,7 @@ namespace DiGi.Core.xUnit
 }
 ```
 
-### Example 2: Serialization and Conversions Test (`/Facts/Color.cs`)
+### Example 2: Serialization and conversions test (`/Facts/Color.cs`)
 ```csharp
 using System.Linq;
 
@@ -147,7 +119,7 @@ namespace DiGi.Core.xUnit
 }
 ```
 
-### Example 3: Performance Benchmark & Boundary Test (`/Facts/PlanarIntersectionResult.cs`)
+### Example 3: Performance benchmark & boundary test (`/Facts/PlanarIntersectionResult.cs`)
 ```csharp
 using DiGi.Geometry.Spatial;
 using DiGi.Geometry.Spatial.Classes;
@@ -219,3 +191,4 @@ namespace DiGi.Geometry.xUnit
     }
 }
 ```
+

@@ -1,6 +1,6 @@
 ---
 name: coding-templates
-description: Use when creating a new project or solution from a template, or managing templates in the workspace's default templates/ directory. Covers digiwebapigltftemplate, DiGi.Template configurations, and dotnet new template commands.
+description: Use for tasks related to coding-templates.
 ---
 
 # Coding — Templates
@@ -63,3 +63,4 @@ To remove a template from dotnet CLI and Visual Studio:
 ```powershell
 dotnet new uninstall "templates/DiGi.WebAPI.GLTF.Template"
 ```
+

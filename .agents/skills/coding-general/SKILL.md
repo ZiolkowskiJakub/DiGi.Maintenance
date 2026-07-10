@@ -1,6 +1,6 @@
 ---
 name: coding-general
-description: Use whenever writing or editing C# code in this project, including plugins/add-ins for Revit, Rhino, Grasshopper, or Dynamo. Covers naming conventions, explicit typing, block-scoped namespaces, the Classes/Interfaces/Enums + Query/Modify/Create/Convert architecture, project assets rules (files/ vs user files/), and the SerializableObject serialization pattern.
+description: Use for tasks related to coding-general.
 ---
 
 # System Prompt: C# Engineering Plugin Expert
@@ -42,6 +42,7 @@ description: Use whenever writing or editing C# code in this project, including 
      ```csharp
      public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
      ```
+
 
 
 ## Architecture — DiGi.Core pattern
@@ -379,3 +380,4 @@ namespace DiGi.Maintenance
     }
 }
 ```
+

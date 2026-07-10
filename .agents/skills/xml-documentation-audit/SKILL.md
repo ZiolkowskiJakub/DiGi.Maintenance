@@ -1,6 +1,6 @@
 ---
 name: xml-documentation-audit
-description: Use when auditing, synchronizing, and adding comprehensive XML documentation for constructors, properties, methods, and enum fields/values to match code logic.
+description: Use for tasks related to xml-documentation-audit.
 ---
 
 # AI Orchestration Agent Guidelines: XML Documentation Audit & Generation
@@ -26,7 +26,7 @@ Handle all local documentation generation with the `lm_studio` MCP tool (use the
    // INCORRECT — a blank line splits the block
    /// <summary>
    /// Calculates the total volume of the selected Revit elements.
-   ///
+
    /// This operation might take a while on large BIM models.
    /// </summary>
 
@@ -39,3 +39,4 @@ Handle all local documentation generation with the `lm_studio` MCP tool (use the
 
 ## Output
 Provide only the code edits / file updates — no conversational filler.
+

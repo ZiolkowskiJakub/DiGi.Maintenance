@@ -1,6 +1,6 @@
 ---
 name: xml-documentation-create
-description: Use when adding missing XML summary documentation tags to C# classes, enums, constructors, properties, and methods.
+description: Use for tasks related to xml-documentation-create.
 ---
 
 # AI Orchestration Agent Guidelines: XML Documentation
@@ -25,7 +25,7 @@ Handle all local documentation generation with the `lm_studio` MCP tool (use the
    // INCORRECT — a blank line splits the block
    /// <summary>
    /// Calculates the total volume of the selected Revit elements.
-   ///
+
    /// This operation might take a while on large BIM models.
    /// </summary>
 
@@ -38,3 +38,4 @@ Handle all local documentation generation with the `lm_studio` MCP tool (use the
 
 ## Output
 Provide only the code edits / file updates — no conversational filler.
+
