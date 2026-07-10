@@ -1,6 +1,6 @@
 ---
 name: coding-api-documentation
-description: Use for tasks related to coding-api-documentation.
+description: Use when looking up a type's public API — consult the generated documentation/API/ markdown before opening .cs source to check signatures, namespaces, or <summary> descriptions.
 ---
 
 # AI Guidelines: Workspace API Documentation

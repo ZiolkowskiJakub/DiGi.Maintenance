@@ -1,6 +1,6 @@
 ---
 name: github-branch-synchronization
-description: Use for tasks related to github-branch-synchronization.
+description: Use when running the version-branch to main merge and patch-bump release workflow — syncing a bare SemVer branch into main, bumping the patch version, and pushing both branches.
 ---
 
 # AI Orchestration Agent Guidelines: Branch Synchronization & Versioning

@@ -1,6 +1,6 @@
 ---
 name: coding-general
-description: Use for tasks related to coding-general.
+description: Use whenever writing or editing C# code in this workspace — naming/typing rules, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, and the SerializableObject serialization pattern.
 ---
 
 # System Prompt: C# Engineering Plugin Expert

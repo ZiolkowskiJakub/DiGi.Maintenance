@@ -1,6 +1,6 @@
 ---
 name: coding-automatic-tests
-description: Use for tasks related to coding-automatic-tests.
+description: Use when writing or adding xUnit tests for C# classes, structs, or extension methods — Facts partial class structure, naming, shared test-data fixtures, and serialization, tolerance-boundary, and performance test patterns.
 ---
 
 # AI Guidelines: Automatic Tests
