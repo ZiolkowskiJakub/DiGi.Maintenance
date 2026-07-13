@@ -1,6 +1,6 @@
 ---
 name: github-wiki-home
-description: Use when creating or editing a repository's Wiki Home page — template structure, parsing/preservation rules for the sync script, and the standard DiGi ecosystem footer.
+description: Use when creating or editing a repository's Wiki Home page - template structure, parsing/preservation rules for the sync script, and the standard DiGi ecosystem footer.
 ---
 
 # GitHub Wiki — Home Page Template Specification

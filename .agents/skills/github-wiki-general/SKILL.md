@@ -1,6 +1,6 @@
 ---
 name: github-wiki-general
-description: Use when editing any GitHub wiki page — repo layout, local clones under DigiProject/wiki/, hand-authored vs auto-generated pages, and CI sync mechanics.
+description: Use when editing any GitHub wiki page - repo layout, local clones under DigiProject/wiki/, hand-authored vs auto-generated pages, and CI sync mechanics.
 ---
 
 # GitHub Wiki — General

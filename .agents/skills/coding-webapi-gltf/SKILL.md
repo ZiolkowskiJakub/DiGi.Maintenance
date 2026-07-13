@@ -1,6 +1,6 @@
 ---
 name: coding-webapi-gltf
-description: Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D framework — the decoupled pipeline, onboarding a new consuming project, adding a 3D object type via IGLTFNodeConverter, and batching/streaming performance rules.
+description: Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D framework - the decoupled pipeline, onboarding a new consuming project, adding a 3D object type via IGLTFNodeConverter, and batching/streaming performance rules.
 ---
 
 # Coding — WebAPI glTF

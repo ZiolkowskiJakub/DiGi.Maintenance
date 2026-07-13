@@ -1,6 +1,6 @@
 ---
 name: coding-general
-description: Use whenever writing or editing C# code in this workspace — naming/typing rules, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, and the SerializableObject serialization pattern.
+description: Use whenever writing or editing C# code in this workspace - naming/typing rules, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, and the SerializableObject serialization pattern.
 ---
 
 # System Prompt: C# Engineering Plugin Expert
@@ -42,6 +42,9 @@ description: Use whenever writing or editing C# code in this workspace — namin
      ```csharp
      public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
      ```
+8. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
+9. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
+
 
 
 
@@ -63,6 +66,15 @@ Data models are strictly separated from business logic (anemic models + static e
 - **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
 - If a helper method has well-defined inputs, no side effects, and high reusability, implement it as a **public static method** within the appropriate partial class (e.g., `Query`, `Convert`, `Modify`).
 - If a helper method is strictly single-use or specific to a narrow scope, implement it as a **local function (inline method)** directly inside the method you are currently implementing.
+
+### Convert Class Pattern (conversion methods)
+`public static partial class Convert` is the **first choice** for any method that transforms an object into another representation — including performance-oriented variants that avoid defensive cloning. Never implement a conversion as an instance method on a `/Classes` model; model classes stay anemic.
+
+The pattern, as established across the `Convert` folders (reference: `DiGi.Geometry/Planar/Convert`):
+
+- **Folder/file layout:** `/Convert/To[TargetArea]/[TargetType].cs` — one file per TARGET type, named after the target type; all source-type overloads converting to that target live in that file (e.g. `ToNTS/LinearRing.cs`, `ToDiGi/Polygon2D.cs`, `ToNTS/Coordinates.cs`).
+- **Method shape:** `public static` **extension method on the SOURCE type**; reference-type parameters are nullable; return `null` for null/invalid input instead of throwing.
+- **Naming:** plain `To[TargetArea](...)` when the source type has a single natural target in that area — the target is then distinguished by the source overload (`ToNTS(this Point2D?)` → `Coordinate`, `ToNTS(this Segment2D?)` → `LineSegment`, `ToNTS(this IPolygonal2D?)` → `LinearRing`). Use the suffixed form `To[TargetArea]_[TargetType](...)` when the same source converts to several targets in one area (`ToNTS_LineString(this Segment2D?)` and `ToNTS_Polygon(this IPolygonal2D?)` beside the plain overloads above; `ToDiGi_Polygon2Ds(this Polygon?)` beside `ToDiGi(this Polygon?)` → `PolygonalFace2D`).
 
 ### Naming Conventions for Query Partial Class
 - Enforce a property-like naming convention for methods inside the `Query` class.

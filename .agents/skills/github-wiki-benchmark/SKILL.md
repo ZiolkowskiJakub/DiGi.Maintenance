@@ -1,6 +1,6 @@
 ---
 name: github-wiki-benchmark
-description: Use when creating or updating a repo's Benchmark GitHub wiki page — required page structure, reproducible-numbers conventions, and the checklist for adding a new benchmark entry.
+description: Use when creating or updating a repo's Benchmark GitHub wiki page - required page structure, reproducible-numbers conventions, and the checklist for adding a new benchmark entry.
 ---
 
 # GitHub Wiki — Benchmark Pages

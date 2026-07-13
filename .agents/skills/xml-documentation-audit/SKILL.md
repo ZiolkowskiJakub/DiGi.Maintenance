@@ -1,6 +1,6 @@
 ---
 name: xml-documentation-audit
-description: Use when auditing or synchronizing existing XML docs against current signatures — a superset of xml-documentation-create that also rewrites stale summaries and fixes mismatched param/returns tags.
+description: Use when auditing or synchronizing existing XML docs against current signatures - a superset of xml-documentation-create that also rewrites stale summaries and fixes mismatched param/returns tags.
 ---
 
 # AI Orchestration Agent Guidelines: XML Documentation Audit & Generation
