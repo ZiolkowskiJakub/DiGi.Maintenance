@@ -29,7 +29,7 @@ if (Test-Path $confPath) {
 # Define local synchronizations (always run, independent of Nextcloud)
 $SyncList = @(
     @{ Source = "$baseDir\DiGi.User.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\user" },
-    @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.WebAPI\bin";           Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
+    @{ Source = "$baseDir\DiGi.GIS.WebAPI\bin";                      Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
     @{ Source = "$baseDir\DiGi.GLTF.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gltf" }
 )
 
