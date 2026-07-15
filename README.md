@@ -60,7 +60,31 @@ To maintain codebase health, performance, and compatibility within Visual Studio
    - **Property matching its value type:** if a value type is fully descriptive and unique in the class, name the property after the type (`public AggregateFunction AggregateFunction { get; set; }`).
    - **Primitives** may use plain camelCase (`double tolerance`, `string name`, `int count`).
 4. **Zero warnings/analyzer messages** — nullability, parameter validation, clean code.
-5. **C# 10+** (`LangVersion` ≥ 10) — modern features (file-scoped namespaces, enhanced pattern matching, etc.) are fine within these architectural constraints.
+5. **C# 10+** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and the `DiGi.Template` `.editorconfig` enforces this (`csharp_style_namespace_declarations = block_scoped`).
+6. **Line breaks in parameters:** If a method or constructor has fewer than 6 input parameters, do not break lines between parameters.
+   - **Correct:**
+     ```csharp
+     public void Calculate(double centerX, double centerY, double radius, double? storeyHeight = null)
+     {
+     }
+     ```
+   - **Incorrect:**
+     ```csharp
+     public void Calculate(
+         double centerX,
+         double centerY,
+         double radius,
+         double? storeyHeight = null)
+     {
+     }
+     ```
+7. **Async method naming:** All asynchronous method names must end with `Async`.
+   - **Example:**
+     ```csharp
+     public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
+     ```
+8. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
+9. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
 
 ---
 
@@ -78,12 +102,21 @@ Data models are strictly separated from business logic (anemic models + static e
 - **`Create`** (`/Create`) — creates and returns a completely new object from input data.
 - **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
 
-#### Method Encapsulation and Reusability in Utility Classes
+### Method Encapsulation and Reusability in Utility Classes
 - **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
 - If a helper method has well-defined inputs, no side effects, and high reusability, implement it as a **public static method** within the appropriate partial class (e.g., `Query`, `Convert`, `Modify`).
 - If a helper method is strictly single-use or specific to a narrow scope, implement it as a **local function (inline method)** directly inside the method you are currently implementing.
 
-#### Naming Conventions for Query Partial Class
+### Convert Class Pattern (conversion methods)
+`public static partial class Convert` is the **first choice** for any method that transforms an object into another representation — including performance-oriented variants that avoid defensive cloning. Never implement a conversion as an instance method on a `/Classes` model; model classes stay anemic.
+
+The pattern, as established across the `Convert` folders (reference: `DiGi.Geometry/Planar/Convert`):
+
+- **Folder/file layout:** `/Convert/To[TargetArea]/[TargetType].cs` — one file per TARGET type, named after the target type; all source-type overloads converting to that target live in that file (e.g. `ToNTS/LinearRing.cs`, `ToDiGi/Polygon2D.cs`, `ToNTS/Coordinates.cs`).
+- **Method shape:** `public static` **extension method on the SOURCE type**; reference-type parameters are nullable; return `null` for null/invalid input instead of throwing.
+- **Naming:** plain `To[TargetArea](...)` when the source type has a single natural target in that area — the target is then distinguished by the source overload (`ToNTS(this Point2D?)` → `Coordinate`, `ToNTS(this Segment2D?)` → `LineSegment`, `ToNTS(this IPolygonal2D?)` → `LinearRing`). Use the suffixed form `To[TargetArea]_[TargetType](...)` when the same source converts to several targets in one area (`ToNTS_LineString(this Segment2D?)` and `ToNTS_Polygon(this IPolygonal2D?)` beside the plain overloads above; `ToDiGi_Polygon2Ds(this Polygon?)` beside `ToDiGi(this Polygon?)` → `PolygonalFace2D`).
+
+### Naming Conventions for Query Partial Class
 - Enforce a property-like naming convention for methods inside the `Query` class.
 - **Do not use verbs as prefixes** (e.g., avoid `Get`, `Find`, `Calculate`).
   - *Example:* `GetBoundingBox()` must be named `BoundingBox()`.
