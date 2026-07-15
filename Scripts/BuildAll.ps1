@@ -46,13 +46,12 @@ $solutionOrder = @(
 	"DiGi.OSM\DiGi.OSM.slnx",
 	"DiGi.YOLO\DiGi.YOLO.slnx",
 	"DiGi.VoTT\DiGi.VoTT.slnx",
-	"DiGi.GitHub\DiGi.GitHub.slnx"
+	"DiGi.GitHub\DiGi.GitHub.slnx",
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
 	"DiGi.Geometry\DiGi.Geometry.slnx",
 	"DiGi.Geometry.Random\DiGi.Geometry.Random.slnx",
 	"DiGi.Geometry.Visual\DiGi.Geometry.Visual.slnx",
 	"DiGi.GLTF\DiGi.GLTF.slnx",
-	"DiGi.GLTF.Analytical\DiGi.GLTF.Analytical.slnx",
 	"DiGi.Serilog\DiGi.Serilog.slnx",
 	"DiGi.WebAPI\DiGi.WebAPI.slnx",
 	"DiGi.GLTF.WebAPI\DiGi.GLTF.WebAPI.slnx",
@@ -76,23 +75,24 @@ $solutionOrder = @(
 	"DiGi.BDOT10k\DiGi.BDOT10k.slnx",
 	"DiGi.Analytical\DiGi.Analytical.slnx",
 	"DiGi.Analytical.Rhino\DiGi.Analytical.Rhino.slnx",
+	"DiGi.GLTF.Analytical\DiGi.GLTF.Analytical.slnx",
 	"DiGi.GIS\DiGi.GIS.slnx",
+	"DiGi.GIS.Emgu.CV\DiGi.GIS.Emgu.CV.slnx",
 	"DiGi.GIS.IO\DiGi.GIS.IO.slnx",
 	"DiGi.GIS.PostgreSQL\DiGi.GIS.PostgreSQL.slnx",
 	"DiGi.GIS.Analytical\DiGi.GIS.Analytical.slnx",
-	"DiGi.GIS.Emgu.CV\DiGi.GIS.Emgu.CV.slnx",
 	"DiGi.GIS.SQLite\DiGi.GIS.SQLite.slnx",
 	"DiGi.GIS.ML\DiGi.GIS.ML.slnx",
-	"DiGi.GIS.WebAPI\DiGi.GIS.WebAPI.slnx"
+	"DiGi.GIS.WebAPI\DiGi.GIS.WebAPI.slnx",
 	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
 	"DiGi.Communication\DiGi.Communication.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
 	"DiGi.SAM\DiGi.SAM.slnx",
-	"DiGi.Tas\DiGi.Tas.slnx"
+	"DiGi.Tas\DiGi.Tas.slnx",
 	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
-	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx"
-	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx"
-	"DiGi.Maintenance\DiGi.Maintenance.slnx"
+	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx",
+	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx",
+	"DiGi.Maintenance\DiGi.Maintenance.slnx",
 	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
 	# add more in the order you need
 )
