@@ -30,7 +30,8 @@ if (Test-Path $confPath) {
 $SyncList = @(
     @{ Source = "$baseDir\DiGi.User.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\user" },
     @{ Source = "$baseDir\DiGi.GIS.WebAPI\bin";                      Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
-    @{ Source = "$baseDir\DiGi.GLTF.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gltf" }
+    @{ Source = "$baseDir\DiGi.GLTF.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gltf" },
+    @{ Source = "$baseDir\DiGi.Communication.WebAPI\bin";            Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\communication" }
 )
 
 # Append Nextcloud synchronizations if Nextcloud directory was successfully parsed
