@@ -8,8 +8,11 @@
 Unless explicitly instructed otherwise in the prompt, the AI must strictly adhere to the following hierarchy of priorities when operating on this codebase:
 
 1. **Quality & Guideline Adherence (Highest Priority):** Code correctness, architectural soundness, and strict compliance with the established guidelines (e.g., explicit typing, DI patterns, English-only code) are absolute. Never compromise on the rules.
-2. **Token Efficiency (High Priority):** Minimize token usage by being concise. Output only the necessary code modifications or explanations. Do not read irrelevant guideline markdown files.
+2. **Output Optimization & Token Efficiency (High Priority):** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations. Do not read irrelevant guideline markdown files.
 3. **Speed (Lowest Priority):** The speed of generating a response is not important. It can, and should, be sacrificed to ensure maximum quality, deep reasoning, and efficient token usage.
+
+Additionally:
+* **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
 
 ---
 
@@ -20,6 +23,7 @@ The files in the `skills/` directory hold the full details for specific tasks an
 ### Coding
 - **coding-general:** Use whenever writing or editing C# code — naming/typing rules, the DiGi.Core `Query`/`Modify`/`Create`/`Convert` architecture, files vs user files assets, and the `SerializableObject` serialization pattern.
 - **coding-api-documentation:** Use when looking up a type's public API — consult the generated `documentation/API/` markdown before opening `.cs` source.
+- **coding-references:** Use when comparing, matching, keying or de-duplicating an `IReference`/`IUniqueReference` — why `==` between two interface-typed references is a silent bug, what to use instead, and how to detect and fix existing occurrences.
 - **coding-automatic-tests:** Use when writing or adding xUnit tests — `Facts` structure, naming, shared fixtures, serialization, tolerance boundary, and performance benchmarks.
 - **coding-templates:** Use when creating a new project/solution from a template, or managing templates in the workspace's default `templates/` folder.
 - **coding-webapi-gltf:** Use when building or extending an ASP.NET Core Web API on the `DiGi.GLTF` 3D framework.
