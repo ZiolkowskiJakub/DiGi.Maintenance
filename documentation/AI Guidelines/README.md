@@ -25,6 +25,7 @@ Additionally:
 |------|---------------|
 | [Coding - General.md](Coding%20-%20General.md) | Writing or modifying any C# — naming/typing rules, the DiGi.Core `Query`/`Modify`/`Create`/`Convert` architecture, and the `SerializableObject` serialization pattern (with worked examples). |
 | [Coding - API Documentation.md](Coding%20-%20API%20Documentation.md) | Looking up a type's public API — consult the generated `documentation/API/` markdown before opening `.cs` source. |
+| [Coding - References.md](Coding%20-%20References.md) | Comparing, matching, keying or de-duplicating an `IReference`/`IUniqueReference` — why `==` between two interface-typed references is a silent bug, what to use instead, and how to detect and fix existing occurrences. |
 | [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) | Writing or adding xUnit tests — `Facts` structure, naming, shared fixtures, and serialization/tolerance/performance patterns. |
 | [Coding - Templates.md](Coding%20-%20Templates.md) | Creating a new project/solution from a template, or adding/modifying templates in the workspace's default `templates/` folder. |
 | [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | Building or extending an ASP.NET Core Web API on the `DiGi.GLTF` 3D framework — the decoupled pipeline, onboarding a new consuming project, adding a new 3D object type via the `IGLTFNodeConverter` registry, and batching/streaming performance rules. |
