@@ -37,8 +37,43 @@
      ```csharp
      public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
      ```
-8. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
-9. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
+8. **`CancellationToken` is always the LAST parameter (CA1068).** This holds for every method — public, private, static, extension, local — and for every overload. When adding a new optional parameter to an existing signature, insert it *before* the token; never append after it.
+   - **Correct:**
+     ```csharp
+     public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
+     ```
+   - **Incorrect** — appending after the token is the usual way this rule gets broken:
+     ```csharp
+     public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, CancellationToken cancellationToken = default, int commandTimeout = 30)
+     ```
+   - The `<param>` tags in the XML doc block must be reordered to match, so the docs still mirror the signature exactly (see `XML Documentation - Audit.md`).
+   - **Pass the token by name at call sites** — `cancellationToken: cancellationToken` — whenever intervening parameters are left at their defaults. Positional calls silently rebind if the signature is ever reordered again; named arguments do not, and they turn a reordering into a compile error rather than a wrong-argument bug.
+     ```csharp
+     await ClearAsync(npgsqlConnection, TableName.Building, cancellationToken: cancellationToken);
+     ```
+   - **Watch for overload ambiguity when reordering.** Moving the token past a trailing `int` can make two overloads structurally identical in their tail, so a `null` argument that used to bind unambiguously becomes CS0121. Disambiguate with a named argument for the differing parameter (`excludedReferences: null`), not with a cast.
+   - **Detection:** `grep -rnE "CancellationToken [a-zA-Z_]+( = default)?, " --include=*.cs .` — every hit that is not the final parameter is a violation.
+9. **Simplify member access (IDE0002/IDE0001) — but verify the binding first.** Inside the `DiGi` root, drop any namespace qualifier the compiler does not need. A `DiGi.` prefix on a type that already resolves is redundant noise.
+   - **Correct** — in `namespace DiGi.GIS.PostgreSQL.UI.Classes`, `Serilog` resolves up the enclosing chain to `DiGi.Serilog`:
+     ```csharp
+     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "Import failed");
+     ```
+   - **Incorrect** — the prefix adds nothing:
+     ```csharp
+     DiGi.Serilog.Modify.Log(DiGi.Serilog.Enums.LogEventLevel.Error, "Import failed");
+     ```
+   - **The exception — innermost-namespace shadowing.** C# resolves the FIRST segment against each enclosing namespace from innermost outwards, and once it binds there is **no fallback**. If a nearer namespace owns that segment, the shortened form binds somewhere else entirely. From `DiGi.GIS.PostgreSQL.UI.Classes`, `WebAPI` binds to `DiGi.GIS.WebAPI` (not `DiGi.WebAPI`), because `DiGi.GIS.WebAPI` is found first:
+     ```csharp
+     // KEEP the prefix - "WebAPI.Query" binds to DiGi.GIS.WebAPI.Query, which does not exist:
+     // error CS0234: The type or namespace name 'Query' does not exist in the namespace 'DiGi.GIS.WebAPI'
+     postResponse = await DiGi.WebAPI.Query.GetAsync<Building>(httpClient, requestUri, postOptions);
+     ```
+     The same trap applies to `Core`, `Geometry`, `Analytical` and any other segment that repeats at several depths — and to a static partial class calling its own namesake in a parent namespace (`DiGi.WebAPI.Modify.PostAsync` from inside `DiGi.GIS.WebAPI.Modify`).
+   - **Method:** remove the qualifier, then **rebuild**. A shadowed name usually fails with CS0234/CS0246 — restore the prefix and leave a short comment saying why. Do not shorten a qualifier you have not compiled.
+   - **Danger case:** if BOTH namespaces expose a matching member, the shortened form compiles and silently calls the wrong one. When a segment repeats at several depths and both candidates have the member, keep the qualifier regardless of the analyzer suggestion.
+   - **Scope:** this rule is about code. Leave `<see cref="..."/>` targets in XML docs as they are — match whatever the surrounding file already does rather than churning doc comments.
+10. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
+11. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
 
 
 
