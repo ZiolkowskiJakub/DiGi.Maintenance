@@ -92,6 +92,32 @@ Data models are strictly separated from business logic (anemic models + static e
 - **`Create`** (`/Create`) — creates and returns a completely new object from input data.
 - **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
 
+### Exception — interface-contract members are implemented ON the class
+The anemic-model + static-extension rule governs behavior that is **not** part of an interface the
+`/Classes` type implements. When a method is declared on an interface the class implements, it MUST be a
+normal **instance method on that class** — C# offers no other way to satisfy the contract, and moving it
+to a `Query`/`Modify` extension leaves the interface unimplemented (CS0535).
+
+This is the deliberate design for **behavior-rich geometry primitives**. `DiGi.Geometry`'s `Ellipse2D`,
+`Circle2D`, `Segment2D`, `Polygon2D`, `Rectangle2D`, their spatial counterparts, etc. implement rich
+behavioral interfaces and therefore carry their behavior as instance methods — for example
+`IBoundable2D.GetBoundingBox()`, `ITransformable2D.Transform(...)`, `IMovable2D.Move(...)`, and
+`IClosedCurve2D.{GetInternalPoint, InRange, Inside, GetArea}`. These types are **not** anemic, and that
+is correct.
+
+- **Do not "migrate" a geometry primitive's instance methods to `Query`/`Modify` extensions, and do not
+  flag them as anemic-model violations.** Deleting a contract implementation breaks the interface and
+  diverges from the entire library. Compare `Circle2D` and `Ellipse2D`: same interfaces
+  (`IEllipse2D, IBoundable2D`), both implement all behavior as instance methods, and neither has any
+  per-type `Query`/`Modify` extensions.
+- **Before proposing to move or remove such a method, check the interface chain first** (the `I*2D`
+  hierarchy under `Planar/Interfaces` / `Spatial/Interfaces`). Only behavior that is genuinely not a
+  contract member — and that belongs to a data model rather than a geometry primitive — goes into the
+  static partial classes.
+- **Private helpers are allowed on such a class.** The "strictly avoid private methods" rule below is
+  scoped to the static partial utility classes (`Query`/`Modify`/`Create`/`Convert`), not to
+  `/Classes` types that implement behavioral interfaces.
+
 ### Method Encapsulation and Reusability in Utility Classes
 - **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
 - If a helper method has well-defined inputs, no side effects, and high reusability, implement it as a **public static method** within the appropriate partial class (e.g., `Query`, `Convert`, `Modify`).
