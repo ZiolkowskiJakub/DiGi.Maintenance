@@ -1,2 +1,0 @@
-PowerShell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\[USERNAME]\GitHub\DigiProject\DiGi.Maintenance\Scripts\BuildAll.ps1" -Configuration Release
-PowerShell -ExecutionPolicy Bypass -File "C:\Users\[USERNAME]\GitHub\DigiProject\DiGi.Maintenance\Scripts\SyncDirectories.ps1"

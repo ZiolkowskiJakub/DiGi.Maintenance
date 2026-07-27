@@ -1,0 +1,89 @@
+# DiGi Maintenance Scripts
+
+This directory contains PowerShell maintenance scripts for managing, building, synchronizing, and setting up DiGi solution repositories.
+
+## Execution Commands
+
+### Build All Solutions
+Builds all DiGi solution repositories in Release configuration.
+```powershell
+PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release
+```
+
+### Sync Output Directories
+Synchronizes output binary directories across web services and Nextcloud storage.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1"
+```
+
+### Copy User Files
+Copies `user files` configuration folders from all DiGi repositories to Nextcloud data directory.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CopyUserFiles.ps1"
+```
+
+### Pull Branches Across All Repositories
+Synchronizes all DiGi repositories to their highest SemVer branch and pulls remote changes.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\PullBranchesAllRepos.ps1"
+```
+
+### Sync Branches Across All Repositories
+Merges active version branch to main, bumps patch version, creates a new branch, and pushes across all repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\SyncBranchesAllRepos.ps1"
+```
+
+### Commit All Repositories
+Commits pending changes across all DiGi repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CommitAllRepos.ps1" -Message "Update"
+```
+
+### Push All Repositories
+Pushes commits across all DiGi repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\PushAllRepos.ps1"
+```
+
+### Commit and Push Current Branch
+Commits and pushes current branch across all DiGi repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CommitAndPushCurrentBranch.ps1" -Message "Update"
+```
+
+### Sync Wiki
+Synchronizes local documentation and Wiki pages with GitHub wikis.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\SyncWiki.ps1"
+```
+
+### Check Wiki Pages
+Verifies and checks structure of GitHub wiki pages.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CheckWikiPages.ps1"
+```
+
+### Update AI Agents & Guidelines
+Updates `.agents` guidelines, rules, and skills across all DiGi repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1"
+```
+
+### Set Secrets Across All Repositories
+Sets secret (e.g. `WIKI_SYNC_PAT`) across all GitHub repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\SetSecretsAllRepos.ps1" -PatToken "<PAT_TOKEN>"
+```
+
+### Sync GitHub Workflows to Main
+Synchronizes GitHub Actions workflows to `main` branch across all repositories.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\SyncWorkflowToMain.ps1"
+```
+
+### Apply Documentation Setup
+Applies XML documentation build targets to project files.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\ApplyDocumentationSetup.ps1"
+```
