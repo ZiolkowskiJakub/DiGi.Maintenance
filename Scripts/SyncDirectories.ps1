@@ -1,9 +1,9 @@
 # Get the dynamic base directory relative to this script
 $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 
-# Read and parse NEXTCLOUD_DIRECTORY from config file if available
-$confPath = Join-Path $PSScriptRoot "..\user files\Sync_Directories.conf"
-$nextcloudDir = ""
+# Read and parse SOFTWARE_DIRECTORY from config file if available
+$confPath = Join-Path $PSScriptRoot "..\user files\Directories.conf"
+$softwareDir = ""
 
 if (Test-Path $confPath) {
     foreach ($line in Get-Content $confPath) {
@@ -16,17 +16,17 @@ if (Test-Path $confPath) {
             if ($val.StartsWith('"') -and $val.EndsWith('"')) {
                 $val = $val.Substring(1, $val.Length - 2)
             }
-            if ($key -eq "NEXTCLOUD_DIRECTORY") {
-                $nextcloudDir = $val
+            if ($key -eq "SOFTWARE_DIRECTORY") {
+                $softwareDir = $val
             }
         }
     }
 } else {
     Write-Warning "Configuration file was not found at: '$confPath'"
-    Write-Warning "To enable Nextcloud sync, copy 'Sync_Directories.conf' to that location and set NEXTCLOUD_DIRECTORY."
+    Write-Warning "To enable Software sync, copy 'Directories.conf' to that location and set SOFTWARE_DIRECTORY."
 }
 
-# Define local synchronizations (always run, independent of Nextcloud)
+# Define local synchronizations (always run, independent of Software output directory)
 $SyncList = @(
     @{ Source = "$baseDir\DiGi.User.WebAPI\bin";                     Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\user" },
     @{ Source = "$baseDir\DiGi.GIS.WebAPI\bin";                      Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\gis" },
@@ -34,16 +34,16 @@ $SyncList = @(
     @{ Source = "$baseDir\DiGi.Communication.WebAPI\bin";            Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\communication" }
 )
 
-# Append Nextcloud synchronizations if Nextcloud directory was successfully parsed
-if (-not [string]::IsNullOrWhiteSpace($nextcloudDir)) {
+# Append Software synchronizations if Software directory was successfully parsed
+if (-not [string]::IsNullOrWhiteSpace($softwareDir)) {
     $SyncList += @(
-        @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin";           Destination = "$nextcloudDir\DiGi.GIS.PostgreSQL.UI" },
-        @{ Source = "$baseDir\DiGi.GIS.UI\bin";                      Destination = "$nextcloudDir\DiGi.GIS.UI" },
-        @{ Source = "$baseDir\DiGi.GIS.WebAPI.UI\bin";               Destination = "$nextcloudDir\DiGi.GIS.WebAPI.UI" },
-        @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$nextcloudDir\DiGi.WebAPI.WindowsService" }
+        @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin";           Destination = "$softwareDir\DiGi.GIS.PostgreSQL.UI" },
+        @{ Source = "$baseDir\DiGi.GIS.UI\bin";                      Destination = "$softwareDir\DiGi.GIS.UI" },
+        @{ Source = "$baseDir\DiGi.GIS.WebAPI.UI\bin";               Destination = "$softwareDir\DiGi.GIS.WebAPI.UI" },
+        @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$softwareDir\DiGi.WebAPI.WindowsService" }
     )
 } else {
-    Write-Warning "NEXTCLOUD_DIRECTORY is not set. Nextcloud synchronization will be skipped."
+    Write-Warning "SOFTWARE_DIRECTORY is not set. Software synchronization will be skipped."
 }
 
 Write-Host "Starting batch synchronization process..." -ForegroundColor Cyan

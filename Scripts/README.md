@@ -2,6 +2,17 @@
 
 This directory contains PowerShell maintenance scripts for managing, building, synchronizing, and setting up DiGi solution repositories.
 
+## Configuration
+
+Configuration settings for maintenance scripts are stored in relative configuration files under the `user files/` directory:
+
+### `user files/Directories.conf`
+Copy `files/Directories.conf` to `user files/Directories.conf` and configure the target path variables:
+- `SOFTWARE_DIRECTORY`: Target directory for software output binary synchronization (used by `SyncDirectories.ps1`).
+- `USER_FILES_BACKUP_DIRECTORY`: Target directory for copying and restoring repository `user files` folders (used by `CopyUserFiles.ps1`).
+
+---
+
 ## Execution Commands
 
 ### Build All Solutions
@@ -11,15 +22,22 @@ PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configurat
 ```
 
 ### Sync Output Directories
-Synchronizes output binary directories across web services and Nextcloud storage.
+Synchronizes output binary directories across web services and the configured software output directory (`SOFTWARE_DIRECTORY` in `user files/Directories.conf`).
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1"
 ```
 
 ### Copy User Files
-Copies `user files` configuration folders from all DiGi repositories to Nextcloud data directory.
+Copies `user files` configuration folders from all DiGi repositories to the backup data directory (`USER_FILES_BACKUP_DIRECTORY` in `user files/Directories.conf`), or restores from the backup directory back to matching repositories when `-Reverse` or `-Restore` is specified.
 ```powershell
+# Copy user files to backup directory
 PowerShell -ExecutionPolicy Bypass -File ".\CopyUserFiles.ps1"
+
+# Restore user files from backup directory to workspace
+PowerShell -ExecutionPolicy Bypass -File ".\CopyUserFiles.ps1" -Reverse
+
+# Override backup directory explicitly via parameter
+PowerShell -ExecutionPolicy Bypass -File ".\CopyUserFiles.ps1" -Destination "<PathToBackupDirectory>"
 ```
 
 ### Pull Branches Across All Repositories
