@@ -83,8 +83,31 @@ To maintain codebase health, performance, and compatibility within Visual Studio
      ```csharp
      public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
      ```
-8. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
-9. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
+8. **`CancellationToken` is always the LAST parameter (CA1068).** This holds for every method — public, private, static, extension, local — and for every overload. When adding a new optional parameter to an existing signature, insert it *before* the token; never append after it.
+   - **Correct:**
+     ```csharp
+     public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
+     ```
+   - **Incorrect** — appending after the token is the usual way this rule gets broken:
+     ```csharp
+     public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, CancellationToken cancellationToken = default, int commandTimeout = 30)
+     ```
+   - The `<param>` tags in the XML doc block must be reordered to match, so the docs still mirror the signature exactly.
+   - **Pass the token by name at call sites** — `cancellationToken: cancellationToken` — whenever intervening parameters are left at their defaults. Positional calls silently rebind if the signature is ever reordered again; named arguments turn a reordering into a compile error rather than a wrong-argument bug.
+   - **Detection:** `grep -rnE "CancellationToken [a-zA-Z_]+( = default)?, " --include=*.cs .` — every hit that is not the final parameter is a violation.
+9. **Simplify member access (IDE0002/IDE0001) — but verify the binding first.** Inside the `DiGi` root, drop any namespace qualifier the compiler does not need; a `DiGi.` prefix on a type that already resolves is redundant noise.
+   - **Correct** — in `namespace DiGi.GIS.PostgreSQL.UI.Classes`, `Serilog` resolves up the enclosing chain to `DiGi.Serilog`:
+     ```csharp
+     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "Import failed");
+     ```
+   - **The exception — innermost-namespace shadowing.** C# resolves the FIRST segment against each enclosing namespace from innermost outwards, and once it binds there is **no fallback**. From `DiGi.GIS.PostgreSQL.UI.Classes`, `WebAPI` binds to `DiGi.GIS.WebAPI` (not `DiGi.WebAPI`), so the qualifier must stay:
+     ```csharp
+     postResponse = await DiGi.WebAPI.Query.GetAsync<Building>(httpClient, requestUri, postOptions);
+     ```
+     The same trap applies to `Core`, `Geometry`, `Analytical` and any other segment that repeats at several depths.
+   - **Method:** remove the qualifier, then **rebuild**. A shadowed name usually fails with CS0234/CS0246 — restore the prefix and leave a short comment saying why. Never shorten a qualifier you have not compiled. If BOTH namespaces expose a matching member, the shortened form compiles and silently calls the wrong one — keep the qualifier regardless of the analyzer suggestion.
+10. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
+11. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
 
 ---
 
@@ -101,6 +124,15 @@ Data models are strictly separated from business logic (anemic models + static e
 - **`Modify`** (`/Modify`) — modifies the state/properties of the existing object.
 - **`Create`** (`/Create`) — creates and returns a completely new object from input data.
 - **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
+
+### Exception — interface-contract members are implemented ON the class
+The anemic-model + static-extension rule governs behavior that is **not** part of an interface the `/Classes` type implements. When a method is declared on an interface the class implements, it MUST be a normal **instance method on that class** — C# offers no other way to satisfy the contract, and moving it to a `Query`/`Modify` extension leaves the interface unimplemented (CS0535).
+
+This is the deliberate design for **behavior-rich geometry primitives**. `DiGi.Geometry`'s `Ellipse2D`, `Circle2D`, `Segment2D`, `Polygon2D`, `Rectangle2D`, their spatial counterparts, etc. implement rich behavioral interfaces and therefore carry their behavior as instance methods — for example `IBoundable2D.GetBoundingBox()`, `ITransformable2D.Transform(...)`, `IMovable2D.Move(...)`, and `IClosedCurve2D.{GetInternalPoint, InRange, Inside, GetArea}`. These types are **not** anemic, and that is correct.
+
+- **Do not "migrate" a geometry primitive's instance methods to `Query`/`Modify` extensions, and do not flag them as anemic-model violations.** Deleting a contract implementation breaks the interface and diverges from the entire library.
+- **Before proposing to move or remove such a method, check the interface chain first** (the `I*2D` hierarchy under `Planar/Interfaces` / `Spatial/Interfaces`). Only behavior that is genuinely not a contract member — and that belongs to a data model rather than a geometry primitive — goes into the static partial classes.
+- **Private helpers are allowed on such a class.** The "strictly avoid private methods" rule below is scoped to the static partial utility classes (`Query`/`Modify`/`Create`/`Convert`), not to `/Classes` types that implement behavioral interfaces.
 
 ### Method Encapsulation and Reusability in Utility Classes
 - **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
@@ -157,7 +189,49 @@ developer's / the server's machine-specific setup? If yes → `user files/`; oth
 
 ---
 
-### 3. XML Documentation Standards
+### 3. Reference Comparison (`IReference` / `IUniqueReference`)
+
+> **Never compare two interface-typed references with `==` or `!=`. Use `Core.Query.Equals(reference_1, reference_2)`.**
+
+This is not a style preference. `==` between two interface-typed operands compiles to **reference equality**, silently returns `false` for two equal references, and the compiler emits no warning. It has already produced an infinite loop in `BuildingModelShellUpdater` and mis-attributed geometry in `ShellByPlaneSplitSolver`.
+
+**Why the operators do not apply.** For `a == b`, C# gathers user-defined operator candidates from the **static types of the operands and their base classes** — an interface contributes none. The `==`/`!=` operators live on `SerializableReference`, so the comparison is correct as soon as **one** side is a concrete `SerializableReference`-derived type (or the `null` literal).
+
+| Static type of the operands | What `==` compiles to | Verdict |
+|---|---|---|
+| both interfaces (`IReference`, `IUniqueReference`, `ISerializableReference`, …) | predefined reference equality | **silent bug** |
+| at least one `SerializableReference`-derived (`GuidReference`, `TypeReference`, …) | `SerializableReference.operator ==` → `Equals` | correct |
+| one side is the `null` literal | null check | correct |
+| `.ToString()` on both sides | string comparison | correct, but allocates |
+
+This cannot be fixed by adding operators: interfaces contribute no operator candidates, a `operator ==(IReference, IReference)` declared in a helper class is **CS0563**, and C# 11 static abstract interface operators dispatch only through a constrained generic type parameter (and require net7.0+, while `DiGi.Core` targets `netstandard2.0`).
+
+**The compounding trap — clone-per-call accessors.** Many model properties return `Core.Query.Clone(field)` and therefore hand back a **new instance on every read**, so `face.UniqueReference == face.UniqueReference` is `false` — the same face compared with itself. Read the property into a local before using it; never call it inside a predicate that runs per element (it is also an allocation per iteration).
+
+| Intent | Use |
+|---|---|
+| Are these two references the same reference? | `Core.Query.Equals(reference_1, reference_2)` (null-safe, two nulls are equal) |
+| Look up / group / de-duplicate | `Dictionary`, `HashSet`, `List.Find`/`FindAll`/`FindIndex`/`Contains` — already correct, they route through `Equals`/`GetHashCode` |
+| I need the concrete API | pattern-match: `if (uniqueReference is GuidReference guidReference)` |
+| Is this the same *instance* of a model object? | compare its `Guid` — a reference identifies the referenced object, not the object holding it |
+
+```csharp
+// WRONG - both operands are IUniqueReference, this is reference equality and never matches
+int index = faces.FindIndex(x => x.UniqueReference == face.UniqueReference);
+```
+
+```csharp
+// CORRECT - hoist the clone-returning accessor into a local, then compare by value
+IUniqueReference? uniqueReference = face.UniqueReference;
+
+int index = faces.FindIndex(x => Core.Query.Equals(x?.UniqueReference, uniqueReference));
+```
+
+**Do not assume an `IReference` is a `SerializableReference` — never cast to it.** `ListClusterReference<TKey_1, TKey_2>` implements `IReference` directly, and `IUniqueReference` has two class branches (`UniqueReference` and `UniqueExternalReference<T>`) with no common base below `SerializableReference`.
+
+---
+
+### 4. XML Documentation Standards
 All public constructors, properties, methods, and enum values must be fully documented using XML comments:
 * **Code preservation & sync:** Edit only `///` comments — never change C# logic. Add missing tags, and rewrite any existing comment that is outdated, inaccurate, or describes logic/parameters that no longer exist.
 * **Explicit typing:** No `var` in any code snippet you touch.
@@ -186,7 +260,7 @@ All public constructors, properties, methods, and enum values must be fully docu
 
 ---
 
-### 4. API Reference Documentation Locating
+### 5. API Reference Documentation Locating
 To minimize token consumption and avoid parsing full implementation files, you MUST consult the generated Markdown documentation first when exploring type schemas, namespaces, and public API interfaces:
 To save tokens, consult the generated Markdown API docs before parsing `.cs` source when exploring type schemas, namespaces, or public API.
 
@@ -195,7 +269,7 @@ To save tokens, consult the generated Markdown API docs before parsing `.cs` sou
 
 ---
 
-### 5. Serialization Pattern (SerializableObject / ISerializableObject)
+### 6. Serialization Pattern (SerializableObject / ISerializableObject)
 Classes under `/Classes` needing JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject` in this exact shape (reflection-driven — no manual JSON parsing).
 
 1. **Marker interfaces** per project under `/Interfaces` (mirroring `DiGi.GIS.Interfaces.IGISObject`/`IGISSerializableObject`):
@@ -321,7 +395,7 @@ public GroundTemperature(GroundTemperature? groundTemperature)
 
 ---
 
-### 6. Automatic Tests (xUnit)
+### 7. Automatic Tests (xUnit)
 1. **One test project per project:** `[ProjectName].xUnit` (e.g. `DiGi.Core.xUnit`, `DiGi.Geometry.xUnit`).
 2. **`public partial class Facts`** holds all test methods (one shared class per namespace).
 3. **Files under `/Facts`.**
@@ -351,7 +425,7 @@ When a test needs an on-disk input file (`.gmf`, `.json`, `.epw`, …), use the 
 
 ---
 
-### 7. Branch Synchronization & Versioning Protocol
+### 8. Branch Synchronization & Versioning Protocol
 1. **Version branch only:** run only when the active branch is a bare SemVer `*.*.*` (e.g. `0.8.2`, `1.12.0`). Skip anything with text, prefix, or suffix (`feature/login`, `v0.8.2`, `0.8.2-beta`, `main`).
 2. **Differs from main:** run only for repos where the active branch differs from `main`; skip repos where they are identical.
 

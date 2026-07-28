@@ -63,4 +63,3 @@ To remove a template from dotnet CLI and Visual Studio:
 ```powershell
 dotnet new uninstall "templates/DiGi.WebAPI.GLTF.Template"
 ```
-

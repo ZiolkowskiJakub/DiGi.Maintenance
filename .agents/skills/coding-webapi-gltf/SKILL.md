@@ -397,4 +397,3 @@ Detailed installation, usage scenarios, and command guidelines for this template
       `user files/`, never the committed `files/` — see the `files/` vs `user files/` rule in
       `Coding - General.md`.
 - [ ] No `var`; explicit types; English only.
-

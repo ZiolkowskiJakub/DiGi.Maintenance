@@ -14,4 +14,3 @@ To save tokens, consult the generated Markdown API docs before parsing `.cs` sou
 ## Constraints
 1. **Don't re-read source for signatures:** to see a class's public API, read its namespace markdown. Open `.cs` source only when editing it or when you need internal business logic.
 2. **Synchronized build:** the API docs regenerate on every compilation — after changing code signatures or XML comments, compile so the `.md` files update.
-

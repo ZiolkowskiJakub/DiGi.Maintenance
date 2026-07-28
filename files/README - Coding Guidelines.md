@@ -1,17 +1,8 @@
----
-name: coding-general
-description: Use whenever writing or editing C# code in this workspace - naming/typing rules, CancellationToken ordering, member-access simplification, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, and the SerializableObject serialization pattern.
----
+## 💻 Coding Guidelines for Developers & AI Agents
 
-# System Prompt: C# Engineering Plugin Expert
+To maintain codebase health, performance, and compatibility within Visual Studio 2026 / C# 10+ environments, all developers and AI agents must strictly comply with these guidelines.
 
-## Role & context
-- **Role:** Expert C# software engineer.
-- **Environment:** Visual Studio 2026 on Windows 11.
-- **Domain:** Hands-on C# plugins/add-ins for engineering & architectural software — Revit (Revit API), Rhino (RhinoCommon), Grasshopper, Dynamo BIM.
-- **Style:** You address another experienced developer in this domain — be technical, direct, and pragmatic.
-
-## Strict coding rules
+### 1. General Coding Standards
 1. **English only** — identifiers and comments.
 2. **Explicit typing — no `var`** (unless the compiler forces it, e.g. anonymous types). Use target-typed `new(...)` when the type is declared (avoids IDE0090): `PointNode pointNode = new();`. Use collection expressions `[]` for collections (avoids IDE0028): `List<int> numbers = [];`, `int[] array = [1, 2, 3];`.
 3. **Variable naming:** start with the type name in camelCase, adding a `_`-suffixed qualifier when needed (`PointNode pointNode_Base`, `pointNode_Temp`).
@@ -51,39 +42,26 @@ description: Use whenever writing or editing C# code in this workspace - naming/
      ```csharp
      public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, CancellationToken cancellationToken = default, int commandTimeout = 30)
      ```
-   - The `<param>` tags in the XML doc block must be reordered to match, so the docs still mirror the signature exactly (see `XML Documentation - Audit.md`).
-   - **Pass the token by name at call sites** — `cancellationToken: cancellationToken` — whenever intervening parameters are left at their defaults. Positional calls silently rebind if the signature is ever reordered again; named arguments do not, and they turn a reordering into a compile error rather than a wrong-argument bug.
-     ```csharp
-     await ClearAsync(npgsqlConnection, TableName.Building, cancellationToken: cancellationToken);
-     ```
-   - **Watch for overload ambiguity when reordering.** Moving the token past a trailing `int` can make two overloads structurally identical in their tail, so a `null` argument that used to bind unambiguously becomes CS0121. Disambiguate with a named argument for the differing parameter (`excludedReferences: null`), not with a cast.
+   - The `<param>` tags in the XML doc block must be reordered to match, so the docs still mirror the signature exactly.
+   - **Pass the token by name at call sites** — `cancellationToken: cancellationToken` — whenever intervening parameters are left at their defaults. Positional calls silently rebind if the signature is ever reordered again; named arguments turn a reordering into a compile error rather than a wrong-argument bug.
    - **Detection:** `grep -rnE "CancellationToken [a-zA-Z_]+( = default)?, " --include=*.cs .` — every hit that is not the final parameter is a violation.
-9. **Simplify member access (IDE0002/IDE0001) — but verify the binding first.** Inside the `DiGi` root, drop any namespace qualifier the compiler does not need. A `DiGi.` prefix on a type that already resolves is redundant noise.
+9. **Simplify member access (IDE0002/IDE0001) — but verify the binding first.** Inside the `DiGi` root, drop any namespace qualifier the compiler does not need; a `DiGi.` prefix on a type that already resolves is redundant noise.
    - **Correct** — in `namespace DiGi.GIS.PostgreSQL.UI.Classes`, `Serilog` resolves up the enclosing chain to `DiGi.Serilog`:
      ```csharp
      Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "Import failed");
      ```
-   - **Incorrect** — the prefix adds nothing:
+   - **The exception — innermost-namespace shadowing.** C# resolves the FIRST segment against each enclosing namespace from innermost outwards, and once it binds there is **no fallback**. From `DiGi.GIS.PostgreSQL.UI.Classes`, `WebAPI` binds to `DiGi.GIS.WebAPI` (not `DiGi.WebAPI`), so the qualifier must stay:
      ```csharp
-     DiGi.Serilog.Modify.Log(DiGi.Serilog.Enums.LogEventLevel.Error, "Import failed");
-     ```
-   - **The exception — innermost-namespace shadowing.** C# resolves the FIRST segment against each enclosing namespace from innermost outwards, and once it binds there is **no fallback**. If a nearer namespace owns that segment, the shortened form binds somewhere else entirely. From `DiGi.GIS.PostgreSQL.UI.Classes`, `WebAPI` binds to `DiGi.GIS.WebAPI` (not `DiGi.WebAPI`), because `DiGi.GIS.WebAPI` is found first:
-     ```csharp
-     // KEEP the prefix - "WebAPI.Query" binds to DiGi.GIS.WebAPI.Query, which does not exist:
-     // error CS0234: The type or namespace name 'Query' does not exist in the namespace 'DiGi.GIS.WebAPI'
      postResponse = await DiGi.WebAPI.Query.GetAsync<Building>(httpClient, requestUri, postOptions);
      ```
-     The same trap applies to `Core`, `Geometry`, `Analytical` and any other segment that repeats at several depths — and to a static partial class calling its own namesake in a parent namespace (`DiGi.WebAPI.Modify.PostAsync` from inside `DiGi.GIS.WebAPI.Modify`).
-   - **Method:** remove the qualifier, then **rebuild**. A shadowed name usually fails with CS0234/CS0246 — restore the prefix and leave a short comment saying why. Do not shorten a qualifier you have not compiled.
-   - **Danger case:** if BOTH namespaces expose a matching member, the shortened form compiles and silently calls the wrong one. When a segment repeats at several depths and both candidates have the member, keep the qualifier regardless of the analyzer suggestion.
-   - **Scope:** this rule is about code. Leave `<see cref="..."/>` targets in XML docs as they are — match whatever the surrounding file already does rather than churning doc comments.
+     The same trap applies to `Core`, `Geometry`, `Analytical` and any other segment that repeats at several depths.
+   - **Method:** remove the qualifier, then **rebuild**. A shadowed name usually fails with CS0234/CS0246 — restore the prefix and leave a short comment saying why. Never shorten a qualifier you have not compiled. If BOTH namespaces expose a matching member, the shortened form compiles and silently calls the wrong one — keep the qualifier regardless of the analyzer suggestion.
 10. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
 11. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
 
+---
 
-
-
-## Architecture — DiGi.Core pattern
+### 2. Architecture & Project Structure (DiGi.Core Pattern)
 Data models are strictly separated from business logic (anemic models + static extension methods). Follow this structure for all new features.
 
 **Data models:**
@@ -98,30 +76,13 @@ Data models are strictly separated from business logic (anemic models + static e
 - **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
 
 ### Exception — interface-contract members are implemented ON the class
-The anemic-model + static-extension rule governs behavior that is **not** part of an interface the
-`/Classes` type implements. When a method is declared on an interface the class implements, it MUST be a
-normal **instance method on that class** — C# offers no other way to satisfy the contract, and moving it
-to a `Query`/`Modify` extension leaves the interface unimplemented (CS0535).
+The anemic-model + static-extension rule governs behavior that is **not** part of an interface the `/Classes` type implements. When a method is declared on an interface the class implements, it MUST be a normal **instance method on that class** — C# offers no other way to satisfy the contract, and moving it to a `Query`/`Modify` extension leaves the interface unimplemented (CS0535).
 
-This is the deliberate design for **behavior-rich geometry primitives**. `DiGi.Geometry`'s `Ellipse2D`,
-`Circle2D`, `Segment2D`, `Polygon2D`, `Rectangle2D`, their spatial counterparts, etc. implement rich
-behavioral interfaces and therefore carry their behavior as instance methods — for example
-`IBoundable2D.GetBoundingBox()`, `ITransformable2D.Transform(...)`, `IMovable2D.Move(...)`, and
-`IClosedCurve2D.{GetInternalPoint, InRange, Inside, GetArea}`. These types are **not** anemic, and that
-is correct.
+This is the deliberate design for **behavior-rich geometry primitives**. `DiGi.Geometry`'s `Ellipse2D`, `Circle2D`, `Segment2D`, `Polygon2D`, `Rectangle2D`, their spatial counterparts, etc. implement rich behavioral interfaces and therefore carry their behavior as instance methods — for example `IBoundable2D.GetBoundingBox()`, `ITransformable2D.Transform(...)`, `IMovable2D.Move(...)`, and `IClosedCurve2D.{GetInternalPoint, InRange, Inside, GetArea}`. These types are **not** anemic, and that is correct.
 
-- **Do not "migrate" a geometry primitive's instance methods to `Query`/`Modify` extensions, and do not
-  flag them as anemic-model violations.** Deleting a contract implementation breaks the interface and
-  diverges from the entire library. Compare `Circle2D` and `Ellipse2D`: same interfaces
-  (`IEllipse2D, IBoundable2D`), both implement all behavior as instance methods, and neither has any
-  per-type `Query`/`Modify` extensions.
-- **Before proposing to move or remove such a method, check the interface chain first** (the `I*2D`
-  hierarchy under `Planar/Interfaces` / `Spatial/Interfaces`). Only behavior that is genuinely not a
-  contract member — and that belongs to a data model rather than a geometry primitive — goes into the
-  static partial classes.
-- **Private helpers are allowed on such a class.** The "strictly avoid private methods" rule below is
-  scoped to the static partial utility classes (`Query`/`Modify`/`Create`/`Convert`), not to
-  `/Classes` types that implement behavioral interfaces.
+- **Do not "migrate" a geometry primitive's instance methods to `Query`/`Modify` extensions, and do not flag them as anemic-model violations.** Deleting a contract implementation breaks the interface and diverges from the entire library.
+- **Before proposing to move or remove such a method, check the interface chain first** (the `I*2D` hierarchy under `Planar/Interfaces` / `Spatial/Interfaces`). Only behavior that is genuinely not a contract member — and that belongs to a data model rather than a geometry primitive — goes into the static partial classes.
+- **Private helpers are allowed on such a class.** The "strictly avoid private methods" rule below is scoped to the static partial utility classes (`Query`/`Modify`/`Create`/`Convert`), not to `/Classes` types that implement behavioral interfaces.
 
 ### Method Encapsulation and Reusability in Utility Classes
 - **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
@@ -176,7 +137,89 @@ developer's / the server's machine-specific setup? If yes → `user files/`; oth
 
 - **Script configurations (PowerShell)**: PowerShell scripts requiring machine-specific, secret, or environment-specific paths (e.g., local backup paths or cloud storage directories) must load these settings from a `.conf` file inside the `user files/` directory, rather than hardcoding them in the scripts or introducing custom `.gitignore` records.
 
-## Serialization pattern (SerializableObject / ISerializableObject)
+---
+
+### 3. Reference Comparison (`IReference` / `IUniqueReference`)
+
+> **Never compare two interface-typed references with `==` or `!=`. Use `Core.Query.Equals(reference_1, reference_2)`.**
+
+This is not a style preference. `==` between two interface-typed operands compiles to **reference equality**, silently returns `false` for two equal references, and the compiler emits no warning. It has already produced an infinite loop in `BuildingModelShellUpdater` and mis-attributed geometry in `ShellByPlaneSplitSolver`.
+
+**Why the operators do not apply.** For `a == b`, C# gathers user-defined operator candidates from the **static types of the operands and their base classes** — an interface contributes none. The `==`/`!=` operators live on `SerializableReference`, so the comparison is correct as soon as **one** side is a concrete `SerializableReference`-derived type (or the `null` literal).
+
+| Static type of the operands | What `==` compiles to | Verdict |
+|---|---|---|
+| both interfaces (`IReference`, `IUniqueReference`, `ISerializableReference`, …) | predefined reference equality | **silent bug** |
+| at least one `SerializableReference`-derived (`GuidReference`, `TypeReference`, …) | `SerializableReference.operator ==` → `Equals` | correct |
+| one side is the `null` literal | null check | correct |
+| `.ToString()` on both sides | string comparison | correct, but allocates |
+
+This cannot be fixed by adding operators: interfaces contribute no operator candidates, a `operator ==(IReference, IReference)` declared in a helper class is **CS0563**, and C# 11 static abstract interface operators dispatch only through a constrained generic type parameter (and require net7.0+, while `DiGi.Core` targets `netstandard2.0`).
+
+**The compounding trap — clone-per-call accessors.** Many model properties return `Core.Query.Clone(field)` and therefore hand back a **new instance on every read**, so `face.UniqueReference == face.UniqueReference` is `false` — the same face compared with itself. Read the property into a local before using it; never call it inside a predicate that runs per element (it is also an allocation per iteration).
+
+| Intent | Use |
+|---|---|
+| Are these two references the same reference? | `Core.Query.Equals(reference_1, reference_2)` (null-safe, two nulls are equal) |
+| Look up / group / de-duplicate | `Dictionary`, `HashSet`, `List.Find`/`FindAll`/`FindIndex`/`Contains` — already correct, they route through `Equals`/`GetHashCode` |
+| I need the concrete API | pattern-match: `if (uniqueReference is GuidReference guidReference)` |
+| Is this the same *instance* of a model object? | compare its `Guid` — a reference identifies the referenced object, not the object holding it |
+
+```csharp
+// WRONG - both operands are IUniqueReference, this is reference equality and never matches
+int index = faces.FindIndex(x => x.UniqueReference == face.UniqueReference);
+```
+
+```csharp
+// CORRECT - hoist the clone-returning accessor into a local, then compare by value
+IUniqueReference? uniqueReference = face.UniqueReference;
+
+int index = faces.FindIndex(x => Core.Query.Equals(x?.UniqueReference, uniqueReference));
+```
+
+**Do not assume an `IReference` is a `SerializableReference` — never cast to it.** `ListClusterReference<TKey_1, TKey_2>` implements `IReference` directly, and `IUniqueReference` has two class branches (`UniqueReference` and `UniqueExternalReference<T>`) with no common base below `SerializableReference`.
+
+---
+
+### 4. XML Documentation Standards
+All public constructors, properties, methods, and enum values must be fully documented using XML comments:
+* **Code preservation & sync:** Edit only `///` comments — never change C# logic. Add missing tags, and rewrite any existing comment that is outdated, inaccurate, or describes logic/parameters that no longer exist.
+* **Explicit typing:** No `var` in any code snippet you touch.
+* **Partial classes:** Don't document the class declaration itself when marked `partial`; document only its members.
+* **Exhaustive coverage:** Every public member must have an accurate, up-to-date description.
+* **Quality over speed** — prioritize accuracy and alignment with the code's actual behavior.
+* **Reference context:** For each referenced library, ingest its sibling XML doc file (`LibraryName.dll` → `LibraryName.xml`, same directory) for accurate cross-referencing, terminology, and external type/parameter descriptions.
+* **Signature matching:** Docs must match signatures exactly — remove `<param>` tags for parameters that no longer exist, add tags for new ones. Document all `<param>`, `<returns>`, and `<typeparam>` to avoid CS1591/CS1573.
+* **Single summary:** Exactly one `<summary>` per element. When updating, overwrite the old one — never append. Do a final pass to strip any redundant tags.
+* **No empty lines** inside doc blocks (no blank line or bare `///`) — they break Visual Studio IntelliSense tooltip rendering. Use `<para>` for paragraph breaks:
+
+   ```csharp
+   // INCORRECT — a blank line splits the block
+   /// <summary>
+   /// Calculates the total volume of the selected Revit elements.
+
+   /// This operation might take a while on large BIM models.
+   /// </summary>
+
+   // CORRECT — use <para>
+   /// <summary>
+   /// Calculates the total volume of the selected Revit elements.
+   /// <para>This operation might take a while on large BIM models.</para>
+   /// </summary>
+   ```
+
+---
+
+### 5. API Reference Documentation Locating
+To minimize token consumption and avoid parsing full implementation files, you MUST consult the generated Markdown documentation first when exploring type schemas, namespaces, and public API interfaces:
+To save tokens, consult the generated Markdown API docs before parsing `.cs` source when exploring type schemas, namespaces, or public API.
+
+- **Path:** `documentation/API/[AssemblyName]/` in each active workspace — one directory per assembly, split by **namespace** (e.g. `DiGi.Core.Classes.md`). These files hold exact signatures and `<summary>` descriptions for all public classes, constructors, methods, properties, and enums.
+- **Fallback:** if `documentation/API/` is absent, scan the C# source and `/bin/*.xml` files.
+
+---
+
+### 6. Serialization Pattern (SerializableObject / ISerializableObject)
 Classes under `/Classes` needing JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject` in this exact shape (reflection-driven — no manual JSON parsing).
 
 1. **Marker interfaces** per project under `/Interfaces` (mirroring `DiGi.GIS.Interfaces.IGISObject`/`IGISSerializableObject`):
@@ -300,156 +343,45 @@ public GroundTemperature(GroundTemperature? groundTemperature)
 }
 ```
 
-## Code examples for AI reference
+---
 
-**1. Class (`/Classes/PointNode.cs`)**
-```csharp
-namespace DiGi.Core.Classes
-{
-    public class PointNode
-    {
-        public string Name { get; set; }
-        public double X { get; set; }
-        public double Y { get; set; }
-    }
-}
-```
+### 7. Automatic Tests (xUnit)
+1. **One test project per project:** `[ProjectName].xUnit` (e.g. `DiGi.Core.xUnit`, `DiGi.Geometry.xUnit`).
+2. **`public partial class Facts`** holds all test methods (one shared class per namespace).
+3. **Files under `/Facts`.**
+4. **Namespace matches the test project** (e.g. `namespace DiGi.Core.xUnit`).
+5. **`Xunit` is global-usinged** by project config — do NOT add `using Xunit;`.
+6. **`[Fact]`** marks test methods.
+7. **Name the method** after the class/property/method under test (`Color()`, `PlanarIntersectionResult_Performance()`).
+8. **XML `<summary>` on every test** describing what is tested — no empty lines inside the block (they break VS tooltips); use `<para>` for paragraph breaks.
 
-**2. Query (`/Query/DistanceToOrigin.cs`)**
-```csharp
-using DiGi.Core.Classes;
-using System;
+#### 📂 Shared Test Data Files (Fixtures)
+When a test needs an on-disk input file (`.gmf`, `.json`, `.epw`, …), use the **one shared `files` directory** — do NOT add a per-project data folder.
 
-namespace DiGi.Core
-{
-    public static partial class Query
-    {
-        public static double DistanceToOrigin(this PointNode pointNode)
-        {
-            double distance = Math.Sqrt((pointNode.X * pointNode.X) + (pointNode.Y * pointNode.Y));
-            return distance;
-        }
-    }
-}
-```
+1. **Location:** `DiGi.Test/files/` (the `DiGi.Test` repo sits beside the other `DiGi.*` repos under the `DigiProject` workspace root; from a `DiGi.Test/<ProjectName>.xUnit/` dir it is `../files/`). The path is given relative to the workspace root because this guideline lives in the separate `DiGi.Maintenance` repo.
+2. **Add a fixture:** drop the file into `DiGi.Test/files/` and reference it by file name only. Files are read **in place** (not copied to build output) — no `<None CopyToOutputDirectory>` entry needed.
+3. **Resolve the path:** `Core.xUnit.Query.FilePath(System.Reflection.Assembly.GetExecutingAssembly(), "<fileName>")` returns the absolute path to `DiGi.Test/files/<fileName>`; for the directory itself use `assembly.FilesDirectory()`. Both live in `DiGi.Core.xUnit/Query/` (`FilePath.cs`, `FilesDirectory.cs`) and resolve by walking up from the test assembly's `bin/<ProjectName>.xUnit/` output. `FilePath` `Assert`s the directory resolves, so a `null`/missing result fails the test cleanly.
+4. **No `using` needed** — call it fully qualified as `Core.xUnit.Query.FilePath(...)`; it resolves via the same innermost-enclosing-namespace lookup as `Core.xUnit.Query.SerializationCheck(...)`, as long as the test namespace nests under `DiGi`. Add `using System.Reflection;` (or fully qualify `Assembly`).
+5. **Example:**
+   ```csharp
+   using System.Reflection;
+   // ...
+   string? path = Core.xUnit.Query.FilePath(Assembly.GetExecutingAssembly(), "0207_GML.gmf");
+   Assert.False(string.IsNullOrWhiteSpace(path));
+   Assert.True(System.IO.File.Exists(path));
+   ```
+   References: `DiGi.GIS.xUnit/Facts/OrtoDatas.cs`, `DiGi.EPW.xUnit/Facts/EPWFile.cs`, `DiGi.Geometry.xUnit/Facts/InRange.cs`.
+6. **Large binaries** (multi-MB `.gmf`, etc.) are git-tracked (not ignored) — prefer a representative-but-minimal sample, and consider Git LFS if size becomes a concern.
 
-**3. Modify (`/Modify/MoveNode.cs`)**
-```csharp
-using DiGi.Core.Classes;
+---
 
-namespace DiGi.Core
-{
-    public static partial class Modify
-    {
-        public static void MoveNode(this PointNode pointNode, double deltaX, double deltaY)
-        {
-            pointNode.X += deltaX;
-            pointNode.Y += deltaY;
-        }
-    }
-}
-```
+### 8. Branch Synchronization & Versioning Protocol
+1. **Version branch only:** run only when the active branch is a bare SemVer `*.*.*` (e.g. `0.8.2`, `1.12.0`). Skip anything with text, prefix, or suffix (`feature/login`, `v0.8.2`, `0.8.2-beta`, `main`).
+2. **Differs from main:** run only for repos where the active branch differs from `main`; skip repos where they are identical.
 
-**4. Create (`/Create/PointNode.cs`)**
-```csharp
-using DiGi.Core.Classes;
-
-namespace DiGi.Core
-{
-    public static partial class Create
-    {
-        public static PointNode PointNode_ByOffset(this PointNode pointNode, double offset)
-        {
-            PointNode result = new();
-            result.Name = pointNode.Name + "_Offset";
-            result.X = pointNode.X + offset;
-            result.Y = pointNode.Y + offset;
-            
-            return result;
-        }
-    }
-}
-```
-
-**5. Convert (`/Convert/ToSystem/string.cs`)**
-```csharp
-using DiGi.Core.Classes;
-
-namespace DiGi.Core
-{
-    public static partial class Convert
-    {
-        public static string? ToSystem_String(this PointNode pointNode)
-        {
-            if (pointNode == null)
-            {
-                return null;
-            }
-
-            return $"{pointNode.Name}: ({pointNode.X}, {pointNode.Y})";
-        }
-    }
-}
-```
-
-**6. Method Encapsulation & Query Naming Example (`/Create/Solution.cs` & `/Query/Solution.cs`)**
-```csharp
-using DiGi.Maintenance.Classes;
-using System.IO;
-
-namespace DiGi.Maintenance
-{
-    public static partial class Create
-    {
-        // CORRECT: Single-use utility logic. Implemented as an inline method (local function).
-        public static Solution? Solution(string? path)
-        {
-            // Inline method encapsulated inside the target scope
-            bool ValidatePath(string? p)
-            {
-                return !string.IsNullOrEmpty(p) && File.Exists(p);
-            }
-
-            if (!ValidatePath(path))
-            {
-                return null;
-            }
-
-            // Solution construction logic...
-            System.Version? version = null;
-            return new Solution(path!, version);
-        }
-
-        // VIOLATION: Do not use private methods in partial utility classes!
-        private static bool ValidatePath(string? path)
-        {
-            return !string.IsNullOrEmpty(path) && File.Exists(path);
-        }
-    }
-
-    public static partial class Query
-    {
-        // CORRECT: Property-like naming convention for queries (no 'Get' prefix)
-        public static string? Name(this Solution solution)
-        {
-            if (string.IsNullOrWhiteSpace(solution.Path))
-            {
-                return null;
-            }
-            return Path.GetFileNameWithoutExtension(solution.Path);
-        }
-
-        // CORRECT: Allowed verb prefix indicating a boolean check
-        public static bool IsValid(this Solution solution)
-        {
-            return !string.IsNullOrWhiteSpace(solution.Path) && File.Exists(solution.Path);
-        }
-
-        // VIOLATION: Do not use verbs like 'Get', 'Find', 'Calculate' for regular queries!
-        public static string? GetName(this Solution solution)
-        {
-            return Path.GetFileNameWithoutExtension(solution.Path);
-        }
-    }
-}
-```
+#### 🔄 Synchronization Workflow (Execution Steps)
+1. **Sync with main:** merge the version branch into `main` so both hold the exact same codebase, with no pending diffs.
+2. **Bump patch:** increment the third version digit by 1 (`0.8.2` → `0.8.3`).
+3. **Branch off main** using that new version name.
+4. **Update `Directory.Build.props`** (if present): set `<Major>`/`<Minor>`/`<Build>` to the new version's components and commit on the new branch before pushing.
+5. **Push & track:** push both `main` and the new version branch to `origin`, using `-u` on the new branch so it tracks properly (`git push -u origin <version_branch>`).

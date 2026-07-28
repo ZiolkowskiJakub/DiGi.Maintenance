@@ -13,7 +13,7 @@ This document defines the template structure, parsing rules, and compilation beh
 
 Because GitHub Wiki hard-codes the landing page filename to `Home.md` and dynamically renders "Home" as the page-level H1 title at the top, the file contents **must not** contain a redundant H1 title header.
 
-The page is compiled by the central synchronization script (`update_wikis_and_readmes.ps1`). It splits the file structure into the following sequential blocks:
+The page is compiled by the central wiki synchronization script under `DiGi.Maintenance/Scripts/`. It splits the file structure into the following sequential blocks:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -78,4 +78,3 @@ To preserve manual edits in **Block 3** and prevent duplicate headers, links, an
    - Ecosystem links: `^\s*\*\s+\[DiGi\.[A-Za-z0-9\.]+\]\(https://github\.com/ZiolkowskiJakub/`
    - Ecosystem category labels: `^\s*\*\s+\*\*Foundational:\*\*`, `^\s*\*\s+\*\*Geometry\s+&\s+Graphics:\*\*`, etc.
    - Core attribution line: `^\s*\*Part of the DiGi software suite`
-

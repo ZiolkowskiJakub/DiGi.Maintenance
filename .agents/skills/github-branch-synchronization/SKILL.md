@@ -18,4 +18,3 @@ description: Use when running the version-branch to main merge and patch-bump re
 3. **Branch off main** using that new version name.
 4. **Update `Directory.Build.props`** (if present): set `<Major>`/`<Minor>`/`<Build>` to the new version's components and commit on the new branch before pushing.
 5. **Push & track:** push both `main` and the new version branch to `origin`, using `-u` on the new branch so it tracks properly (`git push -u origin <version_branch>`).
-

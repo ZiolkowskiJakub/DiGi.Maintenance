@@ -39,4 +39,3 @@ Handle all local documentation generation with the `lm_studio` MCP tool (use the
 
 ## Output
 Provide only the code edits / file updates — no conversational filler.
-

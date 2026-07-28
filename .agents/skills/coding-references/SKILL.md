@@ -1,6 +1,6 @@
 ---
 name: coding-references
-description: Use when comparing, matching, keying or de-duplicating an IReference/IUniqueReference — why == between two interface-typed references is a silent bug, what to use instead, and how to detect and fix existing occurrences.
+description: Use when comparing, matching, keying or de-duplicating an IReference/IUniqueReference - why == between two interface-typed references is a silent bug, what to use instead, and how to detect and fix existing occurrences.
 ---
 
 # AI Guidelines: References (`IReference` / `IUniqueReference`)

@@ -76,4 +76,3 @@ Link every new hand-authored page from `Home.md` so it is discoverable.
 - [`GitHub Wiki - Benchmark.md`](GitHub%20Wiki%20-%20Benchmark.md) — required structure for `Benchmark`
   pages.
 - `DiGi.Maintenance/Scripts/SyncWiki.ps1` — the sync implementation.
-

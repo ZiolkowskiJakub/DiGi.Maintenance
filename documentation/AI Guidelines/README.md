@@ -48,6 +48,19 @@ Additionally:
 
 ---
 
-**Not a guideline:** `compiled_guidelines.md` (in the `DigiProject` root) is a generated
-concatenation consumed by `update_wikis_and_readmes.ps1` to sync per-repo READMEs and wiki
-homepages. It is not an instruction file — never `@`-import it or load it into context.
+## How these files are propagated
+
+Everything below is generated from this folder — edit the guideline here, never the generated copy:
+
+| Generated output | Produced by | Contents |
+|------------------|-------------|----------|
+| `<repo>/.agents/AGENTS.md` + `<repo>/.agents/skills/*/SKILL.md` in every `DiGi.*` repo | `DiGi.Maintenance/Scripts/UpdateAgents.ps1` | A copy of `DiGi.Maintenance/.agents/AGENTS.md`, plus one skill per guideline file in this folder (`README.md` excluded). The skill folder name is the file name lower-cased with separators collapsed to `-` (`Coding - Deployed WebAPI.md` → `coding-deployed-webapi`); its frontmatter `description` comes from the `$descriptions` table in that script, so **a new guideline file needs a matching entry there**. |
+| The `## 💻 Coding Guidelines for Developers & AI Agents` block at the end of every `DiGi.*/README.md` | `DiGi.Maintenance/Scripts/UpdateReadmes.ps1` | The canonical block in `DiGi.Maintenance/files/README - Coding Guidelines.md` — a condensed, reader-facing digest of the coding guidelines. It is maintained by hand and must be updated when a guideline above changes materially. Everything above the marker heading in a repo's `README.md` is repository-specific and is preserved. |
+| A machine-global `AGENTS.md` outside the workspace (optional) | `DiGi.Maintenance/Scripts/UpdateAgents.ps1` | The concatenation of every guideline in this folder, appended after the file's `## Summary of Core Coding & Testing Guidelines` heading. The target path is read from `GLOBAL_AGENTS_FILE` in `DiGi.Maintenance/user files/Directories.conf`; when unset, the step is skipped. |
+
+Run both after changing anything in this folder:
+
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1"
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1"
+```

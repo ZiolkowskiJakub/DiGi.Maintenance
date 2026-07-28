@@ -27,6 +27,7 @@ The files in the `skills/` directory hold the full details for specific tasks an
 - **coding-automatic-tests:** Use when writing or adding xUnit tests — `Facts` structure, naming, shared fixtures, serialization, tolerance boundary, and performance benchmarks.
 - **coding-templates:** Use when creating a new project/solution from a template, or managing templates in the workspace's default `templates/` folder.
 - **coding-webapi-gltf:** Use when building or extending an ASP.NET Core Web API on the `DiGi.GLTF` 3D framework.
+- **coding-deployed-webapi:** Use when verifying a client/server change against the live WebAPI at `api.digiproject.uk` — swagger as the source of truth, the county→reference→building GET test recipe, access rules and gotchas. Manual `curl` checks only, never added to `DiGi.Test`.
 
 ### XML Documentation
 - **xml-documentation-create:** Use when adding missing `<summary>` docs to public members.

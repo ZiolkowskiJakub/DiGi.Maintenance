@@ -10,6 +10,7 @@ Configuration settings for maintenance scripts are stored in relative configurat
 Copy `files/Directories.conf` to `user files/Directories.conf` and configure the target path variables:
 - `SOFTWARE_DIRECTORY`: Target directory for software output binary synchronization (used by `SyncDirectories.ps1`).
 - `USER_FILES_BACKUP_DIRECTORY`: Target directory for copying and restoring repository `user files` folders (used by `CopyUserFiles.ps1`).
+- `GLOBAL_AGENTS_FILE`: Path to a machine-global `AGENTS.md` outside the workspace, refreshed from the AI Guidelines by `UpdateAgents.ps1`. Leave empty to skip that step.
 
 ---
 
@@ -83,9 +84,21 @@ PowerShell -ExecutionPolicy Bypass -File ".\CheckWikiPages.ps1"
 ```
 
 ### Update AI Agents & Guidelines
-Updates `.agents` guidelines, rules, and skills across all DiGi repositories.
+Regenerates `.agents/AGENTS.md` and `.agents/skills/*/SKILL.md` across all DiGi repositories from `DiGi.Maintenance/documentation/AI Guidelines`, and refreshes the machine-global `AGENTS.md` when `GLOBAL_AGENTS_FILE` is configured. Changes are committed per repository unless `-NoCommit` is passed.
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1"
+
+# Update the files without creating commits
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1" -NoCommit
+```
+
+### Update Solution READMEs
+Replaces the shared `## 💻 Coding Guidelines for Developers & AI Agents` block at the end of every `DiGi.*/README.md` with the canonical block from `files/README - Coding Guidelines.md`, preserving the repository-specific content above it. Changes are committed per repository unless `-NoCommit` is passed.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1"
+
+# Update the files without creating commits
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1" -NoCommit
 ```
 
 ### Set Secrets Across All Repositories
