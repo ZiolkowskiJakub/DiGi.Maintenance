@@ -52,7 +52,7 @@ up as part of item 5 below.
 | **F1** | Info (by design) | Visibility is opt-out-by-default: base `WebAPIController` (`DiGi.WebAPI/.../Classes/WebAPIController.cs:9`) has `[ApiExplorerSettings(IgnoreApi=true)]`; an action appears only if it sets `IgnoreApi=false`. 14 controllers deployed, 7 documented. This is a deliberate security control (e.g. `user/*` login/secure-data, all `updateitem(s)` writes). Keep it; expose reads only by conscious choice. | `information/controllers` = 14 controllers; `gis/building/itembylatestcreatedat?countyid=5` → 200 (12.6 KB) yet absent from swagger. |
 | **F2** | Critical | **Schema fidelity gap.** Swagger documents DTOs camelCase, no `_type`, enums-as-strings; the wire is DiGi `SerializableObject`: PascalCase + mandatory `_type` + integer enums. `Table.Columns` returns `ExtendedColumn` (`{_type,Name,Type,Index,Category,Description}`), not the documented `Column`. AI cannot build request bodies or parse responses for any object payload. Cause: Swashbuckle reflects public getters + `CamelCaseSchemaFilter` (`DiGi.WebAPI.WindowsService/.../Classes/CamelCaseSchemaFilter.cs`) + `JsonStringEnumConverter`, but serialization runs through the DiGi writer. | `administrativeareal2dreferencebyid?id=5` → `{"_type":"DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference,DiGi.GIS.PostgreSQL","CountyId":null,"AdministrativeArealType":2,...}`. |
 | **F3** | High | `AdministrativeArealType` member misspelled `Subdivison` (value 4) — `DiGi.GIS.PostgreSQL/.../Enums/AdministrativeArealType.cs:38`. It is the wire token; correct `Subdivision` is rejected. | `...referencesbyadministrativearealtype?administrativearealtype=Subdivison` → 200; `=Subdivision` → 400. |
-| **F4** | High | **Opaque request/response bodies.** `communication/geometricalpropagationmodel/segment3d` & `/propagationresults`, `gltf/gltfscene/glb`, `gltf/gltfscene/fromobjects` bind `[FromBody] JsonObject?/JsonArray?` and rehydrate via `Core.Create.SerializableObject<T>`. Swagger shows `object`+`additionalProperties:JsonNode` — no usable shape. Real shapes: `GeometricalPropagationModel`, `GLTFScene`, `GLTFNode[]`. `propagationresults` 200 has NO schema. | Controllers: `DiGi.Communication.WebAPI/.../GeometricalPropagationModelController.cs:44,101`; `DiGi.GLTF.WebAPI/.../GLTFSceneController.cs:31,71`. Fixtures: `DiGi.Test/files/GeometricalPropagationModel.json`. |
+| **F4** | High | **Opaque request/response bodies.** `gltf/gltfscene/glb` and `gltf/gltfscene/fromobjects` bind `[FromBody] JsonObject?/JsonArray?` and rehydrate via `Core.Create.SerializableObject<T>`. Swagger shows `object`+`additionalProperties:JsonNode` — no usable shape. Real shapes: `GLTFScene`, `GLTFNode[]`. **Update 2026-07-29:** the two `communication/geometricalpropagationmodel` actions originally listed here no longer exist. `/propagationresults` had already been removed when this was written (the cited line numbers never matched), and the remaining `segment3d` placeholder was deleted along with `GeometricalPropagationModelController` — it had no consumers. `DiGi.Communication.WebAPI` now ships result contract types only and exposes no endpoints. | Controller: `DiGi.GLTF.WebAPI/.../GLTFSceneController.cs:31,71`. |
 | **F5** | High (fixed upstream) | `gis/building/itembyreference` without `countyid` → 500 on the deployed 0.8.7 build. `countyId` is intentionally optional (all-counties lookup); the `42P18` crash is fixed in current source (typed `NpgsqlParameter`). Controller now also try/catch-wrapped. | `?reference=ID-abc` → 500; `&countyid=5` → 204. |
 | **F6** | Med | Empty/opaque response schemas. `WeatherRecord`, `GLTFScene` show zero properties (state in `private [JsonInclude]` fields + `[JsonIgnore]` getters → invisible to Swashbuckle). `histogramsummary`/`aggregatesummary/*`/`uniquevalues` return raw `JsonNode`/`{}`. | `DiGi.Weather/.../Classes/WeatherRecord.cs`; `DiGi.GLTF/.../Classes/GLTFScene.cs`. |
 | **F7** | Med (fixed) | `glb` binary was declared `application/json`. Fixed to `model/gltf-binary` this session. | — |
@@ -93,14 +93,17 @@ AI can build bodies. Once the item-1 engine exists, register the concrete types 
 (via `[ProducesResponseType]`/`[Consumes]` typed overloads or an operation filter mapping the
 action to the DiGi type) so the engine emits their shapes:
 
-- Requests: `GeometricalPropagationModel` (`CommunicationRelationCluster.Values[]` of `Antenna`,
-  `ScatteringObject`, `SimpleMultipathPowerDelayProfile`); `GLTFScene`; `GLTFNode[]`.
-- Responses: `Segment3D` (`{_type,Start,Vector}`); `GLTFScene`; `propagationresults` array
-  `[{Frequency:double, PropagationResult:{...}}]` — **flag:** `PropagationResult` currently lives in
-  `DiGi.Communication.Obselete.Classes` (`_type` reflects `...Obselete...`); resolve the namespace
-  before publishing it as a stable contract. Typed `HistogramBucket` and aggregate-result schemas to
-  replace raw `JsonNode` on `histogramsummary`/`aggregatesummary/*`.
-- Reference the ready-made body fixture `DiGi.Test/files/GeometricalPropagationModel.json`.
+- Requests: `GLTFScene`; `GLTFNode[]`.
+- Responses: `GLTFScene`. Typed `HistogramBucket` and aggregate-result schemas to replace raw
+  `JsonNode` on `histogramsummary`/`aggregatesummary/*`.
+
+**Update 2026-07-29:** the `communication/*` items dropped from this list with F4 above — there are no
+communication endpoints left to document. When the propagation calculation is exposed over HTTP from
+`DiGi.Communication.WebAPI`, the request shape will be `GeometricalPropagationModel`
+(`CommunicationRelationCluster.Values[]` of `Antenna`, `ScatteringObject`,
+`SimpleMultipathPowerDelayProfile`) with the ready-made body fixture
+`DiGi.Test/files/GeometricalPropagationModel.json`, and the response will be the existing
+`DiGi.Communication.WebAPI.Classes.GeometricalPropagationResult` contract.
 
 ### 3. Rename `Subdivison` → `Subdivision` (F3) — **breaking wire change**
 

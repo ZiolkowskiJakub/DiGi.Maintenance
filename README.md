@@ -60,7 +60,7 @@ To maintain codebase health, performance, and compatibility within Visual Studio
    - **Property matching its value type:** if a value type is fully descriptive and unique in the class, name the property after the type (`public AggregateFunction AggregateFunction { get; set; }`).
    - **Primitives** may use plain camelCase (`double tolerance`, `string name`, `int count`).
 4. **Zero warnings/analyzer messages** — nullability, parameter validation, clean code.
-5. **C# 10+** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and the `DiGi.Template` `.editorconfig` enforces this (`csharp_style_namespace_declarations = block_scoped`).
+5. **C# 10+ / C# 13/14** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, `System.Threading.Lock`, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and enforced via `.editorconfig` (`csharp_style_namespace_declarations = block_scoped`). See `Coding - Editor Config.md` for the unified baseline rules.
 6. **Line breaks in parameters:** If a method or constructor has fewer than 6 input parameters, do not break lines between parameters.
    - **Correct:**
      ```csharp
