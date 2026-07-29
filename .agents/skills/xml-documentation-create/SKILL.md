@@ -3,38 +3,33 @@ name: xml-documentation-create
 description: Use when adding missing XML <summary> docs to public members without touching existing docs or code logic.
 ---
 
-# AI Orchestration Agent Guidelines: XML Documentation
+# AI Guidelines: XML Documentation Generation
 
-**Role:** Expert C# .NET developer / Orchestration Agent.
-**Goal:** Add comprehensive XML `<summary>` documentation to every public constructor, property, method, and enum field/value in the project's C# classes and enums.
+Add comprehensive XML `<summary>` documentation to every public constructor, property, method, and enum field/value in target C# files.
 
-## Tool access (critical)
-Handle all local documentation generation with the `lm_studio` MCP tool (use the **Gemma 4** model if available) for every file-processing request.
+---
 
-## Constraints
-1. **Code preservation:** Only add missing `<summary>` tags — never edit, refactor, or restructure code.
-2. **Partial classes:** Don't document the class declaration itself when marked `partial`; document only its members.
-3. **Exhaustive coverage:** No public member may be skipped.
-4. **Quality over speed.**
-5. **Reference context:** For each referenced library, ingest its sibling XML doc file (`LibraryName.dll` → `LibraryName.xml`, same directory) for accurate cross-referencing, terminology, and external type/parameter descriptions.
-6. **Warning-free:** Introduce no new compiler/analyzer warnings. Document all `<param>`, `<returns>`, and `<typeparam>` exhaustively to avoid CS1591/CS1573.
-7. **Single summary:** Exactly one `<summary>` per element — no duplicates. Do a final pass to strip any redundant tags before output.
-8. **No empty lines** inside doc blocks (no blank line or bare `///`) — they break Visual Studio IntelliSense tooltip rendering. Use `<para>` for paragraph breaks:
+## Tooling Requirements
 
-   ```csharp
-   // INCORRECT — a blank line splits the block
-   /// <summary>
-   /// Calculates the total volume of the selected Revit elements.
+- Process all local documentation requests using the `lm_studio` MCP tool (prefer **Gemma 4** model if available).
 
-   /// This operation might take a while on large BIM models.
-   /// </summary>
+---
 
-   // CORRECT — use <para>
-   /// <summary>
-   /// Calculates the total volume of the selected Revit elements.
-   /// <para>This operation might take a while on large BIM models.</para>
-   /// </summary>
-   ```
+## Directives & Constraints
 
-## Output
-Provide only the code edits / file updates — no conversational filler.
+1. **Code Preservation:** Add missing XML doc tags only. Never edit, refactor, or alter C# logic.
+2. **Partial Classes:** Do not document `partial` class declarations — document member declarations only.
+3. **Exhaustive Coverage:** Document all public members without exception.
+4. **External Reference Context:** Ingest sibling XML doc files (`LibraryName.dll` → `LibraryName.xml`) from the same directory for accurate cross-referencing and parameter descriptions.
+5. **Zero Compiler Warnings:** Document all `<param>`, `<returns>`, and `<typeparam>` tags to eliminate CS1591 and CS1573 analyzer warnings. Reorder `<param>` tags to mirror method parameter order.
+6. **Single Summary Tag:** Ensure exactly one `<summary>` block per element. Strip redundant tags.
+7. **No Blank Lines in Doc Blocks:** Prohibit empty lines or bare `///` lines inside doc comments (breaks Visual Studio tooltips). Use `<para>` tags for paragraph breaks:
+
+```csharp
+/// <summary>
+/// Calculates total volume of selected elements.
+/// <para>Operation may take time on large models.</para>
+/// </summary>
+```
+
+8. **Output Format:** Return modified code files only. Omit conversational intro and outro text.

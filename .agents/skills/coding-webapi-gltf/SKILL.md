@@ -5,192 +5,76 @@ description: Use when building or extending an ASP.NET Core Web API on the DiGi.
 
 # Coding — WebAPI glTF
 
-Standardized template and operational guide for any Visual Studio solution that integrates an
-ASP.NET Core Web API with the `DiGi.GLTF` 3D visualization framework. Read this when creating a new
-glTF-consuming Web API project, or when adding support for a new 3D object type to an existing one.
-
-The reference implementation of everything described here is the pair
-`DiGi.GLTF.WebAPI` (the generic engine) + `DiGi.GIS.WebAPI.UI` (a domain consumer).
+Standardized guide for integrating ASP.NET Core Web APIs with the `DiGi.GLTF` 3D visualization framework (reference: `DiGi.GLTF.WebAPI` engine + `DiGi.GIS.WebAPI.UI` consumer).
 
 ---
 
-## 1. Architectural blueprint
+## 1. Architectural Blueprint
 
-The system is a strictly decoupled 4-step pipeline. **Domain logic lives only in the consuming
-project; rendering/glTF logic lives only in `DiGi.GLTF`.** The engine is never modified to add a new
-domain type (Open-Closed Principle).
+4-step decoupled pipeline:
+1. **Input Data (Consumer):** `ISerializableObject` collection (e.g., `Building2D` from DB/GIS).
+2. **Domain-to-glTF Conversion (Consumer Converters):** `IGLTFNodeConverter` converts domain objects into generic `GLTFNode` instances in **WORLD coordinates**. Registered at startup; dispatched by `DiGi.GLTF`.
+3. **`GLTFScene` Generation (Engine):** `DiGi.GLTF.Create.GLTFScene` merges nodes, shifts geometry to a **LOCAL origin (0,0,0)** (storing removed world offset in `GLTFScene.ReferencePoint`), and adds lighting/camera.
+4. **WebGL View Rendering (Engine JS + Consumer Host):** `gltf-viewer-core.js` fetches binary `.glb`, renders, and broadcasts selection events.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ STEP 1 — Input data                (Consumer: DiGi.GIS.WebAPI.UI)                      │
-│   ISerializableObject / IEnumerable<ISerializableObject>                               │
-│   e.g. Building2D fetched from the GIS API or PostgreSQL.                              │
-└───────────────────────────────────────────────┬───────────────────────────────────────┘
-                                                 │
-┌───────────────────────────────────────────────▼───────────────────────────────────────┐
-│ STEP 2 — Domain-to-glTF conversion  (Consumer converters, dispatched by the engine)     │
-│   IGLTFNodeConverter implementations turn a domain object into generic GLTFNode         │
-│   instances (triangulated Mesh3D + Color + opacity + serialized properties), in         │
-│   WORLD coordinates. Registered once; consulted by DiGi.GLTF.Convert.ToGLTF_GLTFNodes.  │
-└───────────────────────────────────────────────┬───────────────────────────────────────┘
-                                                 │
-┌───────────────────────────────────────────────▼───────────────────────────────────────┐
-│ STEP 3 — GLTFScene / ViewModel generation      (Engine: DiGi.GLTF)                      │
-│   DiGi.GLTF.Create.GLTFScene merges the nodes, translates all geometry to a LOCAL       │
-│   origin (0,0,0) and stores the removed world offset in GLTFScene.ReferencePoint,       │
-│   then adds default lighting + an auto-framing camera. The consumer wraps this in a     │
-│   thin ViewModel (title + streamed .glb URL).                                           │
-└───────────────────────────────────────────────┬───────────────────────────────────────┘
-                                                 │
-┌───────────────────────────────────────────────▼───────────────────────────────────────┐
-│ STEP 4 — WebGL UI view rendering    (Reusable engine JS + consumer host glue)           │
-│   gltf-viewer-core.js (owned by DiGi.GLTF.WebAPI) fetches the batched binary .glb,       │
-│   renders it (Revit navigation, marquee selection, frustum culling) and broadcasts      │
-│   generic selection events. The consuming UI owns only the domain panels around it.     │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Why local-origin translation is mandatory
-
-GIS coordinates are large (hundreds of thousands of meters). WebGL uses 32-bit floats, so rendering
-raw world coordinates produces catastrophic vertex jitter. Step 3 subtracts a single reference point
-from every vertex so the GPU only ever sees small numbers; the reference point is preserved in
-`GLTFScene.ReferencePoint` (and in the `.glb` scene extras) to recover the original world position.
-
-### Delivery: streamed, not inlined
-
-The viewer page is a lightweight HTML shell carrying only a `data-glb-url`. Geometry is streamed
-from a separate binary endpoint (`model/gltf-binary`); its scene extras carry a self-describing
-`sceneConfiguration` (reference point, lights, camera) and an `objectMap` (per-object identity).
-Never inline megabytes of base64 into the page.
+### Critical Rules
+- **Local Origin Translation:** Mandatory. WebGL 32-bit floats jitter on raw GIS world coordinates. `GLTFScene` subtracts `ReferencePoint` so GPU sees small numbers.
+- **Streamed Delivery:** Stream geometry as binary `.glb` (`model/gltf-binary`). Never inline base64 into HTML.
 
 ---
 
-## 2. New project onboarding checklist
+## 2. New Project Onboarding Checklist
 
-The fastest path is the `dotnet new` template (see section 5). Do the steps below manually only when
-integrating glTF into an existing project.
-
-1. **Location.** Create the solution folder directly under the `DigiProject` workspace root:
-   `DigiProject\<SolutionName>\<ProjectName>\`. The `DiGi.*` DLL references resolve by relative
-   `HintPath` (`..\..\DiGi.Core\bin\...`), so the two-levels-up depth matters.
-
-2. **Project SDK.** Use `Microsoft.NET.Sdk.Web`, `net10.0`, `<Nullable>enable</Nullable>`,
-   `<LangVersion>latest</LangVersion>`, `<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>`.
-
-3. **References.** Add the generic engine and its geometry stack by `HintPath` (never a domain
-   library — that would recouple the engine's consumer to domain code it does not need):
-
-   ```xml
-   <ItemGroup>
-     <!-- NuGet dependencies of the referenced DLLs must be re-added on the exe/web project so
-          they reach the output (HintPath references do not carry transitive NuGet packages). -->
-     <PackageReference Include="NetTopologySuite" Version="2.6.0" />
-     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.6" />
-   </ItemGroup>
-
-   <ItemGroup>
-     <Reference Include="DiGi.Core">
-       <HintPath>..\..\DiGi.Core\bin\DiGi.Core.dll</HintPath>
-     </Reference>
-     <Reference Include="DiGi.Geometry">
-       <HintPath>..\..\DiGi.Geometry\bin\DiGi.Geometry.dll</HintPath>
-     </Reference>
-     <Reference Include="DiGi.GLTF">
-       <HintPath>..\..\DiGi.GLTF\bin\DiGi.GLTF.dll</HintPath>
-     </Reference>
-   </ItemGroup>
-   ```
-
-4. **Bootstrap the generic controllers.** Register every converter of the project's assembly with
-   the engine at startup, and enable response compression for the streamed payload:
-
+1. **Location:** Create solution folder directly under workspace root (`workspace_root\<Solution>\<Project>\`) to preserve 2-level relative `HintPath`s (`..\..\DiGi.Core\bin\...`).
+2. **Project Config:** SDK `Microsoft.NET.Sdk.Web`, `net10.0`, `<Nullable>enable</Nullable>`, `<LangVersion>latest</LangVersion>`, `<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>`.
+3. **References:** Add `NetTopologySuite`, `SharpGLTF.Toolkit`, and `HintPath` references to `DiGi.Core`, `DiGi.Geometry`, `DiGi.GLTF`.
+4. **Startup Bootstrap:** Configure response compression and register converters:
    ```csharp
    using Microsoft.AspNetCore.ResponseCompression;
 
-   WebApplicationBuilder webApplicationBuilder = WebApplication.CreateBuilder(args);
-
-   webApplicationBuilder.Services.AddControllers();
-
-   // The batched .glb JSON chunk (object properties) compresses very well.
-   webApplicationBuilder.Services.AddResponseCompression(responseCompressionOptions =>
+   WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+   builder.Services.AddControllers();
+   builder.Services.AddResponseCompression(options =>
    {
-       responseCompressionOptions.EnableForHttps = true;
-       responseCompressionOptions.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["model/gltf-binary"]);
+       options.EnableForHttps = true;
+       options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["model/gltf-binary"]);
    });
 
-   // Plugin registration: scan this assembly for IGLTFNodeConverter implementations.
+   // Scan assembly for IGLTFNodeConverter implementations
    DiGi.GLTF.Modify.Register(typeof(Program).Assembly);
 
-   WebApplication webApplication = webApplicationBuilder.Build();
-   webApplication.UseResponseCompression();
-   webApplication.MapControllers();
-   webApplication.Run();
+   WebApplication app = builder.Build();
+   app.UseResponseCompression();
+   app.MapControllers();
+   app.Run();
    ```
-
-5. **Expose an endpoint.** A generic endpoint accepts serialized DiGi objects and returns the
-   batched `.glb`. The engine's registry resolves each object to `GLTFNode` instances:
-
+5. **Endpoint Contract:**
    ```csharp
    [HttpPost("glb/fromobjects")]
    public IActionResult GLBFromObjects([FromBody] JsonArray? jsonArray, [FromQuery(Name = "name")] string? name = null)
    {
-       if (jsonArray is null)
-       {
-           return BadRequest();
-       }
+       if (jsonArray is null) return BadRequest();
+       List<ISerializableObject>? objects = DiGi.Core.Create.SerializableObjects<ISerializableObject>(jsonArray);
+       if (objects is null || objects.Count == 0) return NoContent();
 
-       List<ISerializableObject>? serializableObjects = DiGi.Core.Create.SerializableObjects<ISerializableObject>(jsonArray);
-       if (serializableObjects is null || serializableObjects.Count == 0)
-       {
-           return NoContent();
-       }
+       GLTFScene? scene = DiGi.GLTF.Create.GLTFScene(objects, name);
+       if (scene is null) return NoContent();
 
-       GLTFScene? gLTFScene = DiGi.GLTF.Create.GLTFScene(serializableObjects, name);
-       if (gLTFScene is null)
-       {
-           return NoContent();
-       }
+       byte[]? bytes = DiGi.GLTF.Convert.ToSystem_Bytes(scene, true); // batched: true
+       if (bytes is null || bytes.Length == 0) return NoContent();
 
-       byte[]? bytes = DiGi.GLTF.Convert.ToSystem_Bytes(gLTFScene, true);
-       if (bytes is null || bytes.Length == 0)
-       {
-           return NoContent();
-       }
-
-       return File(bytes, "model/gltf-binary", $"{gLTFScene.Name ?? "scene"}.glb");
+       return File(bytes, "model/gltf-binary", $"{scene.Name ?? "scene"}.glb");
    }
    ```
-
-   > **Note on qualification.** Inside a project whose namespace is not under the `DiGi` root, the
-   > DiGi innermost-enclosing-namespace lookup does not apply. Fully qualify the static classes:
-   > `DiGi.GLTF.Create.GLTFScene(...)`, `DiGi.Core.Create.SerializableObjects<...>(...)`.
-
-6. **Front-end (only if this project hosts the WebGL view).** Sync the reusable engine module into
-   `wwwroot` at build time and load it through a versioned import map. See section 4.
+6. **Frontend Asset:** Copy `gltf-viewer-core.js` into `wwwroot/js/` at build time.
 
 ---
 
-## 3. Extensibility guide — adding a new 3D object type
+## 3. Extensibility Guide — Adding a 3D Object Type
 
-**The rule:** supporting a new domain type requires **only a new converter class in the consuming
-project**. Do not touch `DiGi.GLTF` or the generic controllers.
+To support a new domain object type, **create a new converter class in the consuming project**. Do NOT modify `DiGi.GLTF` or core controllers.
 
-### 3.1 The abstraction
-
-The engine exposes a plugin contract in `DiGi.GLTF`:
-
-- `DiGi.GLTF.Interfaces.IGLTFNodeConverter` — `bool CanConvert(ISerializableObject)` +
-  `List<GLTFNode>? Convert(ISerializableObject, double tolerance)`.
-- `DiGi.GLTF.Classes.GLTFNodeConverter<TSerializableObject>` — convenience base for the common case
-  of a single concrete type; you override the strongly-typed `Convert`.
-- `DiGi.GLTF.Modify.Register(IGLTFNodeConverter?)` / `Register(Assembly?)` — registration; the
-  assembly overload scans for all implementations with a public parameterless constructor.
-- `DiGi.GLTF.Convert.ToGLTF_GLTFNodes(this ISerializableObject?, double)` — the dispatcher; consults
-  registered converters (registration order, first `CanConvert` wins), then falls back to `GLTFNode`
-  pass-through and raw `IGeometry3D` triangulation.
-
-### 3.2 Template — a new converter
+### 3.1 Concrete Type Converter Template
 
 ```csharp
 using DiGi.GLTF.Classes;
@@ -198,202 +82,93 @@ using System.Collections.Generic;
 
 namespace MyProject.Classes
 {
-    /// <summary>
-    /// Converts a MyDomainObject into GLTFNode instances. Registered automatically at startup by
-    /// assembly scanning (DiGi.GLTF.Modify.Register(typeof(Program).Assembly)).
-    /// </summary>
     public class MyDomainObjectGLTFNodeConverter : GLTFNodeConverter<MyDomainObject>
     {
         public override List<GLTFNode>? Convert(MyDomainObject serializableObject, double tolerance)
         {
-            // 1. EXTRACT the 3D geometry from the domain object. Convert 2D footprints to 3D and
-            //    extrude if required. Keep coordinates in WORLD space — the local-origin shift
-            //    happens later, once, for the whole scene.
+            // 1. Extract 3D geometry in WORLD coordinates (do not shift origin)
             DiGi.Geometry.Spatial.Interfaces.IGeometry3D? geometry3D = serializableObject.Geometry;
-            if (geometry3D is null)
-            {
-                return null;
-            }
+            if (geometry3D is null) return null;
 
-            // 2. STYLE. Pick a color and opacity (opacity < 1 => the object joins the blended batch).
+            // 2. Styling, Reference, Properties
             DiGi.Core.Classes.Color color = new(byte.MaxValue, 222, 184, 135);
-            double opacity = 1.0;
-
-            // 3. IDENTITY + PROPERTIES. A stable reference is broadcast on selection; the serialized
-            //    source object becomes the properties payload shown in the viewer.
             string? reference = DiGi.Core.Create.UniqueReference(serializableObject)?.ToString();
             string? properties = DiGi.Core.Convert.ToSystem_String(serializableObject);
 
-            // 4. PACK into a generic GLTFNode. The engine triangulates the geometry into a Mesh3D.
-            GLTFNode? gLTFNode = DiGi.GLTF.Create.GLTFNode(
-                geometry3D, serializableObject.GetType().Name, reference, color, opacity, properties, tolerance);
-            if (gLTFNode is null)
-            {
-                return null;
-            }
+            // 3. Pack into GLTFNode
+            GLTFNode? node = DiGi.GLTF.Create.GLTFNode(
+                geometry3D, serializableObject.GetType().Name, reference, color, 1.0, properties, tolerance);
 
-            return [gLTFNode];
+            return node is null ? null : [node];
         }
     }
 }
 ```
 
-That is the entire change. On next startup the assembly scan finds and registers it, and every
-generic endpoint immediately supports `MyDomainObject`.
-
-### 3.3 Worked example — a 2D footprint extruded to 3D (the `Building2D` pattern)
-
-This is the canonical GIS case: take a 2D polygonal face, lift it onto a horizontal plane, extrude
-it by the number of storeys, and pack it — again, all in world coordinates.
+### 3.2 2D Footprint Extrusion Pattern (`Building2D`)
 
 ```csharp
 public override List<GLTFNode>? Convert(Building2D serializableObject, double tolerance)
 {
-    PolygonalFace2D? polygonalFace2D = serializableObject.PolygonalFace2D;
-    if (polygonalFace2D is null)
-    {
-        return null;
-    }
+    PolygonalFace2D? face2D = serializableObject.PolygonalFace2D;
+    if (face2D is null) return null;
 
-    // 2D footprint -> 3D face on the ground plane (Z = 0).
-    Plane? plane = DiGi.Geometry.Spatial.Create.Plane(0);
-    PolygonalFace3D? polygonalFace3D = plane.Convert(polygonalFace2D);
-    if (polygonalFace3D is null)
-    {
-        return null;
-    }
+    Plane plane = DiGi.Geometry.Spatial.Create.Plane(0);
+    PolygonalFace3D? face3D = plane.Convert(face2D);
+    if (face3D is null) return null;
 
-    // Extrude by storeys * storey height.
     int storeys = serializableObject.Storeys < 1 ? 1 : serializableObject.Storeys;
-    PolygonalFaceExtrusion polygonalFaceExtrusion = new(polygonalFace3D, new Vector3D(0, 0, storeys * 3.0));
+    PolygonalFaceExtrusion extrusion = new(face3D, new Vector3D(0, 0, storeys * 3.0));
 
     string? reference = serializableObject.Reference ?? DiGi.Core.Create.UniqueReference(serializableObject)?.ToString();
 
-    GLTFNode? gLTFNode = DiGi.GLTF.Create.GLTFNode(
-        polygonalFaceExtrusion, $"Building2D {reference}", reference,
-        new DiGi.Core.Classes.Color(byte.MaxValue, 222, 184, 135), 1,
+    GLTFNode? node = DiGi.GLTF.Create.GLTFNode(
+        extrusion, $"Building2D {reference}", reference,
+        new DiGi.Core.Classes.Color(byte.MaxValue, 222, 184, 135), 1.0,
         DiGi.Core.Convert.ToSystem_String(serializableObject), tolerance);
 
-    return gLTFNode is null ? null : [gLTFNode];
+    return node is null ? null : [node];
 }
 ```
 
-### 3.4 Handling large GIS coordinates — do NOT do it in the converter
-
-The reference-point translation is a **scene-level** concern, applied exactly once by
-`DiGi.GLTF.Create.GLTFScene`. A converter must emit world coordinates and nothing else. Emitting
-pre-shifted coordinates from a converter would double-shift the scene and corrupt multi-object
-alignment. The offset is available afterwards as `GLTFScene.ReferencePoint`.
-
-### 3.5 Matching against an interface instead of a concrete type
-
-When the domain match is an interface (e.g. any `IComponent`), implement `IGLTFNodeConverter`
-directly rather than the generic base, and test with `is`:
-
-```csharp
-public class ComponentGLTFNodeConverter : DiGi.GLTF.Interfaces.IGLTFNodeConverter
-{
-    public bool CanConvert(ISerializableObject serializableObject) => serializableObject is IComponent;
-
-    public List<GLTFNode>? Convert(ISerializableObject serializableObject, double tolerance)
-    {
-        if (serializableObject is not IComponent component)
-        {
-            return null;
-        }
-        // ... extract surface geometry, pack into GLTFNode(s) ...
-    }
-}
-```
-
-Register more specific converters before more general ones — the first matching converter wins.
+### 3.3 Converter Constraints
+- **WORLD Coordinates:** Converters MUST emit world coordinates. Origin translation is applied at scene level (`GLTFScene`). Pre-shifting inside converters causes double-shift bugs.
+- **Interface Matching:** To match interfaces, implement `IGLTFNodeConverter` directly and test with `is`:
+  ```csharp
+  public class ComponentGLTFNodeConverter : IGLTFNodeConverter
+  {
+      public bool CanConvert(ISerializableObject obj) => obj is IComponent;
+      public List<GLTFNode>? Convert(ISerializableObject obj, double tolerance) { ... }
+  }
+  ```
 
 ---
 
-## 4. Performance & optimization requirements
+## 4. Performance & Optimization
 
-These are strict rules for any project rendering more than a handful of objects.
-
-### 4.1 Geometry batching / merging (backend, mandatory for large datasets)
-
-Thousands of individual glTF nodes = thousands of WebGL draw calls = a frozen browser. The engine
-merges all node geometry into **one draw unit per alpha mode** (opaque + blended) via
-`DiGi.GLTF.Create.GLTFBatches`, invoked automatically by `ToSystem_Bytes(gLTFScene, batched: true)`.
-Per-object color is baked into the vertex `COLOR_0` attribute, so objects do **not** need to share a
-material to share a draw call. **Always pass `batched: true` for multi-object scenes.**
-
-Result at reference scale: 15,704 buildings / 265k triangles render in **4 draw calls at ~59 FPS**.
-
-### 4.2 ID mapping for raycasting (backend + frontend)
-
-Merged geometry loses per-node identity, so identity is re-encoded:
-
-- Every vertex carries its object id in a custom `_OBJECTID` float vertex attribute.
-- Each object occupies a **contiguous** vertex/index range, recorded in an `objectMap` array written
-  to the glTF scene extras (array index == object id == the value in `_OBJECTID`).
-
-The frontend decodes the `_OBJECTID` of the raycast-hit face to resolve the exact object, and
-highlights it by tinting only its contiguous vertex-color range (uploading just that sub-range to the
-GPU). This keeps selection O(range), independent of scene size.
-
-### 4.3 Asynchronous frontend loading (frontend, mandatory)
-
-- **Stream the binary `.glb`** from an endpoint (`fetchGlbBytes(url)`); never inline base64 into the
-  page. The page shell must stay in the low-KB range regardless of scene size.
-- **Never block the main thread.** The GLB is fetched as raw binary; `GLTFLoader.parse` consumes it
-  zero-copy; heavy structures (edge overlays, the raycast BVH) are built *after* the first frame is
-  presented (`setTimeout(..., 0)`), so the UI never freezes on load.
-- **Raycast acceleration.** `three-mesh-bvh` is loaded via the import map with a graceful fallback:
-  without it, hover picking is throttled so the frame rate stays stable.
-
-### 4.4 Frustum culling (frontend)
-
-All meshes are marked `frustumCulled = true` with computed bounding boxes/spheres, so geometry
-outside the viewport is skipped by the renderer.
-
-### 4.5 Reusable viewer engine delivery
-
-The engine JS (`gltf-viewer-core.js`) is owned by `DiGi.GLTF.WebAPI/wwwroot/js/`. A consuming UI syncs
-it into its own `wwwroot` at build time (the static-asset analogue of the `HintPath` DLL references)
-and imports it through a versioned import map:
-
-```xml
-<Target Name="CopyGLTFViewerCore" BeforeTargets="Build">
-  <Copy SourceFiles="$(ProjectDir)..\..\DiGi.GLTF.WebAPI\DiGi.GLTF.WebAPI\wwwroot\js\gltf-viewer-core.js"
-        DestinationFolder="$(ProjectDir)wwwroot\js\" SkipUnchangedFiles="true" />
-</Target>
-```
-
-The engine dispatches generic events on its container — `gltf-ready` (`{ objectCount, referencePoint,
-name }`) and `gltf-selectionchanged` (`{ references: string[] }`) — and exposes a small API
-(`frameScene`, `clearSelection`, `getUserData`, `setSun`, ...). **The consuming UI owns only the
-domain panels** (properties, lighting) and reacts to these events; it never forks the engine.
-
-> **Import map + tag helpers gotcha.** With MVC tag helpers active, the `<script type="importmap">`
-> element is rewritten and the `type` attribute is stripped, breaking module resolution. Opt that one
-> element out with the Razor `!` prefix: `<!script type="importmap"> ... </!script>`.
+- **Geometry Batching:** Mandatory for large datasets. Call `ToSystem_Bytes(scene, batched: true)`. Merges node geometries into one draw unit per alpha mode (opaque/blended) using vertex `COLOR_0`.
+- **ID Raycast Mapping:** Every vertex carries object ID in `_OBJECTID` float attribute. Contiguous vertex ranges are recorded in scene extras `objectMap`. Frontend selection highlights by updating GPU vertex color range in O(range) time.
+- **Async Loading:** Stream binary `.glb`; parse zero-copy; build BVH/edges asynchronously post-first-frame (`setTimeout(..., 0)`).
+- **Frustum Culling:** Set `frustumCulled = true` on all meshes.
+- **Engine JS Deployment:** Sync viewer JS via MSBuild target:
+  ```xml
+  <Target Name="CopyGLTFViewerCore" BeforeTargets="Build">
+    <Copy SourceFiles="$(ProjectDir)..\..\DiGi.GLTF.WebAPI\DiGi.GLTF.WebAPI\wwwroot\js\gltf-viewer-core.js"
+          DestinationFolder="$(ProjectDir)wwwroot\js\" SkipUnchangedFiles="true" />
+  </Target>
+  ```
+  Opt out Razor importmap rewriting using `<!script type="importmap">`.
 
 ---
 
-## 5. Visual Studio solution template
+## 5. Checklist Summary
 
-To scaffold a ready-to-run generic host pre-configured with the engine references, response compression, plugin registration hooks, and sample converter, use the template located in the default `templates/` directory.
-
-Detailed installation, usage scenarios, and command guidelines for this template are documented in the central [Coding - Templates.md](Coding%20-%20Templates.md) guideline.
-
----
-
-## Checklist summary
-
-- [ ] Solution folder under `DigiProject\` root (two levels above the DLL `HintPath`s).
-- [ ] References: `DiGi.Core`, `DiGi.Geometry`, `DiGi.GLTF` (never a domain library on the engine host).
-- [ ] Re-add transitive NuGet packages (`NetTopologySuite`, `SharpGLTF.Toolkit`, plus `Npgsql` etc. if used).
-- [ ] `DiGi.GLTF.Modify.Register(typeof(Program).Assembly)` at startup.
-- [ ] One `IGLTFNodeConverter` per new domain type — no engine or controller edits.
-- [ ] Converters emit world coordinates; never pre-shift (scene handles the reference point).
-- [ ] `ToSystem_Bytes(scene, batched: true)` for multi-object scenes.
-- [ ] Stream the `.glb`; keep the page a thin shell; enable response compression.
-- [ ] Runtime secrets (e.g. a PostgreSQL `*.conf` for a direct-DB endpoint) go in the git-ignored
-      `user files/`, never the committed `files/` — see the `files/` vs `user files/` rule in
-      `Coding - General.md`.
-- [ ] No `var`; explicit types; English only.
+- [ ] Solution folder placed under workspace root (`workspace_root\<Solution>\`).
+- [ ] References set: `DiGi.Core`, `DiGi.Geometry`, `DiGi.GLTF`, `NetTopologySuite`, `SharpGLTF.Toolkit`.
+- [ ] Startup includes `DiGi.GLTF.Modify.Register(typeof(Program).Assembly)`.
+- [ ] New 3D types implemented via `IGLTFNodeConverter` in consuming project.
+- [ ] Converters emit WORLD coordinates (no manual origin shift).
+- [ ] Endpoint calls `ToSystem_Bytes(scene, batched: true)`.
+- [ ] Response compression enabled for `model/gltf-binary`.
+- [ ] `gltf-viewer-core.js` synced to `wwwroot/js/`.
+- [ ] Explicit typing declared; no `var`; English only.

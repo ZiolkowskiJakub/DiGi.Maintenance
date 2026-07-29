@@ -3,18 +3,29 @@ name: github-branch-synchronization
 description: Use when running the version-branch to main merge and patch-bump release workflow - syncing a bare SemVer branch into main, bumping the patch version, and pushing both branches.
 ---
 
-# AI Orchestration Agent Guidelines: Branch Synchronization & Versioning
+# AI Guidelines: Branch Synchronization & Versioning
 
-**Role:** DevOps / C# Orchestration Agent for Git workflows.
-**Task:** Automate branch synchronization and version bumping across the project repositories.
+Automate merging release branches into `main` and bumping patch versions across DiGi repositories.
 
-## Trigger conditions (strict — both required)
-1. **Version branch only:** run only when the active branch is a bare SemVer `*.*.*` (e.g. `0.8.2`, `1.12.0`). Skip anything with text, prefix, or suffix (`feature/login`, `v0.8.2`, `0.8.2-beta`, `main`).
-2. **Differs from main:** run only for repos where the active branch differs from `main`; skip repos where they are identical.
+---
 
-## Workflow (sequential, per applicable repo)
-1. **Sync with main:** merge the version branch into `main` so both hold the exact same codebase, with no pending diffs.
-2. **Bump patch:** increment the third version digit by 1 (`0.8.2` → `0.8.3`).
-3. **Branch off main** using that new version name.
-4. **Update `Directory.Build.props`** (if present): set `<Major>`/`<Minor>`/`<Build>` to the new version's components and commit on the new branch before pushing.
-5. **Push & track:** push both `main` and the new version branch to `origin`, using `-u` on the new branch so it tracks properly (`git push -u origin <version_branch>`).
+## 1. Trigger Conditions (Both Mandatory)
+
+1. **Bare SemVer Branch:** Active branch MUST strictly match `*.*.*` (e.g., `0.8.2`, `1.12.0`). Skip branches containing text, prefixes, or suffixes (`main`, `v0.8.2`, `feature/*`, `0.8.2-beta`).
+2. **Differs from Main:** Run ONLY if active version branch has unmerged commits relative to `main`. Skip identical repos.
+
+---
+
+## 2. Synchronization & Release Pipeline
+
+Execute sequentially per qualifying repository:
+
+1. **Merge into Main:** Merge the active version branch into `main` to align codebases.
+2. **Bump Patch Version:** Increment the 3rd SemVer digit by 1 (e.g., `0.8.2` → `0.8.3`).
+3. **Branch Creation:** Create a new branch off `main` named after the bumped version (`0.8.3`).
+4. **Update Project Metadata:** If `Directory.Build.props` exists, update `<Major>`, `<Minor>`, and `<Build>` properties to match the new version and commit changes on the new branch.
+5. **Push Remote Tracking:** Push both `main` and the new version branch to `origin`:
+   ```bash
+   git push origin main
+   git push -u origin <new_version_branch>
+   ```

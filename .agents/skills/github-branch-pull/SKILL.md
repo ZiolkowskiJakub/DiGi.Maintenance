@@ -3,25 +3,37 @@ name: github-branch-pull
 description: Use when scanning local DiGi repositories, identifying SemVer branches, selecting the highest version, and pulling/syncing the local machine with the latest remote state.
 ---
 
-# AI Orchestration Agent Guidelines: Local Repository Pull & Synchronization
+# AI Guidelines: Local Repository Pull & Synchronization
 
-**Role:** DevOps / C# Automation Agent for local Git workflows.
-**Task:** Scan local directories, identify all "DiGi" repositories, detect the highest available SemVer version branch, and fully synchronize the local machine with the latest remote state.
+Automate scanning of local Git repositories, detection of highest SemVer release branches, and remote state synchronization.
 
-## 1. Repository Discovery & Targeting
-* **Scan Scope:** Locate all active Git repositories on the local machine belonging to the "DiGi" suite.
-* **Target Identification:** A directory is considered a valid target if it contains a `.git` folder and matches the DiGi project naming convention or path.
+---
 
-## 2. Branch Discovery & Selection Logic (Highest SemVer)
-For each identified repository, the agent must evaluate all available remote and local branches using the following strict rules:
-1. **Filter SemVer Branches:** Extract branches that strictly follow the bare SemVer format `*.*.*` (e.g., `0.8.4`, `0.8.5`). Ignore prefixes, suffixes, or descriptive names (e.g., `main`, `feature/*`, `v0.8.5`).
-2. **Evaluate Highest Version:** Compare the filtered version strings numerically. 
-   > **Example:** If both `0.8.4` and `0.8.5` exist, the agent must dynamically select `0.8.5` as the target branch.
+## 1. Repository Discovery
 
-## 3. Synchronization & Conflict Handling Workflow
-Execute the following Git operations sequentially per repository. The agent must ensure that any local data is protected and conflicts are explicitly tracked.
+- **Target Scope:** Scan local directories for Git repositories matching the "DiGi" naming convention.
+- **Criteria:** Directory contains a `.git` folder and belongs to the DiGi project suite.
 
-### Step 1: Fetch Remote State
-Update the local metadata to ensure all remote branches are known.
+---
+
+## 2. SemVer Branch Selection Logic
+
+1. **Filter Version Branches:** Extract branches matching bare SemVer `*.*.*` (e.g., `0.8.4`, `0.8.5`). Ignore prefixes/suffixes (`main`, `v0.8.5`, `feature/*`).
+2. **Select Highest Version:** Evaluate SemVer strings numerically. Select the highest available branch (e.g., select `0.8.5` over `0.8.4`).
+
+---
+
+## 3. Synchronization Pipeline
+
+Execute sequentially per repository:
+
 ```bash
+# 1. Fetch all remote branches and prune deleted tracking refs
 git fetch --all --prune
+
+# 2. Checkout the highest SemVer version branch
+git checkout <highest_semver_branch>
+
+# 3. Pull latest remote changes
+git pull origin <highest_semver_branch>
+```

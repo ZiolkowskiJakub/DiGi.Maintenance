@@ -5,181 +5,98 @@ description: Use when comparing, matching, keying or de-duplicating an IReferenc
 
 # AI Guidelines: References (`IReference` / `IUniqueReference`)
 
-## When to read this
-Read it before writing or reviewing code that **compares, matches, keys or de-duplicates** references —
-`IReference`, `ISerializableReference`, `IUniqueReference`, `GuidReference`, `UniqueIdReference`,
-`TypeReference`, and every `UniqueReference` property on a model object (`Face.UniqueReference`,
-`Shell.UniqueReference`, `IOneToManyRelation.UniqueReference_From`, ...).
+## Mandatory Rule
 
-The headline rule, if you read nothing else:
+> **NEVER compare two interface-typed references with `==` or `!=`. ALWAYS use `Core.Query.Equals(reference_1, reference_2)`.**
 
-> **Never compare two interface-typed references with `==` or `!=`. Use `Core.Query.Equals(reference_1, reference_2)`.**
+`==` between interface-typed operands compiles to **reference equality**, silently returning `false` for equal reference instances without compiler warnings.
 
-This is not a style preference. `==` between two interface-typed operands compiles to *reference
-equality*, silently returns `false` for two equal references, and the compiler emits no warning. It
-has already produced an infinite loop in `BuildingModelShellUpdater` and mis-attributed geometry in
-`ShellByPlaneSplitSolver`.
+---
 
-## 1. The type map
-Interfaces (`DiGi.Core/Interfaces/Reference/`):
+## 1. Type Map & Casting Constraints
 
-```
-IObject
- └─ IReference : IEquatable<IReference>
-     ├─ ISerializableReference : ISerializableObject, IReference
-     │   ├─ IInstanceRelatedSerializableReference
-     │   │   └─ IUniqueReference          (adds TypeReference, UniqueId)
-     │   └─ ITypeRelatedSerializableReference
-     ├─ IComplexReference
-     └─ IExternalReference
-```
+### Interfaces (`DiGi.Core/Interfaces/Reference/`)
+`IObject` → `IReference` → `ISerializableReference` → `IInstanceRelatedSerializableReference` → `IUniqueReference` (adds `TypeReference`, `UniqueId`). Also: `ITypeRelatedSerializableReference`, `IComplexReference`, `IExternalReference`.
 
-Classes (`DiGi.Core/Classes/Reference/`):
+### Classes (`DiGi.Core/Classes/Reference/`)
+`SerializableObject` → `SerializableReference` (defines `ToString()`, `Equals()`, `==`/`!=`)
+- `UniqueReference` (`GuidReference`, `UniqueIdReference`)
+- `TypeReference`, `ComplexReference`
+- `ExternalReference` → `InstanceRelatedExternalReference<T>` → `UniqueExternalReference<T>` (implements `IUniqueReference`)
 
-```
-SerializableObject
- └─ SerializableReference            ← owns ToString(), Equals(IReference?), GetHashCode() and the == / != operators
-     ├─ UniqueReference               ├─ GuidReference
-     │                                └─ UniqueIdReference
-     ├─ TypeReference
-     ├─ ComplexReference
-     └─ ExternalReference
-         └─ InstanceRelatedExternalReference<T>
-             └─ UniqueExternalReference<T>    (also an IUniqueReference)
-```
+### Constraints
+- **Do NOT cast `IReference` to `SerializableReference`.** Implementations may inherit directly from `SerializableObject` (e.g. `GISModelAreal2DReference`) or implement `IReference` directly (`ListClusterReference`).
+- `IUniqueReference` has two separate class branches (`UniqueReference` and `UniqueExternalReference<T>`).
 
-**Do not assume an `IReference` is a `SerializableReference` — never cast to it.** Counter-examples in
-the workspace: `ListClusterReference<TKey_1, TKey_2>` implements `IReference` directly, and
-`DiGi.GIS.Classes.GISModelAreal2DReference` implements `ISerializableReference` off plain
-`SerializableObject`. Note also that `IUniqueReference` has **two** class branches — `UniqueReference`
-and `UniqueExternalReference<T>` — with no common base below `SerializableReference`, so there is no
-concrete type you can narrow a property to without excluding valid implementations.
+---
 
-## 2. What equality actually means
-`SerializableReference` centralises the whole contract:
+## 2. Equality Mechanics
 
-- `ToString()` is **sealed**. The base renders the type discriminator plus the derived type's
-  `Segments`, and caches the result. That rendered string *is* the reference's identity.
-- `GetHashCode()` is derived from that cached string.
-- `Equals(IReference? reference)` returns true only when the runtime types match **and** the hash and
-  the rendered string match.
+- **Identity:** `ToString()` is sealed, caching the type discriminator + `Segments`. This rendered string defines identity.
+- **Hash Code:** `GetHashCode()` is derived from the cached `ToString()` string.
+- **Equality:** `Equals(IReference?)` returns `true` only when runtime types match AND cached strings match.
+- **Collections:** `Dictionary<IUniqueReference, ...>`, `HashSet<IReference>`, `List.Contains`, `Find`, and `Remove` are safe because they route through `Equals`/`GetHashCode`.
 
-Consequences worth internalising:
+---
 
-- Two independently constructed references to the same object **are** `Equals` and have the same hash,
-  but are never `ReferenceEquals`.
-- References of different runtime types are never equal, even if they render similarly.
-- `Dictionary<IUniqueReference, ...>`, `HashSet<IReference>`, `List<T>.Contains`, `Find`, `FindAll`,
-  `Remove` are all **safe** — they route through `Equals`/`GetHashCode`, never through the operators.
+## 3. Operator `==` Evaluation Matrix
 
-## 3. The `==` rule table
-For `a == b`, C# gathers user-defined operator candidates from the **static types of the operands and
-their base classes**. An interface contributes none.
-
-| Static type of the operands | What `==` compiles to | Verdict |
+| Operand Static Types | Compilation Target | Status |
 |---|---|---|
-| both interfaces (`IReference`, `IUniqueReference`, `ISerializableReference`, ...) | predefined reference equality | **silent bug** |
-| at least one `SerializableReference`-derived (`GuidReference`, `TypeReference`, ...) | `SerializableReference.operator ==` → `Equals` | correct |
-| one side is the `null` literal | null check | correct |
-| `.ToString()` on both sides | string comparison | correct, but allocates |
+| Both interfaces (`IReference`, `IUniqueReference`) | Predefined Reference Equality | **SILENT BUG** |
+| At least one concrete `SerializableReference` | `SerializableReference.operator ==` → `Equals` | Correct |
+| One side `null` literal | Null check | Correct |
+| `.ToString()` on both sides | String comparison | Correct (allocates) |
 
-`SerializableReference` deliberately declares four operator pairs, including
-`==(SerializableReference?, object?)` and `==(object?, SerializableReference?)`. That is why a
-comparison is fine as soon as **one** side is concrete:
+### Why `==` Cannot Be Added to Interfaces
+1. Interfaces contribute no operator candidates for `==` resolution.
+2. Binary operators declared in external helpers require parameter declaring types (CS0563).
+3. C# 11 static abstract interface operators require generic constraints and .NET 7+ (`DiGi.Core` targets `netstandard2.0`).
 
-```csharp
-// CORRECT - right operand is GuidReference, so the operator applies (DiGi.GIS/Classes/GISModel.cs)
-x => x?.UniqueReference_From is not null && x.UniqueReference_From == guidReference
-```
+---
 
-## 4. Why this cannot be fixed by adding operators
-Three independent blockers — do not re-open this:
+## 4. Clone-per-Call Accessor Trap
 
-1. **Interfaces contribute no operator candidates.** Nothing declared on `SerializableReference` (or
-   anywhere else) can enter the candidate set when both operands are interface-typed.
-2. **The operator cannot be declared elsewhere.** `public static bool operator ==(IReference, IReference)`
-   in a helper class is **CS0563** — a binary operator's declaring type must be one of its parameter
-   types — and interfaces cannot declare ordinary operators.
-3. **C# 11 static abstract interface operators do not help.** They dispatch only *through a generic
-   type parameter* constrained to the interface, so `IReference a, b; a == b` still uses reference
-   equality; and they require net7.0+ while `DiGi.Core` targets **netstandard2.0**.
+Model reference properties (e.g. `face.UniqueReference`) return `Core.Query.Clone(field)` (new instance per call).  
+Therefore, `face.UniqueReference == face.UniqueReference` evaluates to `false`.
 
-The only way to make `==` correct at a call site is to change the *static type* of an operand to a
-concrete `SerializableReference`-derived type — which for a model property such as
-`Face.UniqueReference` would exclude valid implementations. So: use `Equals`.
+**Directives:**
+- **Hoist to local variable:** Always assign property to a local variable before comparing.
+- **Do not use returned instances as identity tokens.**
 
-## 5. The compounding trap — clone-per-call accessors
-Many model properties are implemented as `Core.Query.Clone(field)` and therefore hand back a **new
-instance on every read**:
+---
 
-```csharp
-public IUniqueReference? UniqueReference
-{
-    get { return Core.Query.Clone(uniqueReference); }
-}
-```
+## 5. Replacement Guide
 
-So `face.UniqueReference == face.UniqueReference` is `false` — the same face compared with itself.
-Rules that follow:
-
-- Read the property into a local before using it; do not call it inside a predicate that runs per
-  element (it is also an allocation per iteration).
-- Never rely on getting the same instance back, and never use the returned instance as an identity
-  token. As a dictionary key it is fine — the dictionary uses `Equals`/`GetHashCode`.
-
-## 6. What to use instead
-
-| Intent | Use |
+| Intent | Code Implementation |
 |---|---|
-| Are these two references the same reference? | `Core.Query.Equals(reference_1, reference_2)` (null-safe, two nulls are equal) |
-| Look up / group / de-duplicate | `Dictionary`, `HashSet`, `List.Find`/`FindAll`/`FindIndex`/`Contains` — already correct |
-| I need the concrete API | pattern-match: `if (uniqueReference is GuidReference guidReference)` |
-| Is this the same *instance* of a model object? | compare its `Guid` — a reference identifies the referenced object, not the object holding it. Several faces of one shell normally share one `UniqueReference` |
+| Compare two reference interfaces | `Core.Query.Equals(reference_1, reference_2)` (null-safe) |
+| Concrete type access | Pattern-match: `if (uniqueReference is GuidReference guidReference)` |
+| Model object instance identity | Compare object `Guid` (references identify target data, not container) |
 
-## 7. Detection recipe
-Sweep with ripgrep (PCRE2 for the negative look-ahead):
+---
 
+## 6. Audit & Detection Recipe
+
+### Ripgrep Commands
 ```bash
 rg --pcre2 -n -g '*.cs' -i '\b[A-Za-z0-9_]*uniqueReference[A-Za-z0-9_]*\s*(==|!=)\s*(?!null)[A-Za-z_(]'
-```
-
-```bash
 rg --pcre2 -n -g '*.cs' '\b[A-Za-z0-9_]*[Rr]eference[A-Za-z0-9_]*\s*(==|!=)\s*(?!null)[A-Za-z_(]'
 ```
 
-Then triage every hit — **most hits are sound.** A hit is a bug only if the *declared* type of **both**
-operands is an interface. Resolve the declared type of each side before changing anything:
+### Triage Logic
+A hit is a bug **ONLY IF both operands have interface declared types**.
+- `x.UniqueReference == face.UniqueReference` → **BUG** (both `IUniqueReference?`).
+- `x.UniqueReference_From == guidReference` → Valid (right operand concrete).
+- `face.UniqueReference != null` → Valid (null check).
 
-- `x?.Reference == reference` where `Reference` is `string?` → fine (most `DiGi.GIS` hits).
-- `uniqueIdReference.TypeReference == new TypeReference(...)` → fine, both concrete.
-- `x.UniqueReference_From == guidReference` → fine, right operand concrete.
-- `face.UniqueReference != null` → fine, null check.
-- `x?.UniqueReference_To?.ToString() == uniqueReference?.ToString()` → fine, string comparison.
-- `x.UniqueReference == face.UniqueReference` → **bug**, both `IUniqueReference?`.
-
-## 8. Fix template
+### Corrective Refactoring Template
 
 ```csharp
-// WRONG - both operands are IUniqueReference, this is reference equality and never matches
+// INCORRECT — Silent reference equality bug
 int index = faces.FindIndex(x => x.UniqueReference == face.UniqueReference);
-```
 
-```csharp
-// CORRECT - hoist the clone-returning accessor into a local, then compare by value
-// References have to be compared by value, the equality operators are declared on SerializableReference and do not apply to IUniqueReference typed operands
+// CORRECT — Hoist local variable, compare via Core.Query.Equals
 IUniqueReference? uniqueReference = face.UniqueReference;
-
 int index = faces.FindIndex(x => Core.Query.Equals(x?.UniqueReference, uniqueReference));
 ```
-
-Worked references in the codebase:
-`DiGi.Analytical/DiGi.Analytical/Classes/Solver/ShellByPlaneSplitSolver.cs` and
-`DiGi.Analytical/DiGi.Analytical.Building/Classes/Updater/BuildingModelShellUpdater.cs`; the helper
-lives in `DiGi.Core/DiGi.Core/Query/Equals.cs`; the trap itself is pinned by
-`DiGi.Test/DiGi.Core.xUnit/Facts/Equals.cs` and
-`DiGi.Test/DiGi.Analytical.xUnit/Facts/ShellByPlaneSplitSolver.cs`.
-
-## Related
-- [Coding - General.md](Coding%20-%20General.md) — naming/typing rules and the `Query`/`Modify`/`Create`/`Convert` architecture the helper belongs to.
-- [Coding - API Documentation.md](Coding%20-%20API%20Documentation.md) — the generated API markdown carries the same warning in the `Remarks` of `IReference`, `IUniqueReference` and `SerializableReference`.
-- [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) — how to add a fact covering a reference comparison.
