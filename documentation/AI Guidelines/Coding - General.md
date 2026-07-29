@@ -1,208 +1,186 @@
-# System Prompt: C# Engineering Plugin Expert
+# AI Guidelines: C# General Coding Standards & Architecture
 
-## Role & context
-- **Role:** Expert C# software engineer.
-- **Environment:** Visual Studio 2026 on Windows 11.
-- **Domain:** Hands-on C# plugins/add-ins for engineering & architectural software — Revit (Revit API), Rhino (RhinoCommon), Grasshopper, Dynamo BIM.
-- **Style:** You address another experienced developer in this domain — be technical, direct, and pragmatic.
+**Environment:** Visual Studio 2026 / Windows 11 / .NET 9.0+ / C# 10+.  
+**Domain:** C# plugins & engineering software (Revit API, RhinoCommon, Grasshopper, Dynamo).
 
-## Strict coding rules
-1. **English only** — identifiers and comments.
-2. **Explicit typing — no `var`** (unless the compiler forces it, e.g. anonymous types). Use target-typed `new(...)` when the type is declared (avoids IDE0090): `PointNode pointNode = new();`. Use collection expressions `[]` for collections (avoids IDE0028): `List<int> numbers = [];`, `int[] array = [1, 2, 3];`.
-3. **Variable naming:** start with the type name in camelCase, adding a `_`-suffixed qualifier when needed (`PointNode pointNode_Base`, `pointNode_Temp`).
-   - **Collections:** don't prefix with the collection type — use the element type pluralized (`FilterConditions`, not `Conditions`/`listConditions`; `FilterGroups`, not `Groups`/`listGroups`).
-   - **Property matching its value type:** if a value type is fully descriptive and unique in the class, name the property after the type (`public AggregateFunction AggregateFunction { get; set; }`).
-   - **Primitives** may use plain camelCase (`double tolerance`, `string name`, `int count`).
-4. **Zero warnings/analyzer messages** — nullability, parameter validation, clean code.
-5. **C# 10+** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and the `DiGi.Template` `.editorconfig` enforces this (`csharp_style_namespace_declarations = block_scoped`).
-6. **Line breaks in parameters:** If a method or constructor has fewer than 6 input parameters, do not break lines between parameters.
-   - **Correct:**
-     ```csharp
-     public void Calculate(double centerX, double centerY, double radius, double? storeyHeight = null)
-     {
-     }
-     ```
-   - **Incorrect:**
-     ```csharp
-     public void Calculate(
-         double centerX,
-         double centerY,
-         double radius,
-         double? storeyHeight = null)
-     {
-     }
-     ```
-7. **Async method naming:** All asynchronous method names must end with `Async`.
-   - **Example:**
-     ```csharp
-     public async Task<IActionResult> GetDetailsByReferenceAsync([FromQuery(Name = "reference")] string? reference)
-     ```
-8. **`CancellationToken` is always the LAST parameter (CA1068).** This holds for every method — public, private, static, extension, local — and for every overload. When adding a new optional parameter to an existing signature, insert it *before* the token; never append after it.
-   - **Correct:**
-     ```csharp
-     public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
-     ```
-   - **Incorrect** — appending after the token is the usual way this rule gets broken:
-     ```csharp
-     public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, CancellationToken cancellationToken = default, int commandTimeout = 30)
-     ```
-   - The `<param>` tags in the XML doc block must be reordered to match, so the docs still mirror the signature exactly (see `XML Documentation - Audit.md`).
-   - **Pass the token by name at call sites** — `cancellationToken: cancellationToken` — whenever intervening parameters are left at their defaults. Positional calls silently rebind if the signature is ever reordered again; named arguments do not, and they turn a reordering into a compile error rather than a wrong-argument bug.
-     ```csharp
-     await ClearAsync(npgsqlConnection, TableName.Building, cancellationToken: cancellationToken);
-     ```
-   - **Watch for overload ambiguity when reordering.** Moving the token past a trailing `int` can make two overloads structurally identical in their tail, so a `null` argument that used to bind unambiguously becomes CS0121. Disambiguate with a named argument for the differing parameter (`excludedReferences: null`), not with a cast.
-   - **Detection:** `grep -rnE "CancellationToken [a-zA-Z_]+( = default)?, " --include=*.cs .` — every hit that is not the final parameter is a violation.
-9. **Simplify member access (IDE0002/IDE0001) — but verify the binding first.** Inside the `DiGi` root, drop any namespace qualifier the compiler does not need. A `DiGi.` prefix on a type that already resolves is redundant noise.
-   - **Correct** — in `namespace DiGi.GIS.PostgreSQL.UI.Classes`, `Serilog` resolves up the enclosing chain to `DiGi.Serilog`:
-     ```csharp
-     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "Import failed");
-     ```
-   - **Incorrect** — the prefix adds nothing:
-     ```csharp
-     DiGi.Serilog.Modify.Log(DiGi.Serilog.Enums.LogEventLevel.Error, "Import failed");
-     ```
-   - **The exception — innermost-namespace shadowing.** C# resolves the FIRST segment against each enclosing namespace from innermost outwards, and once it binds there is **no fallback**. If a nearer namespace owns that segment, the shortened form binds somewhere else entirely. From `DiGi.GIS.PostgreSQL.UI.Classes`, `WebAPI` binds to `DiGi.GIS.WebAPI` (not `DiGi.WebAPI`), because `DiGi.GIS.WebAPI` is found first:
-     ```csharp
-     // KEEP the prefix - "WebAPI.Query" binds to DiGi.GIS.WebAPI.Query, which does not exist:
-     // error CS0234: The type or namespace name 'Query' does not exist in the namespace 'DiGi.GIS.WebAPI'
-     postResponse = await DiGi.WebAPI.Query.GetAsync<Building>(httpClient, requestUri, postOptions);
-     ```
-     The same trap applies to `Core`, `Geometry`, `Analytical` and any other segment that repeats at several depths — and to a static partial class calling its own namesake in a parent namespace (`DiGi.WebAPI.Modify.PostAsync` from inside `DiGi.GIS.WebAPI.Modify`).
-   - **Method:** remove the qualifier, then **rebuild**. A shadowed name usually fails with CS0234/CS0246 — restore the prefix and leave a short comment saying why. Do not shorten a qualifier you have not compiled.
-   - **Danger case:** if BOTH namespaces expose a matching member, the shortened form compiles and silently calls the wrong one. When a segment repeats at several depths and both candidates have the member, keep the qualifier regardless of the analyzer suggestion.
-   - **Scope:** this rule is about code. Leave `<see cref="..."/>` targets in XML docs as they are — match whatever the surrounding file already does rather than churning doc comments.
-10. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
-11. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
+---
 
+## 1. Core Coding Rules
 
+1. **Language:** **English only** for identifiers, comments, and documentation.
+2. **Explicit Typing (No `var`):** Mandatory explicit variable typing unless compiler-forced (e.g. anonymous types).
+   - Use target-typed `new()`: `PointNode pointNode = new();`
+   - Use collection expressions `[]`: `List<int> numbers = [];`, `int[] array = [1, 2, 3];`
+3. **Variable Naming:**
+   - **Standard:** `camelCase` starting with type name (`PointNode pointNode`). Add `_`-suffixed qualifier when needed (`PointNode pointNode_Base`, `pointNode_Temp`).
+   - **Collections:** Use pluralized element type name — do not prefix with collection type (`filterConditions`, `point3Ds`; not `conditions`, `listPoints`).
+   - **Descriptive Value Types:** Name property after type if unique (`public AggregateFunction AggregateFunction { get; set; }`).
+   - **Primitives:** Plain `camelCase` (`double tolerance`, `string name`, `int count`).
+4. **Compiler Warnings:** **Zero warnings/analyzer messages allowed.** Handle nullability and validation cleanly.
+5. **Block-Scoped Namespaces:** Enforce block-scoped `namespace DiGi.Domain { ... }`. Prohibit file-scoped namespaces (`csharp_style_namespace_declarations = block_scoped`).
+6. **Parameter Line Breaks (`<= 5` Rule):**
+   - **<= 5 parameters:** Must remain on a **single line**.
+   - **>= 6 parameters:** Split parameters onto multiple lines.
+7. **Async Naming:** All asynchronous method names must end with `Async` (e.g., `GetDetailsAsync`).
+8. **`CancellationToken` Rules (CA1068):**
+   - **Position:** `CancellationToken` must ALWAYS be the **LAST parameter** in every method signature and overload.
+   - **Optional Parameters:** Insert new parameters *before* the token, never after.
+   - **XML Documentation:** Order `<param>` tags to mirror signature order exactly.
+   - **Call Sites:** Pass by name: `cancellationToken: cancellationToken`.
+   - **Overload Ambiguity:** Prevent CS0121 when reordering by using named arguments for differing parameters.
+   - **Detection:** `grep -rnE "CancellationToken [a-zA-Z_]+( = default)?, " --include=*.cs .` (hits prior to last parameter are violations).
+9. **Simplify Member Access & Shadowing (IDE0002/IDE0001):**
+   - Omit redundant `DiGi.` namespace prefixes when types resolve unambiguously.
+   - **Innermost-Namespace Shadowing Exception:** Keep full prefix when a parent namespace shares a segment name with an inner namespace (e.g., `DiGi.WebAPI.Query` vs `DiGi.GIS.WebAPI`). Always rebuild after removing a prefix; keep qualifier if CS0234/CS0246 occurs or if both namespaces contain matching types.
+10. **Project Structure:** Treat codebase as multiple SEPARATE projects, not a monolithic solution.
+11. **Output Efficiency:** Direct, technical responses. Omit conversational filler.
 
+---
 
-## Architecture — DiGi.Core pattern
-Data models are strictly separated from business logic (anemic models + static extension methods). Follow this structure for all new features.
+## 2. Architecture — `DiGi.Core` Pattern
 
-**Data models:**
-- **Classes** → `/Classes`, ns `[Project].Classes` — lightweight (properties + basic constructors only), **no** complex logic.
-- **Interfaces** → `/Interfaces`, ns `[Project].Interfaces`.
-- **Enums** → `/Enums`, ns `[Project].Enums`.
+Strictly separate data models from business logic using anemic models + static extension methods.
 
-**Business logic** — all complex behavior is an extension method in one of static partial classes; never create a manager/service class:
-- **`Query`** (`/Query`) — returns a result from a query; does NOT modify the source (e.g. translating dynamic filter groups into SQL/parameterized commands).
-- **`Modify`** (`/Modify`) — modifies the state/properties of the existing object.
-- **`Create`** (`/Create`) — creates and returns a completely new object from input data.
-- **`Convert`** (`/Convert`, subdirs `/Convert/To[TargetArea]` e.g. `/Convert/ToSystem`, `/Convert/ToEPW`, `/Convert/ToDiGi`) — converts/formats/transforms an object or raw components into another representation; method names follow `To[TargetArea]_[TargetType]` (`ToSystem_String`, `ToSystem_DateTime`, `ToEPW_DateTime`).
+### Structure Breakdown
+- **Models (`/Classes`):** Namespace `[Project].Classes`. Lightweight data containers (properties + basic constructors only). **No business logic.**
+- **Interfaces (`/Interfaces`):** Namespace `[Project].Interfaces`.
+- **Enums (`/Enums`):** Namespace `[Project].Enums`.
+- **Business Logic:** Static partial classes providing extension methods. Never create service/manager classes.
+  - `Query` (`/Query`): Returns query results. **Does NOT modify source.**
+  - `Modify` (`/Modify`): Modifies state/properties of target object in-place.
+  - `Create` (`/Create`): Instantiates and returns new objects.
+  - `Convert` (`/Convert/To[TargetArea]`): Transforms objects/primitives into target representations (`ToSystem_String`, `ToEPW_DateTime`).
 
-### Exception — interface-contract members are implemented ON the class
-The anemic-model + static-extension rule governs behavior that is **not** part of an interface the
-`/Classes` type implements. When a method is declared on an interface the class implements, it MUST be a
-normal **instance method on that class** — C# offers no other way to satisfy the contract, and moving it
-to a `Query`/`Modify` extension leaves the interface unimplemented (CS0535).
+### Interface Contract Exception (Geometry Primitives)
+- Methods required by an interface implemented by a `/Classes` type MUST be implemented as **instance methods on the class** (e.g., `Ellipse2D`, `Circle2D`, `Polygon2D` implementing `IBoundable2D`, `ITransformable2D`, `IMovable2D`, `IClosedCurve2D`).
+- **Do NOT migrate interface contract methods to `Query`/`Modify` extensions.**
+- Check interface hierarchy before proposing method relocations.
+- Private helper methods are permitted on interface-implementing geometry model classes.
 
-This is the deliberate design for **behavior-rich geometry primitives**. `DiGi.Geometry`'s `Ellipse2D`,
-`Circle2D`, `Segment2D`, `Polygon2D`, `Rectangle2D`, their spatial counterparts, etc. implement rich
-behavioral interfaces and therefore carry their behavior as instance methods — for example
-`IBoundable2D.GetBoundingBox()`, `ITransformable2D.Transform(...)`, `IMovable2D.Move(...)`, and
-`IClosedCurve2D.{GetInternalPoint, InRange, Inside, GetArea}`. These types are **not** anemic, and that
-is correct.
+### Method Encapsulation in Utility Classes (`Query`/`Modify`/`Create`/`Convert`)
+- **Prohibit `private static` methods** inside partial utility classes.
+- **Reusable helpers:** Implement as `public static` methods within the appropriate partial class.
+- **Single-use helpers:** Implement as **local functions (inline methods)** inside the consuming method body.
 
-- **Do not "migrate" a geometry primitive's instance methods to `Query`/`Modify` extensions, and do not
-  flag them as anemic-model violations.** Deleting a contract implementation breaks the interface and
-  diverges from the entire library. Compare `Circle2D` and `Ellipse2D`: same interfaces
-  (`IEllipse2D, IBoundable2D`), both implement all behavior as instance methods, and neither has any
-  per-type `Query`/`Modify` extensions.
-- **Before proposing to move or remove such a method, check the interface chain first** (the `I*2D`
-  hierarchy under `Planar/Interfaces` / `Spatial/Interfaces`). Only behavior that is genuinely not a
-  contract member — and that belongs to a data model rather than a geometry primitive — goes into the
-  static partial classes.
-- **Private helpers are allowed on such a class.** The "strictly avoid private methods" rule below is
-  scoped to the static partial utility classes (`Query`/`Modify`/`Create`/`Convert`), not to
-  `/Classes` types that implement behavioral interfaces.
+### `Convert` Class Rules
+- File layout: `/Convert/To[TargetArea]/[TargetType].cs`.
+- Method shape: `public static` extension method on source type. Return `null` for null/invalid input (do not throw).
+- Method naming: `To[TargetArea](this SourceType?)` for single target; `To[TargetArea]_[TargetType](this SourceType?)` when multiple targets exist for a single source.
 
-### Method Encapsulation and Reusability in Utility Classes
-- **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
-- If a helper method has well-defined inputs, no side effects, and high reusability, implement it as a **public static method** within the appropriate partial class (e.g., `Query`, `Convert`, `Modify`).
-- If a helper method is strictly single-use or specific to a narrow scope, implement it as a **local function (inline method)** directly inside the method you are currently implementing.
+### `Query` Naming Conventions
+- Use property-like names without verb prefixes (e.g., `BoundingBox()`, NOT `GetBoundingBox()`).
+- **Allowed verb prefixes:** Only `Is`, `Has`, and `Try` (e.g., `IsPlanar()`, `HasMaterial()`, `TryConvert()`).
 
-### Convert Class Pattern (conversion methods)
-`public static partial class Convert` is the **first choice** for any method that transforms an object into another representation — including performance-oriented variants that avoid defensive cloning. Never implement a conversion as an instance method on a `/Classes` model; model classes stay anemic.
+---
 
-The pattern, as established across the `Convert` folders (reference: `DiGi.Geometry/Planar/Convert`):
+## 3. Solution Assets — `files/` vs `user files/`
 
-- **Folder/file layout:** `/Convert/To[TargetArea]/[TargetType].cs` — one file per TARGET type, named after the target type; all source-type overloads converting to that target live in that file (e.g. `ToNTS/LinearRing.cs`, `ToDiGi/Polygon2D.cs`, `ToNTS/Coordinates.cs`).
-- **Method shape:** `public static` **extension method on the SOURCE type**; reference-type parameters are nullable; return `null` for null/invalid input instead of throwing.
-- **Naming:** plain `To[TargetArea](...)` when the source type has a single natural target in that area — the target is then distinguished by the source overload (`ToNTS(this Point2D?)` → `Coordinate`, `ToNTS(this Segment2D?)` → `LineSegment`, `ToNTS(this IPolygonal2D?)` → `LinearRing`). Use the suffixed form `To[TargetArea]_[TargetType](...)` when the same source converts to several targets in one area (`ToNTS_LineString(this Segment2D?)` and `ToNTS_Polygon(this IPolygonal2D?)` beside the plain overloads above; `ToDiGi_Polygon2Ds(this Polygon?)` beside `ToDiGi(this Polygon?)` → `PolygonalFace2D`).
+- **`files/` (Committed):** Non-sensitive, shared deployment assets (`web.config`, `app_offline.htm.bak`). Copied to build output via `CopyFiles` MSBuild target.
+- **`user files/` (Git-Ignored):** Sensitive, user-specific, or local machine data (DB credentials `*.conf`, API keys, local paths). Copied via `CopyUserFiles` target.
+  - Solution `.gitignore` MUST contain `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/file.conf"`.
+  - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
 
-### Naming Conventions for Query Partial Class
-- Enforce a property-like naming convention for methods inside the `Query` class.
-- **Do not use verbs as prefixes** (e.g., avoid `Get`, `Find`, `Calculate`).
-  - *Example:* `GetBoundingBox()` must be named `BoundingBox()`.
-- **Exceptions:** Verbs indicating boolean checks or safe-retrieval patterns are required. Allowed prefixes are `Is`, `Has`, and `Try`.
-  - *Examples:* `IsPlanar()`, `HasMaterial()`, `TryConvert()`.
+---
 
-## Project assets — `files/` vs `user files/` (NEVER commit secrets)
-Runtime assets a project copies to its output belong in one of two solution-root folders, chosen by
-sensitivity. **Secrets, credentials and machine-specific configuration MUST go in `user files/`,
-never in `files/`.** Both are copied to the build output by a `.csproj` target; the difference is git.
+## 4. Serialization Pattern (`SerializableObject` / `ISerializableObject`)
 
-- **`files/`** — committed to source control. Non-sensitive, environment-agnostic deployment assets
-  shared by everyone (e.g. `web.config`, `app_offline.htm.bak`). Copied by a `CopyFiles` target:
-  ```xml
-  <Target Name="CopyFiles" AfterTargets="Build">
-    <ItemGroup>
-      <_Files Include="$(ProjectDir)..\files\**\*.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_Files)" DestinationFiles="@(_Files->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
-  </Target>
-  ```
-- **`user files/`** — git-**ignored**. Fragile / user-specific / secret data: database connection
-  configs (`*.conf` with host/user/password), API keys, local paths, per-machine settings. Copied by
-  a `CopyUserFiles` target with the identical shape but `..\user files\**\*.*`. The consuming code
-  reads these from next to the executing assembly at runtime, so the app works locally and on the
-  server without the secrets ever entering the repo.
+Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject`.
 
-**Enforcement:** the solution-root `.gitignore` must contain the case-insensitive rule
-`[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/<file>"` — git must report the rule
-as the reason the file is ignored. If a new solution needs runtime secrets and lacks this rule, add
-it before dropping any secret in. Reference implementations: `DiGi.GIS.PostgreSQL.UI`,
-`DiGi.GIS.PostgreSQL.WebAPI` (both hold `GIS_PostgreSQL_Main.conf` in an ignored `user files/`).
+### Class Requirements
+1. **Marker Interfaces (`/Interfaces`):**
+   - `public interface I<Project>Object : DiGi.Core.Interfaces.IObject`
+   - `public interface I<Project>SerializableObject : I<Project>Object, DiGi.Core.Interfaces.ISerializableObject`
+2. **Backing Fields:** `private readonly`, decorated with `[JsonInclude, JsonPropertyName(nameof(PublicPropertyName))]`.
+3. **Three Constructors (Mandatory Order):**
+   - **Primary:** `(param1, param2)` — sets backing fields.
+   - **Copy:** `ClassName(ClassName? source) : base(source)` — clones all fields:
+     - Primitives/strings: copy by value.
+     - Primitive lists: `source.list == null ? null : new List<T>(source.list)`.
+     - `SerializableObject` lists: iterate source and clone: `if (Core.Query.Clone(item) is ItemType item_Temp) list.Add(item_Temp);`. Do NOT cast `IEnumerable.Clone()` directly to `IList`.
+     - Single nested `SerializableObject`: `field = Core.Query.Clone(source.field);`.
+   - **JSON:** `ClassName(JsonObject? jsonObject) : base(jsonObject)` — empty body delegation.
+4. **Properties:** `[JsonIgnore]` get-only returning field.
 
-**Decision rule when placing a runtime asset:** would committing it leak a secret, or break another
-developer's / the server's machine-specific setup? If yes → `user files/`; otherwise → `files/`.
+---
 
-- **Script configurations (PowerShell)**: PowerShell scripts requiring machine-specific, secret, or environment-specific paths (e.g., local backup paths or cloud storage directories) must load these settings from a `.conf` file inside the `user files/` directory, rather than hardcoding them in the scripts or introducing custom `.gitignore` records.
+## 5. Code Reference Snippets
 
-## Serialization pattern (SerializableObject / ISerializableObject)
-Classes under `/Classes` needing JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject` in this exact shape (reflection-driven — no manual JSON parsing).
+### Core Architecture (`Query`, `Modify`, `Create`, `Convert`, Local Function)
 
-1. **Marker interfaces** per project under `/Interfaces` (mirroring `DiGi.GIS.Interfaces.IGISObject`/`IGISSerializableObject`):
-   ```csharp
-   // /Interfaces/I<Project>Object.cs
-   public interface I<Project>Object : DiGi.Core.Interfaces.IObject
-   {
-   }
+```csharp
+namespace DiGi.Core.Classes
+{
+    public class PointNode
+    {
+        public string? Name { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+}
 
-   // /Interfaces/I<Project>SerializableObject.cs
-   public interface I<Project>SerializableObject : I<Project>Object, DiGi.Core.Interfaces.ISerializableObject
-   {
-   }
-   ```
-   Every serializable class implements `I<Project>SerializableObject` (e.g. `public class Holiday : SerializableObject, IEPWSerializableObject`).
-2. **Fields:** `private readonly`, each `[JsonInclude, JsonPropertyName(nameof(PublicPropertyName))]` — always `nameof(...)`, never a hardcoded string literal.
-3. **Three constructors, always in this order:**
-   - **Primary** (plain params, assigns fields) — no `base(...)` call needed.
-   - **Copy** `ClassName(ClassName? classNameInstance) : base(classNameInstance)`, copying every field:
-     - Primitive/value-type fields and strings: copy by value.
-     - `List<T>`/`IList<T>` of **primitives**: `new List<T>(source)` (or `null` if source is `null`).
-     - `IList<T>` of **nested `SerializableObject`-derived items**: clone element-by-element filtering nulls (see the excerpt below). Do NOT pipe the `IEnumerable<T>.Clone<T>()` extension into an `IList<T>` field — it returns `List<T?>?`, a nullable-element mismatch against a non-nullable `IList<T>` field.
-     - A single nested `SerializableObject` reference: `field = Core.Query.Clone(source.field);`.
-   - **JSON** `ClassName(JsonObject? jsonObject) : base(jsonObject)` — pure delegation, empty body.
-4. **Properties:** `[JsonIgnore]` get-only, returning the backing field (the field attribute handles serialization — do not also serialize through the property).
-5. **Project file:** `.csproj` needs a `<Reference Include="DiGi.Core"><HintPath>..\..\DiGi.Core\bin\DiGi.Core.dll</HintPath></Reference>` and a `<PackageReference Include="System.Text.Json" .../>` matching the version used elsewhere (check `DiGi.Core.csproj`).
+namespace DiGi.Core
+{
+    public static partial class Query
+    {
+        // Property-like naming (no 'Get')
+        public static double DistanceToOrigin(this Classes.PointNode pointNode)
+        {
+            return Math.Sqrt((pointNode.X * pointNode.X) + (pointNode.Y * pointNode.Y));
+        }
 
-### Example — simple class with primitive fields (`/Classes/Holiday.cs`)
+        public static bool IsValid(this Classes.PointNode pointNode)
+        {
+            return !string.IsNullOrWhiteSpace(pointNode.Name);
+        }
+    }
+
+    public static partial class Modify
+    {
+        public static void MoveNode(this Classes.PointNode pointNode, double deltaX, double deltaY)
+        {
+            pointNode.X += deltaX;
+            pointNode.Y += deltaY;
+        }
+    }
+
+    public static partial class Create
+    {
+        public static Classes.PointNode PointNode_ByOffset(this Classes.PointNode pointNode, double offset)
+        {
+            // Inline helper (local function) for single-use logic
+            bool IsValidOffset(double val) => !double.IsNaN(val) && !double.IsInfinity(val);
+
+            if (!IsValidOffset(offset))
+            {
+                return new();
+            }
+
+            PointNode pointNode_Result = new();
+            pointNode_Result.Name = pointNode.Name + "_Offset";
+            pointNode_Result.X = pointNode.X + offset;
+            pointNode_Result.Y = pointNode.Y + offset;
+            return pointNode_Result;
+        }
+    }
+
+    public static partial class Convert
+    {
+        public static string? ToSystem_String(this Classes.PointNode? pointNode)
+        {
+            if (pointNode is null)
+            {
+                return null;
+            }
+            return $"{pointNode.Name}: ({pointNode.X}, {pointNode.Y})";
+        }
+    }
+}
+```
+
+### `SerializableObject` Pattern
+
 ```csharp
 using DiGi.Core.Classes;
-using DiGi.EPW.Interfaces;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -222,8 +200,7 @@ namespace DiGi.EPW.Classes
             this.date = date;
         }
 
-        public Holiday(Holiday? holiday)
-            : base(holiday)
+        public Holiday(Holiday? holiday) : base(holiday)
         {
             if (holiday != null)
             {
@@ -232,219 +209,13 @@ namespace DiGi.EPW.Classes
             }
         }
 
-        public Holiday(JsonObject? jsonObject)
-            : base(jsonObject)
-        {
-        }
+        public Holiday(JsonObject? jsonObject) : base(jsonObject) { }
 
         [JsonIgnore]
-        public string? Name
-        {
-            get
-            {
-                return name;
-            }
-        }
+        public string? Name => name;
 
         [JsonIgnore]
-        public string? Date
-        {
-            get
-            {
-                return date;
-            }
-        }
-    }
-}
-```
-
-### Example — nested list of `SerializableObject` items (copy-constructor excerpt)
-```csharp
-public HolidaysDaylightSaving(HolidaysDaylightSaving? holidaysDaylightSaving)
-    : base(holidaysDaylightSaving)
-{
-    if (holidaysDaylightSaving != null)
-    {
-        leapYearObserved = holidaysDaylightSaving.leapYearObserved;
-
-        if (holidaysDaylightSaving.holidays != null)
-        {
-            holidays = [];
-            foreach (Holiday holiday in holidaysDaylightSaving.holidays)
-            {
-                if (Core.Query.Clone(holiday) is Holiday holiday_Temp)
-                {
-                    holidays.Add(holiday_Temp);
-                }
-            }
-        }
-    }
-}
-```
-
-### Example — `List<double>` of primitives (copy-constructor excerpt)
-```csharp
-public GroundTemperature(GroundTemperature? groundTemperature)
-    : base(groundTemperature)
-{
-    if (groundTemperature != null)
-    {
-        depth = groundTemperature.depth;
-        monthlyValues = groundTemperature.monthlyValues == null ? null : new List<double>(groundTemperature.monthlyValues);
-    }
-}
-```
-
-## Code examples for AI reference
-
-**1. Class (`/Classes/PointNode.cs`)**
-```csharp
-namespace DiGi.Core.Classes
-{
-    public class PointNode
-    {
-        public string Name { get; set; }
-        public double X { get; set; }
-        public double Y { get; set; }
-    }
-}
-```
-
-**2. Query (`/Query/DistanceToOrigin.cs`)**
-```csharp
-using DiGi.Core.Classes;
-using System;
-
-namespace DiGi.Core
-{
-    public static partial class Query
-    {
-        public static double DistanceToOrigin(this PointNode pointNode)
-        {
-            double distance = Math.Sqrt((pointNode.X * pointNode.X) + (pointNode.Y * pointNode.Y));
-            return distance;
-        }
-    }
-}
-```
-
-**3. Modify (`/Modify/MoveNode.cs`)**
-```csharp
-using DiGi.Core.Classes;
-
-namespace DiGi.Core
-{
-    public static partial class Modify
-    {
-        public static void MoveNode(this PointNode pointNode, double deltaX, double deltaY)
-        {
-            pointNode.X += deltaX;
-            pointNode.Y += deltaY;
-        }
-    }
-}
-```
-
-**4. Create (`/Create/PointNode.cs`)**
-```csharp
-using DiGi.Core.Classes;
-
-namespace DiGi.Core
-{
-    public static partial class Create
-    {
-        public static PointNode PointNode_ByOffset(this PointNode pointNode, double offset)
-        {
-            PointNode result = new();
-            result.Name = pointNode.Name + "_Offset";
-            result.X = pointNode.X + offset;
-            result.Y = pointNode.Y + offset;
-            
-            return result;
-        }
-    }
-}
-```
-
-**5. Convert (`/Convert/ToSystem/string.cs`)**
-```csharp
-using DiGi.Core.Classes;
-
-namespace DiGi.Core
-{
-    public static partial class Convert
-    {
-        public static string? ToSystem_String(this PointNode pointNode)
-        {
-            if (pointNode == null)
-            {
-                return null;
-            }
-
-            return $"{pointNode.Name}: ({pointNode.X}, {pointNode.Y})";
-        }
-    }
-}
-```
-
-**6. Method Encapsulation & Query Naming Example (`/Create/Solution.cs` & `/Query/Solution.cs`)**
-```csharp
-using DiGi.Maintenance.Classes;
-using System.IO;
-
-namespace DiGi.Maintenance
-{
-    public static partial class Create
-    {
-        // CORRECT: Single-use utility logic. Implemented as an inline method (local function).
-        public static Solution? Solution(string? path)
-        {
-            // Inline method encapsulated inside the target scope
-            bool ValidatePath(string? p)
-            {
-                return !string.IsNullOrEmpty(p) && File.Exists(p);
-            }
-
-            if (!ValidatePath(path))
-            {
-                return null;
-            }
-
-            // Solution construction logic...
-            System.Version? version = null;
-            return new Solution(path!, version);
-        }
-
-        // VIOLATION: Do not use private methods in partial utility classes!
-        private static bool ValidatePath(string? path)
-        {
-            return !string.IsNullOrEmpty(path) && File.Exists(path);
-        }
-    }
-
-    public static partial class Query
-    {
-        // CORRECT: Property-like naming convention for queries (no 'Get' prefix)
-        public static string? Name(this Solution solution)
-        {
-            if (string.IsNullOrWhiteSpace(solution.Path))
-            {
-                return null;
-            }
-            return Path.GetFileNameWithoutExtension(solution.Path);
-        }
-
-        // CORRECT: Allowed verb prefix indicating a boolean check
-        public static bool IsValid(this Solution solution)
-        {
-            return !string.IsNullOrWhiteSpace(solution.Path) && File.Exists(solution.Path);
-        }
-
-        // VIOLATION: Do not use verbs like 'Get', 'Find', 'Calculate' for regular queries!
-        public static string? GetName(this Solution solution)
-        {
-            return Path.GetFileNameWithoutExtension(solution.Path);
-        }
+        public string? Date => date;
     }
 }
 ```

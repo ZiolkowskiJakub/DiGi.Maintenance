@@ -1,73 +1,55 @@
-# GitHub Wiki — General
+# GitHub Wiki — General Guidelines
 
-How DiGi wikis are structured, cloned locally, kept in sync, and hand-edited. Read this before touching
-any wiki page. For benchmark pages see [`GitHub Wiki - Benchmark.md`](GitHub%20Wiki%20-%20Benchmark.md).
+Structure, local layout, CI synchronization, and editing workflows for DiGi repository GitHub Wikis.
 
-## What a DiGi wiki is
-- Each code repo can have a **GitHub Wiki** — a *separate* git repo at
-  `https://github.com/ZiolkowskiJakub/<repo>.wiki.git`, rendered at `.../<repo>/wiki`. It has its own
-  history and remote, default branch **`master`**. A page's URL is its `.md` filename without the
-  extension (`Benchmark.md` → `.../wiki/Benchmark`; `Home.md` → the landing page).
-- A wiki repo exists once it has at least one page (`Home`); all DiGi.* repos with wikis enabled
-  already do.
+---
 
-## Local layout — `DigiProject/wiki/`
-Wiki clones live under **`wiki/`** under the `DigiProject` workspace root, one folder per wiki named
-`<repo>.wiki` (e.g. `DiGi.Core.wiki/`, `DiGi.Geometry.wiki/`, `DiGi.ComputeSharp.wiki/`,
-`DiGi.Weather.wiki/`). `DigiProject/` is not a git repo, so each clone is standalone (own `.git`,
-URL-based remote); its on-disk location is irrelevant to git and CI, so it can be moved freely. Clone a
-missing wiki here:
+## 1. Wiki Architecture & Repository Layout
 
-```
-# Run from the DigiProject workspace root:
-git clone https://github.com/ZiolkowskiJakub/<repo>.wiki.git "wiki/<repo>.wiki"
-```
+- **Wiki Remote:** Separate Git repository at `https://github.com/ZiolkowskiJakub/<repo>.wiki.git` (default branch: **`master`**).
+- **Page Routing:** Page URL corresponds to `.md` filename without extension (`Home.md` → landing page).
+- **Local Location:** Cloned under `DigiProject/wiki/<repo>.wiki` (e.g., `DigiProject/wiki/DiGi.Core.wiki/`). Each clone is a standalone repository.
+  ```bash
+  # Clone a missing wiki (from DigiProject workspace root):
+  git clone https://github.com/ZiolkowskiJakub/<repo>.wiki.git "wiki/<repo>.wiki"
+  ```
 
-## Two kinds of page
-- **Auto-generated API pages** — built from XML doc comments into `documentation/API/<Assembly>/*.md`
-  in the code repo on every build, then copied into the wiki by CI. **Never hand-edit** — the next sync
-  overwrites them; change the C# XML docs and rebuild instead.
-- **Hand-authored pages** — `Home.md`, `Benchmark.md`, and other guide pages. The sync never touches
-  these (it only adds/updates API pages). Edit them directly in the wiki clone.
+---
 
-### Multi-assembly repos need a unique assembly page name
-`DefaultDocumentation` names a multi-namespace assembly's overview page `index.md` unless
-`DefaultDocumentationAssemblyPageName` is set. The wiki sidebar shows only the filename, not the
-folder, so a repo with 2+ assemblies (e.g. `DiGi.Communication` + `DiGi.Communication.ComputeSharp`)
-ends up with multiple pages that all display as the same bare word "index". `Directory.Build.targets`
-(both the shared one written by `ApplyDocumentationSetup.ps1` and `templates/DiGi.Template`'s) sets
+## 2. Page Types & Overwrite Constraints
+
+| Page Type | Source & Generation | Modification Rule |
+|---|---|---|
+| **Auto-Generated API Pages** | Compiled from XML doc comments to `documentation/API/<Assembly>/*.md` during build, copied via CI. | **NEVER hand-edit.** Changes are overwritten by CI sync. Edit C# XML docs instead. |
+| **Hand-Authored Pages** | `Home.md`, `Benchmark.md`, and guide pages created directly in wiki clone. | Edit and commit directly in wiki clone. CI sync never overwrites them. |
+
+### Multi-Assembly Overview Page Rule
+To prevent filename collisions across multi-assembly repositories, `Directory.Build.targets` enforces:
 `<DefaultDocumentationAssemblyPageName>$(AssemblyName).Overview</DefaultDocumentationAssemblyPageName>`
-to avoid this — don't remove it, and don't hand-rename the resulting `<Assembly>.Overview.md` pages
-back to `index.md`.
+Do NOT remove this setting or rename `<Assembly>.Overview.md` back to `index.md`.
 
-## CI auto-sync (independent of local clones)
-Each code repo has `.github/workflows/sync-wiki.yml`. On push to `main`/`master` it checks out
-`DiGi.Maintenance` and runs `DiGi.Maintenance/Scripts/SyncWiki.ps1 -RepoPath <workspace>`, which:
+---
 
-1. Derives the wiki URL from the code repo's `origin` (`…<repo>.git` → `…<repo>.wiki.git`), injecting
-   `WIKI_SYNC_PAT`/`GITHUB_TOKEN` for auth.
-2. Clones that wiki into a temp dir (`$env:TEMP\DiGi.WikiTemp_<repo>`) — not the `DigiProject/wiki/`
-   clone.
-3. Copies `documentation/API/*` from the code repo into the temp clone.
-4. Commits (`chore: auto-update API documentation`) and pushes **only if there are changes**, then
-   deletes the temp dir.
+## 3. CI Auto-Sync Mechanism (`SyncWiki.ps1`)
 
-Because the sync uses its own throwaway clone, the `DigiProject/wiki/` clones have no effect on CI and
-vice-versa — the only collision risk is hand-editing an auto-generated API page, which the sync reverts.
+Workflow `.github/workflows/sync-wiki.yml` triggers on push to `main`/`master`:
+1. Clones target wiki to temporary directory (`$env:TEMP\DiGi.WikiTemp_<repo>`).
+2. Copies updated `documentation/API/*` markdown files from code repository into temp clone.
+3. Commits (`chore: auto-update API documentation`) and pushes to `master` if diffs exist.
 
-## Editing workflow (manual / AI)
-1. `cd` to the clone under `DigiProject/wiki/<repo>.wiki` (clone it there first if missing).
-2. `git pull` — CI may have pushed API updates since you last synced.
-3. Edit **hand-authored** pages only; match the existing page style and cross-link related pages by
-   filename.
-4. Commit and `git push origin HEAD` (branch `master`). Git identity and `credential.helper=manager`
-   are preconfigured on these clones, so pushes are non-interactive.
-5. Verify the rendered page at `https://github.com/ZiolkowskiJakub/<repo>/wiki/<PageName>` (GitHub may
-   serve a cached copy briefly).
+---
 
-Link every new hand-authored page from `Home.md` so it is discoverable.
+## 4. Manual & AI Editing Workflow
 
-## Related
-- [`GitHub Wiki - Benchmark.md`](GitHub%20Wiki%20-%20Benchmark.md) — required structure for `Benchmark`
-  pages.
-- `DiGi.Maintenance/Scripts/SyncWiki.ps1` — the sync implementation.
+1. Open wiki clone: `cd DigiProject/wiki/<repo>.wiki`.
+2. Fetch latest changes: `git pull`.
+3. Edit **hand-authored** pages only (`Home.md`, `Benchmark.md`).
+4. Cross-link related pages using markdown filenames.
+5. Commit and push: `git push origin HEAD` (branch `master`).
+6. **Mandatory Link Rule:** Link every new hand-authored page in `Home.md` for discoverability.
+
+---
+
+## Related Guidelines
+- [GitHub Wiki - Benchmark.md](GitHub%20Wiki%20-%20Benchmark.md)
+- [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md)
