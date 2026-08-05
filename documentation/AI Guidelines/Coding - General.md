@@ -57,6 +57,65 @@ Strictly separate data models from business logic using anemic models + static e
 - Check interface hierarchy before proposing method relocations.
 - Private helper methods are permitted on interface-implementing geometry model classes.
 
+### Constructors Stay Cheap — Put Calculation in `Create`
+
+- **Constructors on `/Classes` types assign and clone. Nothing else.** No validation sweep, no
+  normalisation, no cleanup pass, no geometric or numeric computation — not even an `O(n)` scan over
+  a collection the caller just handed over. A constructor is on the hot path of every clone, every
+  copy constructor and every deserialization, and a caller who already holds clean data must not pay
+  for a check they do not need.
+- **Any such work belongs in a `Create` factory** named after the type it returns, at
+  `/Create/[TypeName].cs`. The factory does the work, then calls the plain constructor. It returns
+  the type as **nullable** and returns `null` when the input cannot make a valid object, so the
+  guard is a return value rather than an exception.
+- **Order inside the factory:** materialise and filter the input, run the cleanup, *then* check the
+  result is still valid. Validating before the cleanup measures the wrong thing — a ring of three
+  positions that repeats a corner passes a "three or more" check and then becomes a two corner
+  polygon.
+- **Document the split on both sides.** The constructor's `<summary>` points at the factory for
+  callers whose data is not already clean; the factory's `<summary>` says what it removes and why
+  the constructor does not.
+
+**Reference:** `DiGi.Geometry.Spatial.Create.Polygon3D(IEnumerable<Point3D?>?, double)` and
+`DiGi.Geometry.Planar.Create.Polygon2D(IEnumerable<Point2D?>?, double)` — both drop points repeating
+their predecessor via `Modify.RemoveDuplicates(..., closed, tolerance)` before checking the corner
+count, while `Polygon2D`'s constructors store whatever they are given.
+
+```csharp
+// /Classes — plain assignment, no work
+public Polygon2D(IEnumerable<Point2D>? point2Ds)
+    : base(point2Ds)
+{
+}
+
+// /Create — the work lives here, and the guard runs after it
+public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double tolerance = DiGi.Core.Constants.Tolerance.Distance)
+{
+    if (point2Ds == null)
+    {
+        return null;
+    }
+
+    List<Point2D> point2Ds_Temp = [];
+    foreach (Point2D? point2D in point2Ds)
+    {
+        if (point2D != null)
+        {
+            point2Ds_Temp.Add(point2D);
+        }
+    }
+
+    point2Ds_Temp.RemoveDuplicates(true, tolerance);
+
+    if (point2Ds_Temp.Count < 3)
+    {
+        return null;
+    }
+
+    return new Polygon2D(point2Ds_Temp);
+}
+```
+
 ### Method Encapsulation in Utility Classes (`Query`/`Modify`/`Create`/`Convert`)
 - **Prohibit `private static` methods** inside partial utility classes.
 - **Reusable helpers:** Implement as `public static` methods within the appropriate partial class.
