@@ -135,9 +135,10 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 ## 3. Solution Assets — `files/` vs `user files/`
 
 - **`files/` (Committed):** Non-sensitive, shared deployment assets (`web.config`, `app_offline.htm.bak`). Copied to build output via `CopyFiles` MSBuild target.
-- **`user files/` (Git-Ignored):** Sensitive, user-specific, or local machine data (DB credentials `*.conf`, API keys, local paths). Copied via `CopyUserFiles` target.
+- **`user files/` (Git-Ignored):** Sensitive, user-specific, local machine data (DB credentials `*.conf`, API keys, local paths), and test report outputs (`user files/reports/`). Copied via `CopyUserFiles` target.
   - Solution `.gitignore` MUST contain `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/file.conf"`.
   - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
+  - Automated test reports, diagnostic dumps, and text logs produced during test execution MUST be saved to `user files/reports/` (resolved via `assembly.ReportsDirectory()`).
 
 ---
 

@@ -29,7 +29,7 @@ PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1"
 ```
 
 ### Copy User Files
-Copies `user files` configuration folders from all DiGi repositories to the backup data directory (`USER_FILES_BACKUP_DIRECTORY` in `user files/Directories.conf`), or restores from the backup directory back to matching repositories when `-Reverse` or `-Restore` is specified.
+Copies `user files` configuration folders from all DiGi repositories to the backup data directory (`USER_FILES_BACKUP_DIRECTORY` in `user files/Directories.conf`), excluding `reports` folders, or restores from the backup directory back to matching repositories when `-Reverse` or `-Restore` is specified.
 ```powershell
 # Copy user files to backup directory
 PowerShell -ExecutionPolicy Bypass -File ".\CopyUserFiles.ps1"

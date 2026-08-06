@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Finds "user files" directories in all DiGi solutions/repositories and copies them to/from the target backup data directory.
+    Finds "user files" directories in all DiGi solutions/repositories and copies them to/from the target backup data directory (excluding 'reports' folders).
 
 .DESCRIPTION
     1. Reads target backup directory from parameter or 'user files/Directories.conf'.
-    2. By default, searches for "user files" folders across all DiGi repositories under the workspace root and copies them to the backup directory.
-    3. If -Reverse (or -Restore) is specified, copies "user files" from the backup directory back into matching workspace repositories.
+    2. By default, searches for "user files" folders across all DiGi repositories under the workspace root and copies them to the backup directory (excluding 'reports' folders).
+    3. If -Reverse (or -Restore) is specified, copies "user files" from the backup directory back into matching workspace repositories (excluding 'reports' folders).
 
 .PARAMETER Destination
     Target root directory where user files folders will be copied or restored from.
@@ -93,12 +93,14 @@ if ($Reverse) {
                 New-Item -ItemType Directory -Path $destPath -Force | Out-Null
             }
 
-            $items = Get-ChildItem -Path $srcPath
+            $items = Get-ChildItem -Path $srcPath | Where-Object { $_.Name -ne "reports" }
             if ($items.Count -gt 0) {
-                Copy-Item -Path "$srcPath\*" -Destination $destPath -Recurse -Force -ErrorAction Stop
-                Write-Host "[SUCCESS] Restored $($items.Count) item(s) to $destPath" -ForegroundColor Green
+                foreach ($item in $items) {
+                    Copy-Item -Path $item.FullName -Destination $destPath -Recurse -Force -ErrorAction Stop
+                }
+                Write-Host "[SUCCESS] Restored $($items.Count) item(s) (excluding 'reports') to $destPath" -ForegroundColor Green
             } else {
-                Write-Host "[SUCCESS] Destination directory created (backup 'user files' is empty)" -ForegroundColor Yellow
+                Write-Host "[SUCCESS] Destination directory created (backup 'user files' is empty or only contains excluded items)" -ForegroundColor Yellow
             }
             $copiedCount++
         } catch {
@@ -150,12 +152,14 @@ if ($Reverse) {
                 New-Item -ItemType Directory -Path $destPath -Force | Out-Null
             }
 
-            $items = Get-ChildItem -Path $srcPath
+            $items = Get-ChildItem -Path $srcPath | Where-Object { $_.Name -ne "reports" }
             if ($items.Count -gt 0) {
-                Copy-Item -Path "$srcPath\*" -Destination $destPath -Recurse -Force -ErrorAction Stop
-                Write-Host "[SUCCESS] Copied $($items.Count) item(s) to $destPath" -ForegroundColor Green
+                foreach ($item in $items) {
+                    Copy-Item -Path $item.FullName -Destination $destPath -Recurse -Force -ErrorAction Stop
+                }
+                Write-Host "[SUCCESS] Copied $($items.Count) item(s) (excluding 'reports') to $destPath" -ForegroundColor Green
             } else {
-                Write-Host "[SUCCESS] Target directory created (source 'user files' is empty)" -ForegroundColor Yellow
+                Write-Host "[SUCCESS] Target directory created (source 'user files' is empty or only contains excluded items)" -ForegroundColor Yellow
             }
             $copiedCount++
         } catch {
