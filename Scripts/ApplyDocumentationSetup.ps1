@@ -27,6 +27,7 @@ $targetsContent = @'
 
 $jsonContent = @'
 {
+  "LogLevel": "Warning",
   "RemoveFileExtensionFromLinks": true
 }
 '@
