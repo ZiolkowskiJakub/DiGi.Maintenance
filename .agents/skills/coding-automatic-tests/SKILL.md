@@ -27,22 +27,37 @@ description: Use when writing or adding xUnit tests for C# classes, structs, or 
 
 ---
 
-## 3. Shared Test Data Fixtures
+## 3. Shared Test Data Fixtures & Test Reports
 
-- **Directory Path:** `DiGi.Test/files/` (workspace root level; do not create per-project data folders).
-- **Asset Access:** Read files in place. Do not set `<CopyToOutputDirectory>`.
-- **Path Resolution:**
-  - File path: `Core.xUnit.Query.FilePath(Assembly.GetExecutingAssembly(), "fileName.ext")`
-  - Directory path: `assembly.FilesDirectory()`
-  - Requires `using System.Reflection;`. Call fully-qualified: `Core.xUnit.Query.FilePath(...)`.
-  - `FilePath` asserts directory existence and fails cleanly if missing.
+- **Shared Input Data Fixtures (`DiGi.Test/files/`):**
+  - **Directory Path:** `DiGi.Test/files/` (workspace root level; do not create per-project data folders).
+  - **Asset Access:** Read input files in place. Do not set `<CopyToOutputDirectory>`.
+  - **Path Resolution:**
+    - File path: `Core.xUnit.Query.FilePath(Assembly.GetExecutingAssembly(), "fileName.ext")`
+    - Directory path: `assembly.FilesDirectory()`
+    - Requires `using System.Reflection;`. Call fully-qualified: `Core.xUnit.Query.FilePath(...)`.
+    - `FilePath` asserts directory existence and fails cleanly if missing.
+- **Default Path for Test Reports & Diagnostic Outputs (`DiGi.Test/user files/reports/`):**
+  - **Rule:** ALL reports, text dumps, benchmark logs, and diagnostic output files produced during test execution MUST be saved to `user files/reports/` (never in `files/`).
+  - **Path Resolution Helpers:**
+    - Reports directory: `assembly.ReportsDirectory()` or `Core.xUnit.Query.ReportsDirectory(Assembly.GetExecutingAssembly())` (resolves and creates `DiGi.Test/user files/reports/`).
+    - User files directory: `assembly.UserFilesDirectory()` (resolves and creates `DiGi.Test/user files/`).
+  - **Portability:** Use relative paths or extension methods. Do NOT hardcode machine-specific absolute paths.
 
 ```csharp
 using System.Reflection;
 
-string? path = Core.xUnit.Query.FilePath(Assembly.GetExecutingAssembly(), "sample.gmf");
-Assert.False(string.IsNullOrWhiteSpace(path));
-Assert.True(System.IO.File.Exists(path));
+// Resolving input fixture file path
+string? pathInput = Core.xUnit.Query.FilePath(Assembly.GetExecutingAssembly(), "sample.gmf");
+Assert.False(string.IsNullOrWhiteSpace(pathInput));
+Assert.True(System.IO.File.Exists(pathInput));
+
+// Resolving test report output path
+string? pathReportsDir = Core.xUnit.Query.ReportsDirectory(Assembly.GetExecutingAssembly());
+Assert.False(string.IsNullOrWhiteSpace(pathReportsDir));
+
+string reportFilePath = System.IO.Path.Combine(pathReportsDir!, "Diagnostic_Report.txt");
+System.IO.File.WriteAllLines(reportFilePath, reportLines);
 ```
 
 ---
