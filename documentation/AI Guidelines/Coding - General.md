@@ -116,6 +116,28 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 }
 ```
 
+### File Organisation — One Member Per File
+
+- **`Query`/`Modify`/`Create` — one method per file, named after the method.** A file in `/Query`,
+  `/Modify` or `/Create` holds exactly one public method, and the file name is that method's name
+  (`/Spatial/Query/NearestIndexes.cs` holds `NearestIndexes`). Do **not** group related methods into
+  one file: `TryGetNearestIndexes`, `NearestIndexes` and `NearestNeighbors` are three files, not one.
+  - **Overloads are the same method and stay together.** Every `Triangle3D(...)` overload lives in
+    `Triangle3D.cs`; the plural `Triangle3Ds(...)` is a different method name and gets
+    `Triangle3Ds.cs`.
+  - Helpers promoted to `public static` under the encapsulation rule below get their own file too,
+    named after the helper.
+  - `Convert` keeps its own layout, `/Convert/To[TargetArea]/[TargetType].cs` — file per TARGET
+    type, not per method, so all conversions to one target share a file.
+- **Nested types get their own file, `[Outer].[Inner].cs`.** A `class`, `struct`, `record` or `enum`
+  declared inside another type is moved to its own file next to the outer type's file, declaring the
+  outer type `partial` and carrying only the nested type — `/Spatial/Classes/PointCloud3D.Point.cs`
+  and `/Spatial/Classes/PointCloud3D.Enumerator.cs` sit beside `/Spatial/Classes/PointCloud3D.cs`.
+  Keep the type nested; do not promote it to a top-level type, because that changes the public API
+  and usually the name stops making sense on its own (`Point`, `Enumerator`).
+  - The outer `partial` declaration is repeated in each file with no XML `<summary>` on it, per the
+    "do not document `partial` class declarations" rule.
+
 ### Method Encapsulation in Utility Classes (`Query`/`Modify`/`Create`/`Convert`)
 - **Prohibit `private static` methods** inside partial utility classes.
 - **Reusable helpers:** Implement as `public static` methods within the appropriate partial class.
