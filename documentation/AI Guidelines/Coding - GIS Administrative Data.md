@@ -92,22 +92,31 @@ arbitrary in fact, not just in theory, and it demonstrably changed between impor
 
 ---
 
-## 3. `building_2d` holds duplicates across sibling parts
+## 3. `building_2d` duplication across sibling parts — repaired 2026-08-14
 
-The same building reference is stored once per county row it was imported under — **~86 196 duplicate
-rows**, produced by repeated imports resolving the same code to different parts:
+Three codes held the same building reference under two parts at once — **86 196 duplicate rows**,
+produced by repeated imports resolving one code to different parts back when that resolution had no
+`ORDER BY`. **They were removed on 2026-08-14** by `PostgreSQLBuilding2DCountyPartRepairTask`, which
+re-filed each building under the part its footprint lies in and deleted the copies left behind:
 
 ```
-2212  73482 (10 198)  73485 (44 809)  shared 10 197  orphan-only 1
-2405  76989 (24 260)  76984 (42 588)  shared 24 260  orphan-only 0
-2612  86713 (51 740)  86698 (51 739)  shared 51 739  orphan-only 1
+             before                          after
+2212  73482 (10 198)  73485 (44 809)   ->   73482 (1)      73485 (44 809)
+2405  76989 (24 260)  76984 (42 588)   ->   76989 (3)      76984 (42 585)
+2612  86713 (51 740)  86698 (51 739)   ->   86713 (1)      86698 (51 739)
 ```
 
-Consequences to keep in mind:
-- A `reference` is **not unique** in `building_2d`; it is unique only per `county_id`.
-- Re-generating models per county id materialises a model under *each* part holding that building.
-- Of the 44 rows in the 18 multi-part groups, **23 hold no `building_2d` at all**. A group only
-  misbehaves when more than one of its rows holds building data — 3 groups today, 15 latent.
+The union per code is unchanged — 44 810 / 42 588 / 51 740 — so no building lost its last row. Full
+account in [DiGi.GIS.PostgreSQL#1](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/1).
+
+Still true, and still worth knowing:
+- A `reference` is **not unique** in `building_2d`; it is unique only per `county_id`. The repair
+  removed today's duplicates, it did not add a constraint.
+- Of the 44 rows in the 18 multi-part groups, **23 hold no `building_2d` at all**. Only those three
+  groups ever had more than one part holding building data. The other 15 carry no duplicates, and an
+  import now assigns a building to a part by geometry, so they cannot acquire any the way these did.
+- Re-generating models per county id materialises a model under each part holding that building —
+  which after the repair is one part per building for these codes.
 
 ---
 
