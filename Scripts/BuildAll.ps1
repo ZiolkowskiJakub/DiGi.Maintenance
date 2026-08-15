@@ -1,7 +1,8 @@
 param(
 	[string]$Root = "$PSScriptRoot\..\..",  # Default to one level above script folder
 	[string]$Configuration = "Release",
-	[string]$VsMsbuildPath = ""
+	[string]$VsMsbuildPath = "",
+	[switch]$CheckDependencies              # Run CheckHostDependencies.ps1 after the last solution builds
 )
 
 # Resolve the Root path to full absolute path
@@ -146,11 +147,32 @@ foreach ($relativePath in $solutionOrder)
 	Write-Host "Building succeeded ($count/$length)`n"-ForegroundColor Green
 }
 
-if ($count -eq $length) 
+if ($count -eq $length)
 {
 	Write-Host "$count solutions from $length built successfully.`n" -ForegroundColor Green
-} 
-else 
+}
+else
 {
 	Write-Host "$count solutions from $length built successfully.`n" -ForegroundColor Yellow
+}
+
+if ($CheckDependencies)
+{
+	# HintPath references drop a library's transitive NuGet dependencies, so a host can build clean
+	# and still be missing an assembly at runtime. Verify the output before it is deployed.
+	$checkScript = Join-Path -Path $PSScriptRoot -ChildPath "CheckHostDependencies.ps1"
+
+	if (-Not (Test-Path $checkScript))
+	{
+		Write-Host "'$checkScript' not found. Dependency check skipped." -ForegroundColor Yellow
+	}
+	else
+	{
+		& $checkScript -Root $Root -FailOnMissing
+
+		if ($LASTEXITCODE -ne 0)
+		{
+			exit $LASTEXITCODE
+		}
+	}
 }

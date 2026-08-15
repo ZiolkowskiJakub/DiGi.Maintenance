@@ -1,6 +1,6 @@
 ---
 name: coding-general
-description: Use whenever writing or editing C# code in this workspace - naming/typing rules, CancellationToken ordering, member-access simplification, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, and the SerializableObject serialization pattern.
+description: Use whenever writing or editing C# code in this workspace - naming/typing rules, CancellationToken ordering, member-access simplification, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, the SerializableObject serialization pattern, and the host PackageReference rules for NuGet dependencies that HintPath references drop (a runtime FileNotFoundException that shows up as a partial result, not an error).
 ---
 
 # AI Guidelines: C# General Coding Standards & Architecture
@@ -121,6 +121,28 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 }
 ```
 
+### File Organisation — One Member Per File
+
+- **`Query`/`Modify`/`Create` — one method per file, named after the method.** A file in `/Query`,
+  `/Modify` or `/Create` holds exactly one public method, and the file name is that method's name
+  (`/Spatial/Query/NearestIndexes.cs` holds `NearestIndexes`). Do **not** group related methods into
+  one file: `TryGetNearestIndexes`, `NearestIndexes` and `NearestNeighbors` are three files, not one.
+  - **Overloads are the same method and stay together.** Every `Triangle3D(...)` overload lives in
+    `Triangle3D.cs`; the plural `Triangle3Ds(...)` is a different method name and gets
+    `Triangle3Ds.cs`.
+  - Helpers promoted to `public static` under the encapsulation rule below get their own file too,
+    named after the helper.
+  - `Convert` keeps its own layout, `/Convert/To[TargetArea]/[TargetType].cs` — file per TARGET
+    type, not per method, so all conversions to one target share a file.
+- **Nested types get their own file, `[Outer].[Inner].cs`.** A `class`, `struct`, `record` or `enum`
+  declared inside another type is moved to its own file next to the outer type's file, declaring the
+  outer type `partial` and carrying only the nested type — `/Spatial/Classes/PointCloud3D.Point.cs`
+  and `/Spatial/Classes/PointCloud3D.Enumerator.cs` sit beside `/Spatial/Classes/PointCloud3D.cs`.
+  Keep the type nested; do not promote it to a top-level type, because that changes the public API
+  and usually the name stops making sense on its own (`Point`, `Enumerator`).
+  - The outer `partial` declaration is repeated in each file with no XML `<summary>` on it, per the
+    "do not document `partial` class declarations" rule.
+
 ### Method Encapsulation in Utility Classes (`Query`/`Modify`/`Create`/`Convert`)
 - **Prohibit `private static` methods** inside partial utility classes.
 - **Reusable helpers:** Implement as `public static` methods within the appropriate partial class.
@@ -147,7 +169,57 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 
 ---
 
-## 4. Serialization Pattern (`SerializableObject` / `ISerializableObject`)
+## 4. Host Dependencies — `HintPath` Drops Transitive NuGet Packages
+
+DiGi projects reference each other with `<Reference><HintPath>..\..\X\bin\X.dll</HintPath>`, never
+`<ProjectReference>`. A raw assembly reference is **opaque to NuGet**, and the DiGi class libraries do
+not copy their own NuGet dependencies into their `bin`. A library's third-party dependencies therefore
+never reach a host that consumes it by `HintPath`.
+
+### The Rule
+- When a `HintPath`-referenced DiGi library needs a NuGet package, re-declare that `PackageReference`
+  on the **deployed host** (the `Exe`/`WinExe`/`Microsoft.NET.Sdk.Web` project), at the **exact same
+  version**. Add a comment naming the library that owns the dependency.
+- The chain runs deeper than the direct reference: `DiGi.Geometry` → `DiGi.Math` → `MathNet.Numerics`.
+  Audit the whole closure, not just the assemblies listed in the `.csproj`.
+- Do **NOT** fix this with `CopyLocalLockFileAssemblies=true` on the netstandard2.0 library — it bloats
+  its `bin` with `System.*` 4.3.0 shims.
+- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally there.
+
+### The Failure Signature — Read This Before Suspecting the Data
+**A missing transitive dependency produces a partial result, not an error.** `FileNotFoundException` is
+thrown per item deep inside a loop, so a batch run completes and reports success while silently
+delivering less than it should. County 5 modelled **65 % of 33 687 buildings and reported success**; the
+shortfall was found by sampling the database, not by any log entry.
+
+> When a run completes but delivers less than it should, check the host's output directory for missing
+> assemblies **before** investigating the data.
+
+**A green build and a green test suite prove nothing.** `DiGi.Test/DiGi.GIS.Analytical.xUnit` re-declares
+`QuikGraph` for exactly this reason, so the suite exercised the storey split successfully while the
+shipped application could not.
+
+### Extension Hosts Are One Probing Set
+`DiGi.GIS.WebAPI`, `DiGi.GLTF.WebAPI`, `DiGi.Communication.WebAPI` and `DiGi.User.WebAPI` deploy into
+`DiGi.WebAPI.WindowsService\bin\extensions\<name>` and are loaded into `AssemblyLoadContext.Default`
+with cross-directory `AssemblyDependencyResolver`s. Audit the host output **together with** its
+`extensions\*` folders, and declare shared dependencies once on `DiGi.WebAPI.WindowsService` — that is
+already how `Microsoft.OpenApi` and `Serilog` reach the extensions.
+
+### The Check
+Run after building; it inspects compiled output, not project files.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1"
+PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release -CheckDependencies
+```
+It reads each output assembly's reference table with `System.Reflection.Metadata.PEReader` and reports
+every reference that resolves neither inside the deployment unit nor in a shared framework. Reviewed
+exceptions are declared per unit inside the script, each with a stated reason — an unexplained entry
+there re-hides the exact class of bug the script exists to find.
+
+---
+
+## 5. Serialization Pattern (`SerializableObject` / `ISerializableObject`)
 
 Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject`.
 
@@ -168,7 +240,7 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
 
 ---
 
-## 5. Code Reference Snippets
+## 6. Code Reference Snippets
 
 ### Core Architecture (`Query`, `Modify`, `Create`, `Convert`, Local Function)
 

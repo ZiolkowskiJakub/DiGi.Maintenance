@@ -187,6 +187,34 @@ developer's / the server's machine-specific setup? If yes → `user files/`; oth
 
 - **Script configurations (PowerShell)**: PowerShell scripts requiring machine-specific, secret, or environment-specific paths (e.g., local backup paths or cloud storage directories) must load these settings from a `.conf` file inside the `user files/` directory, rather than hardcoding them in the scripts or introducing custom `.gitignore` records.
 
+## Host dependencies — `HintPath` drops a library's NuGet packages
+
+DiGi projects reference each other with `<Reference><HintPath>..\..\X\bin\X.dll</HintPath>`, never
+`<ProjectReference>`. A raw assembly reference is **opaque to NuGet**, and the DiGi class libraries do
+not copy their own NuGet dependencies into their `bin` — so a library's third-party dependencies never
+reach a host that consumes it by `HintPath`.
+
+> **When a `HintPath`-referenced library needs a NuGet package, re-declare that `PackageReference` on
+> the deployed host (the `Exe` / `WinExe` / `Microsoft.NET.Sdk.Web` project) at the identical version.**
+
+- The chain runs deeper than the direct reference: `DiGi.Geometry` → `DiGi.Math` → `MathNet.Numerics`.
+  Audit the whole closure, not just the assemblies listed in the `.csproj`.
+- Do **NOT** use `CopyLocalLockFileAssemblies=true` on the netstandard2.0 library — it bloats its `bin`
+  with `System.*` 4.3.0 shims.
+- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally.
+
+**The failure signature is a partial result, not an error.** `FileNotFoundException` is thrown per item
+deep inside a loop, so a batch run completes and reports success while silently delivering less than it
+should — one county produced models for 65 % of 33 687 buildings and reported success. A green build and
+a green test suite prove nothing, because the `.xUnit` projects re-declare these packages themselves.
+**When a run completes but delivers less than it should, check the host's output directory for missing
+assemblies before investigating the data.**
+
+Verify after building:
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1"
+```
+
 ---
 
 ### 3. Reference Comparison (`IReference` / `IUniqueReference`)

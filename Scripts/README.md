@@ -17,9 +17,32 @@ Copy `files/Directories.conf` to `user files/Directories.conf` and configure the
 ## Execution Commands
 
 ### Build All Solutions
-Builds all DiGi solution repositories in Release configuration.
+Builds all DiGi solution repositories in Release configuration. Pass `-CheckDependencies` to run
+`CheckHostDependencies.ps1` against the produced output once every solution has built, failing when
+a host is missing an assembly its libraries reference.
 ```powershell
 PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release
+
+# Build, then audit the host outputs for unresolvable assembly references
+PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release -CheckDependencies
+```
+
+### Check Host Dependencies
+Audits the build output of every deployed host for assembly references that cannot be resolved at
+runtime. DiGi repositories reference each other by `HintPath`, which is opaque to NuGet, so a
+library's transitive NuGet dependencies never reach a host that consumes it that way — the host
+builds clean, the tests pass, and the assembly is missing only at runtime, usually as a *partial
+result* rather than an error. Requires a prior build; reviewed exceptions are declared per unit
+inside the script. `DiGi.WebAPI.WindowsService` is audited together with `bin\extensions\*`, because
+they share one probing set.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1"
+
+# Audit a single deployment unit
+PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1" -Unit "DiGi.GIS.WebAPI.UI"
+
+# Exit with code 1 when a gap is found (for use in automation)
+PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1" -FailOnMissing
 ```
 
 ### Sync Output Directories

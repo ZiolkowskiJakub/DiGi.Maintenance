@@ -164,7 +164,57 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 
 ---
 
-## 4. Serialization Pattern (`SerializableObject` / `ISerializableObject`)
+## 4. Host Dependencies — `HintPath` Drops Transitive NuGet Packages
+
+DiGi projects reference each other with `<Reference><HintPath>..\..\X\bin\X.dll</HintPath>`, never
+`<ProjectReference>`. A raw assembly reference is **opaque to NuGet**, and the DiGi class libraries do
+not copy their own NuGet dependencies into their `bin`. A library's third-party dependencies therefore
+never reach a host that consumes it by `HintPath`.
+
+### The Rule
+- When a `HintPath`-referenced DiGi library needs a NuGet package, re-declare that `PackageReference`
+  on the **deployed host** (the `Exe`/`WinExe`/`Microsoft.NET.Sdk.Web` project), at the **exact same
+  version**. Add a comment naming the library that owns the dependency.
+- The chain runs deeper than the direct reference: `DiGi.Geometry` → `DiGi.Math` → `MathNet.Numerics`.
+  Audit the whole closure, not just the assemblies listed in the `.csproj`.
+- Do **NOT** fix this with `CopyLocalLockFileAssemblies=true` on the netstandard2.0 library — it bloats
+  its `bin` with `System.*` 4.3.0 shims.
+- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally there.
+
+### The Failure Signature — Read This Before Suspecting the Data
+**A missing transitive dependency produces a partial result, not an error.** `FileNotFoundException` is
+thrown per item deep inside a loop, so a batch run completes and reports success while silently
+delivering less than it should. County 5 modelled **65 % of 33 687 buildings and reported success**; the
+shortfall was found by sampling the database, not by any log entry.
+
+> When a run completes but delivers less than it should, check the host's output directory for missing
+> assemblies **before** investigating the data.
+
+**A green build and a green test suite prove nothing.** `DiGi.Test/DiGi.GIS.Analytical.xUnit` re-declares
+`QuikGraph` for exactly this reason, so the suite exercised the storey split successfully while the
+shipped application could not.
+
+### Extension Hosts Are One Probing Set
+`DiGi.GIS.WebAPI`, `DiGi.GLTF.WebAPI`, `DiGi.Communication.WebAPI` and `DiGi.User.WebAPI` deploy into
+`DiGi.WebAPI.WindowsService\bin\extensions\<name>` and are loaded into `AssemblyLoadContext.Default`
+with cross-directory `AssemblyDependencyResolver`s. Audit the host output **together with** its
+`extensions\*` folders, and declare shared dependencies once on `DiGi.WebAPI.WindowsService` — that is
+already how `Microsoft.OpenApi` and `Serilog` reach the extensions.
+
+### The Check
+Run after building; it inspects compiled output, not project files.
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1"
+PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release -CheckDependencies
+```
+It reads each output assembly's reference table with `System.Reflection.Metadata.PEReader` and reports
+every reference that resolves neither inside the deployment unit nor in a shared framework. Reviewed
+exceptions are declared per unit inside the script, each with a stated reason — an unexplained entry
+there re-hides the exact class of bug the script exists to find.
+
+---
+
+## 5. Serialization Pattern (`SerializableObject` / `ISerializableObject`)
 
 Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST inherit `DiGi.Core.Classes.SerializableObject`.
 
@@ -185,7 +235,7 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
 
 ---
 
-## 5. Code Reference Snippets
+## 6. Code Reference Snippets
 
 ### Core Architecture (`Query`, `Modify`, `Create`, `Convert`, Local Function)
 

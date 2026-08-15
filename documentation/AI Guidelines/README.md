@@ -17,7 +17,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 ### Coding
 | File | Trigger Task |
 |------|--------------|
-| [Coding - General.md](Coding%20-%20General.md) | C# coding, naming/typing rules, `Query`/`Modify`/`Create`/`Convert` architecture, `SerializableObject` pattern. |
+| [Coding - General.md](Coding%20-%20General.md) | C# coding, naming/typing rules, `Query`/`Modify`/`Create`/`Convert` architecture, `SerializableObject` pattern, host `PackageReference` rules for `HintPath`-dropped NuGet dependencies. |
 | [Coding - Editor Config.md](Coding%20-%20Editor%20Config.md) | `.editorconfig` rules, explicit typing (`no var`), block namespaces, collection expressions (`[]`), `new()`. |
 | [Coding - API Documentation.md](Coding%20-%20API%20Documentation.md) | Public API lookup — consult `documentation/API/` before `.cs` source. |
 | [Coding - References.md](Coding%20-%20References.md) | `IReference`/`IUniqueReference` comparison — prohibit `==`/`!=` on interface references, use `Core.Query.Equals`. |
