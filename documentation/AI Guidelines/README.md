@@ -54,8 +54,21 @@ Edit source files in this folder only. Generated downstream outputs:
 | `DiGi.*/README.md` | `DiGi.Maintenance/Scripts/UpdateReadmes.ps1` | Updates `## 💻 Coding Guidelines` block from `DiGi.Maintenance/files/README - Coding Guidelines.md`. |
 | Machine `AGENTS.md` | `DiGi.Maintenance/Scripts/UpdateAgents.ps1` | Concatenates all guidelines if `GLOBAL_AGENTS_FILE` is configured. |
 
+### Hand-synced inputs — the scripts do not derive these from the guideline files
+
+A new or changed rule stops at the source unless these are updated by hand as well:
+
+| File | What it carries |
+|------|-----------------|
+| `DiGi.Maintenance/files/README - Coding Guidelines.md` | The README block. A condensed parallel document, **not** a concatenation — new rules must be written into it. Its first line must stay the `## 💻 Coding Guidelines…` marker (`UpdateReadmes.ps1` hard-fails otherwise). |
+| `DiGi.Maintenance/.agents/AGENTS.md` | The skill routing list. |
+| `$descriptions` in `UpdateAgents.ps1` | The `description:` frontmatter of each generated `SKILL.md`, keyed by skill name. A missing key only warns and falls back to `"Use for tasks related to <skill-name>."`, so a new guideline ships to every repo with a useless description. |
+| `DigiProject/CLAUDE.md` | The Claude Code condensation (re-sync it whenever it disagrees with this folder). |
+
 Run scripts after changing guidelines:
 ```powershell
-PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1"
-PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1"
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1" -NoCommit
+PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1" -NoCommit
 ```
+Both scripts walk **every** `DiGi.*` repository and **commit in each one** — drop `-NoCommit` only when
+a commit per repository is actually wanted.

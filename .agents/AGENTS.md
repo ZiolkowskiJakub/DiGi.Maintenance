@@ -21,7 +21,8 @@ Additionally:
 The files in the `skills/` directory hold the full details for specific tasks and are activated on demand. Consult the matching skill when performing these tasks:
 
 ### Coding
-- **coding-general:** Use whenever writing or editing C# code — naming/typing rules, the DiGi.Core `Query`/`Modify`/`Create`/`Convert` architecture, files vs user files assets, and the `SerializableObject` serialization pattern.
+- **coding-general:** Use whenever writing or editing C# code — naming/typing rules, the DiGi.Core `Query`/`Modify`/`Create`/`Convert` architecture, cheap constructors with the work in a `Create` factory, one-member-per-file layout, files vs user files assets, the `SerializableObject` serialization pattern, and the host `PackageReference` rules for NuGet dependencies a `HintPath` reference drops.
+- **coding-editor-config:** Use when configuring, auditing or enforcing `.editorconfig` code style — explicit typing (no `var`), block-scoped namespaces, collection expressions `[]`, target-typed `new()`, member-body discipline, and the diagnostic severity overrides.
 - **coding-api-documentation:** Use when looking up a type's public API — consult the generated `documentation/API/` markdown before opening `.cs` source.
 - **coding-references:** Use when comparing, matching, keying or de-duplicating an `IReference`/`IUniqueReference` — why `==` between two interface-typed references is a silent bug, what to use instead, and how to detect and fix existing occurrences.
 - **coding-automatic-tests:** Use when writing or adding xUnit tests — `Facts` structure, naming, shared fixtures, serialization, tolerance boundary, and performance benchmarks.
