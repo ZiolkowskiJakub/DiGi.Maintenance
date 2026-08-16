@@ -1,6 +1,6 @@
 ---
 name: coding-general
-description: Use whenever writing or editing C# code in this workspace - naming/typing rules, CancellationToken ordering, member-access simplification, the DiGi.Core Query/Modify/Create/Convert architecture, files vs user files assets, the SerializableObject serialization pattern, and the host PackageReference rules for NuGet dependencies that HintPath references drop (a runtime FileNotFoundException that shows up as a partial result, not an error).
+description: Use whenever writing or editing C# code in this workspace - naming/typing rules, CancellationToken ordering, member-access simplification, the DiGi.Core Query/Modify/Create/Convert architecture, cheap constructors with validation and normalisation moved into a Create factory, the one-member-per-file layout for Query/Modify/Create and nested types, files vs user files assets, the SerializableObject serialization pattern, and the host PackageReference rules for NuGet dependencies that HintPath references drop (a runtime FileNotFoundException that shows up as a partial result, not an error).
 ---
 
 # AI Guidelines: C# General Coding Standards & Architecture

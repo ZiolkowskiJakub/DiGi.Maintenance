@@ -1,6 +1,6 @@
 ---
 name: coding-gis-administrative-data
-description: Use for tasks related to coding-gis-administrative-data.
+description: Use when touching administrative_areal_2d, building_2d, or anything keyed by a county code or id - why a county code is not a key (BDOT10k stores one row per polygon part, so 406 county rows cover 380 codes), why those rows must never be deduplicated, the key-resolution matrix and the mandatory ORDER BY on any LIMIT/FirstOrDefault, plus the AdministrativeArealType wire gotchas.
 ---
 
 # AI Guidelines: GIS Administrative Data (`administrative_areal_2d` & county keying)

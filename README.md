@@ -134,6 +134,57 @@ This is the deliberate design for **behavior-rich geometry primitives**. `DiGi.G
 - **Before proposing to move or remove such a method, check the interface chain first** (the `I*2D` hierarchy under `Planar/Interfaces` / `Spatial/Interfaces`). Only behavior that is genuinely not a contract member — and that belongs to a data model rather than a geometry primitive — goes into the static partial classes.
 - **Private helpers are allowed on such a class.** The "strictly avoid private methods" rule below is scoped to the static partial utility classes (`Query`/`Modify`/`Create`/`Convert`), not to `/Classes` types that implement behavioral interfaces.
 
+### Constructors stay cheap — the work belongs in a `Create` factory
+**A constructor on a `/Classes` type assigns and clones. Nothing else.** No validation sweep, no normalisation, no cleanup pass, no geometric or numeric computation — not even an `O(n)` scan over a collection the caller just handed over. A constructor sits on the hot path of every clone, every copy constructor and every deserialization, and a caller who already holds clean data must not pay for a check it does not need.
+
+- **Any such work goes into a `Create` factory** named after the type it returns, at `/Create/[TypeName].cs`. The factory does the work, then calls the plain constructor. It returns the type as **nullable** and returns `null` when the input cannot make a valid object — the guard is a return value, not an exception.
+- **Order inside the factory:** materialise and filter the input → run the cleanup → *then* check the result is still valid. Validating before the cleanup measures the wrong thing: a ring of three positions that repeats a corner passes a "three or more" check and then becomes a two-corner polygon.
+- **Document the split on both sides.** The constructor's `<summary>` points at the factory for callers whose data is not already clean; the factory's `<summary>` says what it removes and why the constructor does not.
+
+Reference: `DiGi.Geometry.Planar.Create.Polygon2D(IEnumerable<Point2D?>?, double)` and `DiGi.Geometry.Spatial.Create.Polygon3D(IEnumerable<Point3D?>?, double)` both drop points repeating their predecessor via `Modify.RemoveDuplicates(..., closed, tolerance)` *before* checking the corner count, while `Polygon2D`'s constructors store whatever they are given.
+
+```csharp
+// /Classes — plain assignment, no work
+public Polygon2D(IEnumerable<Point2D>? point2Ds)
+    : base(point2Ds)
+{
+}
+
+// /Create — the work lives here, and the guard runs after it
+public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double tolerance = DiGi.Core.Constants.Tolerance.Distance)
+{
+    if (point2Ds == null)
+    {
+        return null;
+    }
+
+    List<Point2D> point2Ds_Temp = [];
+    foreach (Point2D? point2D in point2Ds)
+    {
+        if (point2D != null)
+        {
+            point2Ds_Temp.Add(point2D);
+        }
+    }
+
+    point2Ds_Temp.RemoveDuplicates(true, tolerance);
+
+    if (point2Ds_Temp.Count < 3)
+    {
+        return null;
+    }
+
+    return new Polygon2D(point2Ds_Temp);
+}
+```
+
+### File organisation — one member per file
+- **`Query`/`Modify`/`Create` hold exactly one public method per file, and the file is named after that method** (`/Spatial/Query/NearestIndexes.cs` holds `NearestIndexes`). Do **not** group related methods into one file — `TryGetNearestIndexes`, `NearestIndexes` and `NearestNeighbors` are three files, not one.
+  - **Overloads are the same method and stay together.** Every `Triangle3D(...)` overload lives in `Triangle3D.cs`; the plural `Triangle3Ds(...)` is a different method name and gets `Triangle3Ds.cs`.
+  - A helper promoted to `public static` under the encapsulation rule below gets its own file too, named after the helper.
+  - **`Convert` is the exception** and keeps its file-per-TARGET-type layout, `/Convert/To[TargetArea]/[TargetType].cs`.
+- **Nested types get their own file, `[Outer].[Inner].cs`**, beside the outer type's file, carrying only the nested type and declaring the outer type `partial` — `/Spatial/Classes/PointCloud3D.Point.cs` and `/Spatial/Classes/PointCloud3D.Enumerator.cs` sit next to `/Spatial/Classes/PointCloud3D.cs`. Keep the type nested; promoting it to top level changes the public API and the bare name rarely stands alone (`Point`, `Enumerator`). The repeated outer `partial` declaration carries no XML `<summary>`, per the "do not document `partial` class declarations" rule.
+
 ### Method Encapsulation and Reusability in Utility Classes
 - **Strictly avoid creating private methods** within `Query`, `Convert`, `Modify`, and similar partial utility classes.
 - If a helper method has well-defined inputs, no side effects, and high reusability, implement it as a **public static method** within the appropriate partial class (e.g., `Query`, `Convert`, `Modify`).
@@ -175,6 +226,9 @@ never in `files/`.** Both are copied to the build output by a `.csproj` target; 
   a `CopyUserFiles` target with the identical shape but `..\user files\**\*.*`. The consuming code
   reads these from next to the executing assembly at runtime, so the app works locally and on the
   server without the secrets ever entering the repo.
+  - **Generated output also belongs here.** Test reports, diagnostic dumps, benchmark logs and text
+    logs written during a run go to `user files/reports/` — never to `files/`. In tests, resolve the
+    folder with `assembly.ReportsDirectory()` rather than a hardcoded path (see §7).
 
 **Enforcement:** the solution-root `.gitignore` must contain the case-insensitive rule
 `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/<file>"` — git must report the rule
@@ -210,10 +264,21 @@ a green test suite prove nothing, because the `.xUnit` projects re-declare these
 **When a run completes but delivers less than it should, check the host's output directory for missing
 assemblies before investigating the data.**
 
-Verify after building:
+**Extension hosts are one probing set.** `DiGi.GIS.WebAPI`, `DiGi.GLTF.WebAPI`, `DiGi.Communication.WebAPI`
+and `DiGi.User.WebAPI` deploy into `DiGi.WebAPI.WindowsService\bin\extensions\<name>` and are loaded into
+`AssemblyLoadContext.Default` with cross-directory `AssemblyDependencyResolver`s. Audit the host output
+**together with** its `extensions\*` folders, and declare a shared dependency once on
+`DiGi.WebAPI.WindowsService` — that is already how `Microsoft.OpenApi` and `Serilog` reach the extensions.
+
+Verify after building — both read compiled output, not project files:
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1"
 ```
+```powershell
+PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release -CheckDependencies
+```
+Each deployment unit declares its reviewed exceptions inside `CheckHostDependencies.ps1`, every one with a
+stated reason — an unexplained entry there re-hides the exact class of bug the script exists to find.
 
 ---
 
@@ -451,6 +516,23 @@ When a test needs an on-disk input file (`.gmf`, `.json`, `.epw`, …), use the 
    References: `DiGi.GIS.xUnit/Facts/OrtoDatas.cs`, `DiGi.EPW.xUnit/Facts/EPWFile.cs`, `DiGi.Geometry.xUnit/Facts/InRange.cs`.
 6. **Large binaries** (multi-MB `.gmf`, etc.) are git-tracked (not ignored) — prefer a representative-but-minimal sample, and consider Git LFS if size becomes a concern.
 
+#### 📄 Test Reports & Diagnostic Outputs
+Input fixtures are read from `files/`; everything a test **writes** goes to `DiGi.Test/user files/reports/`.
+
+1. **Rule:** ALL reports, text dumps, benchmark logs and diagnostic output produced during test execution must be written to `user files/reports/` — never to `files/`, and never to a hardcoded machine path. `user files/` is git-ignored, so test output never lands in a commit.
+2. **Resolve the folder:** `Core.xUnit.Query.ReportsDirectory(Assembly.GetExecutingAssembly())` or `assembly.ReportsDirectory()` (both resolve **and create** `DiGi.Test/user files/reports/`). For the parent folder use `assembly.UserFilesDirectory()`. Helpers live in `DiGi.Core.xUnit/Query/` beside `FilePath.cs` / `FilesDirectory.cs`.
+3. **Example:**
+   ```csharp
+   using System.Reflection;
+   // ...
+   string? pathReportsDirectory = Core.xUnit.Query.ReportsDirectory(Assembly.GetExecutingAssembly());
+   Assert.False(string.IsNullOrWhiteSpace(pathReportsDirectory));
+
+   string pathReport = System.IO.Path.Combine(pathReportsDirectory!, "Diagnostic_Report.txt");
+   System.IO.File.WriteAllLines(pathReport, reportLines);
+   ```
+   References: `DiGi.CityGML.xUnit/Facts/InspectDuplicates.cs`, `DiGi.GIS.Analytical.xUnit/Facts/BuildingModel_Enclosed.cs`.
+
 ---
 
 ### 8. Branch Synchronization & Versioning Protocol
@@ -463,3 +545,33 @@ When a test needs an on-disk input file (`.gmf`, `.json`, `.epw`, …), use the 
 3. **Branch off main** using that new version name.
 4. **Update `Directory.Build.props`** (if present): set `<Major>`/`<Minor>`/`<Build>` to the new version's components and commit on the new branch before pushing.
 5. **Push & track:** push both `main` and the new version branch to `origin`, using `-u` on the new branch so it tracks properly (`git push -u origin <version_branch>`).
+
+---
+
+### 9. Full Guideline Set
+This block is the condensed, always-applicable subset. The canonical, task-specific guidelines live in
+`DiGi.Maintenance/documentation/AI Guidelines/` (path relative to the workspace root, since they sit in
+the separate `DiGi.Maintenance` repo). Read the one matching the task rather than all of them; each is
+also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL.md`.
+
+| Guideline | Read it when |
+|---|---|
+| `Coding - General.md` | Writing or editing any C# production code; adding a NuGet package to a `HintPath`-referenced library. |
+| `Coding - Editor Config.md` | Configuring or auditing `.editorconfig` code style and diagnostic severities. |
+| `Coding - API Documentation.md` | Looking up a public signature — read `documentation/API/` before `.cs` source. |
+| `Coding - References.md` | Comparing, keying or de-duplicating an `IReference` / `IUniqueReference`. |
+| `Coding - Automatic Tests.md` | Writing xUnit tests, shared fixtures, or test report output. |
+| `Coding - Templates.md` | Scaffolding a solution/project from `templates/`. |
+| `Coding - WebAPI GLTF.md` | Building or extending a Web API on the `DiGi.GLTF` 3D framework. |
+| `Coding - Deployed WebAPI.md` | Verifying a change against the live API at `api.digiproject.uk` (read-only GET; never in `DiGi.Test`). |
+| `Coding - GIS Administrative Data.md` | Touching `administrative_areal_2d`, `building_2d`, or anything keyed by a county code or id. |
+| `XML Documentation - Create.md` / `- Audit.md` | Adding missing `<summary>` docs, or auditing docs against current signatures. |
+| `GitHub Wiki - General.md` / `- Home.md` / `- Benchmark.md` | Editing a wiki page, a `Home` landing page, or a `Benchmark` performance page. |
+| `GitHub - Branch Pull.md` / `- Branch Synchronization.md` | Pulling repos to their highest SemVer branch, or running the release/patch-bump workflow. |
+
+> **One data rule worth knowing before it bites you:** a GIS county `code` does **not** identify one row.
+> BDOT10k stores one `administrative_areal_2d` feature per polygon part, so 406 county rows cover 380
+> codes, and 18 counties have several. Key every write and lookup by county **`id`**, give every
+> `LIMIT`/`FirstOrDefault` over that table an explicit `ORDER BY`, and never "deduplicate" those rows —
+> for `2412 rybnicki` the largest polygon is only 52 % of the county. Full model in
+> `Coding - GIS Administrative Data.md`.
