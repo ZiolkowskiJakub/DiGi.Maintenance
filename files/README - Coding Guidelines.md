@@ -1,4 +1,4 @@
-## 💻 Coding Guidelines for Developers & AI Agents
+﻿## 💻 Coding Guidelines for Developers & AI Agents
 
 To maintain codebase health, performance, and compatibility within Visual Studio 2026 / C# 10+ environments, all developers and AI agents must strictly comply with these guidelines.
 
@@ -58,6 +58,10 @@ To maintain codebase health, performance, and compatibility within Visual Studio
    - **Method:** remove the qualifier, then **rebuild**. A shadowed name usually fails with CS0234/CS0246 — restore the prefix and leave a short comment saying why. Never shorten a qualifier you have not compiled. If BOTH namespaces expose a matching member, the shortened form compiles and silently calls the wrong one — keep the qualifier regardless of the analyzer suggestion.
 10. **Project Structure:** Assume the C# codebase consists of multiple SEPARATE projects, not a single monolithic solution. Handle namespaces and references accordingly.
 11. **Output Optimization:** Prioritize highest code quality and output token minimization. Skip conversational filler, polite introductions, and conclusions. Output only the necessary code, logic, or requested explanations.
+12. **Temporary code markers:** code that exists only until a migration completes is tagged `TODO [MarkerName]:` at every site, where `MarkerName` is PascalCase and names the migration rather than the issue (`[ReferenceFormat]`, `[ReferencedObjectIndexes]`) — one tag reused everywhere, so `grep -rn "MarkerName"` returns the whole deletion checklist.
+   - Every marker states its **removal condition**: the observable fact that makes deletion safe ("once every deployed database has run this DDL at least once"), not just that the code is temporary. Name the tracking issue when there is one.
+   - Inline comment at the site; file header above the `using` block when the whole file is temporary (`DiGi.Core/Query/TryParseLegacy.cs`); `[TEMPORARY]` as the first token of the XML `<summary>` when removing a whole public member would be a public-API change (`DiGi.GIS.WebAPI.UI/Controllers/SolarController.cs`).
+   - Mark only what is actually temporary — permanent code shipped alongside it must not carry the tag.
 
 ---
 

@@ -1,4 +1,4 @@
-# AI Guidelines: C# General Coding Standards & Architecture
+﻿# AI Guidelines: C# General Coding Standards & Architecture
 
 **Environment:** Visual Studio 2026 / Windows 11 / .NET 9.0+ / C# 10+.  
 **Domain:** C# plugins & engineering software (Revit API, RhinoCommon, Grasshopper, Dynamo).
@@ -39,6 +39,11 @@
    - **Innermost-Namespace Shadowing Exception:** Keep full prefix when a parent namespace shares a segment name with an inner namespace (e.g., `DiGi.WebAPI.Query` vs `DiGi.GIS.WebAPI`). Always rebuild after removing a prefix; keep qualifier if CS0234/CS0246 occurs or if both namespaces contain matching types.
 10. **Project Structure:** Treat codebase as multiple SEPARATE projects, not a monolithic solution.
 11. **Output Efficiency:** Direct, technical responses. Omit conversational filler.
+12. **Temporary Code Markers (`TODO [MarkerName]`):** Code that exists only until a migration completes must say so at every site, in a form one `grep` can collect.
+   - **Tag:** `TODO [MarkerName]:` where `MarkerName` is PascalCase and names the **migration**, not the issue (`[ReferenceFormat]`, `[ReferencedObjectIndexes]`). Reuse the one tag at every site belonging to that migration, so `grep -rn "MarkerName"` returns the complete deletion checklist rather than a sample of it.
+   - **State the removal condition** — the observable fact that makes deletion safe ("once every storage archive has been rewritten", "once every deployed database has run this DDL at least once"), not merely that the code is temporary. A marker without one cannot be acted on and never gets removed. Name the tracking issue when there is one.
+   - **Placement:** an inline comment at the site; a file header above the `using` block when the whole file is temporary (`DiGi.Core/Query/TryParseLegacy.cs`); `[TEMPORARY]` as the first token of the XML `<summary>` when a whole public member is provisional and removing it is a public-API change (`DiGi.GIS.WebAPI.UI/Controllers/SolarController.cs`).
+   - **Mark only what is actually temporary.** Permanent code shipped in the same change must not carry the tag, or the sweep stops being a checklist.
 
 ---
 
