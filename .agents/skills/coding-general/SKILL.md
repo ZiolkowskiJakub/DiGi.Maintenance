@@ -23,9 +23,14 @@ description: Use whenever writing or editing C# code in this workspace - naming/
    - **Primitives:** Plain `camelCase` (`double tolerance`, `string name`, `int count`).
 4. **Compiler Warnings:** **Zero warnings/analyzer messages allowed.** Handle nullability and validation cleanly.
 5. **Block-Scoped Namespaces:** Enforce block-scoped `namespace DiGi.Domain { ... }`. Prohibit file-scoped namespaces (`csharp_style_namespace_declarations = block_scoped`).
-6. **Parameter Line Breaks (`<= 5` Rule):**
-   - **<= 5 parameters:** Must remain on a **single line**.
-   - **>= 6 parameters:** Split parameters onto multiple lines.
+6. **Parameter Line Breaks (`<= 7` Rule):**
+   - **<= 7 parameters:** Must remain on a **single line**, however long that line becomes.
+   - **>= 8 parameters:** Split parameters onto multiple lines, one per line.
+   - Applies to declarations *and* call sites, to methods, constructors and delegates alike.
+   - A long signature is not a reason to wrap. Line length is not the trigger — the parameter count
+     is, because a signature that reads as one line stays greppable and diffs as one line. A WebAPI
+     action binding six query parameters plus a `CancellationToken` is exactly the shape this rule
+     protects: wrapping it turns a one-line diff into seven.
 7. **Async Naming:** All asynchronous method names must end with `Async` (e.g., `GetDetailsAsync`).
 8. **`CancellationToken` Rules (CA1068):**
    - **Position:** `CancellationToken` must ALWAYS be the **LAST parameter** in every method signature and overload.
