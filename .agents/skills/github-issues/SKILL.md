@@ -1,0 +1,52 @@
+---
+name: github-issues
+description: Use when managing, commenting on, or closing GitHub issues/PRs - mandatory --body-file usage to avoid PowerShell escape mangling.
+---
+
+# AI Guidelines: GitHub Issues & Comments
+
+Guidelines for managing, commenting on, and closing GitHub issues and pull requests across DiGi repositories.
+
+---
+
+## 1. PowerShell CLI Escaping & `--body-file` (Mandatory)
+
+When creating or editing GitHub issues, pull requests, or comments using the GitHub CLI (`gh`), **never pass multi-line markdown or text containing backticks/code spans directly as an inline string argument** (`--body "..."` or `--comment "..."`).
+
+### The Escape Mangling Problem
+In PowerShell (`pwsh`), the backtick (`` ` ``) is the escape character. An inline string such as `"Verified on `api.digiproject.uk` ..."` causes PowerShell to evaluate `` `a `` as the ASCII Bell escape character (`\a` / `^G`), mangling the URL into `\pi.digiproject.uk\`. Similarly, `` `n `` produces newlines, `$` triggers variable expansion, and quotes/backslashes become corrupt.
+
+### Safe Execution Pattern
+Always write the formatted markdown body to a temporary/scratch `.md` file encoded as **UTF-8 without BOM**, and pass the file path via `--body-file` or `@<path>`:
+
+1. **Adding a Comment:**
+   ```bash
+   gh issue comment <issue_number> --repo <owner>/<repo> --body-file <path_to_markdown_file>
+   ```
+
+2. **Closing an Issue with Resolution Comment:**
+   ```bash
+   gh issue comment <issue_number> --repo <owner>/<repo> --body-file <path_to_markdown_file>
+   gh issue close <issue_number> --repo <owner>/<repo>
+   ```
+
+3. **Updating an Existing Comment via API:**
+   ```bash
+   gh api -X PATCH repos/<owner>/<repo>/issues/comments/<comment_id> -F "body=@<path_to_markdown_file>"
+   ```
+
+---
+
+## 2. Standard Issue Resolution Comment Structure
+
+When resolving and closing an issue, provide a structured comment covering:
+
+1. **Resolution & Commits:**
+   - Mention the commit SHA(s), version branch, and target repository.
+2. **Summary of Changes:**
+   - Technical summary of the fix or feature implemented.
+   - List of modified and added classes/files.
+3. **Automated & Integration Tests:**
+   - Test facts added to `DiGi.Test` and verification commands run.
+4. **Live Deployed Verification (if applicable):**
+   - Results of manual verification against deployed WebAPI endpoints or services.

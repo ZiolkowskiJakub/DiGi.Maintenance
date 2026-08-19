@@ -70,6 +70,7 @@ $descriptions = @{
     "coding-webapi-gltf"             = "Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D framework - the decoupled pipeline, onboarding a new consuming project, adding a 3D object type via IGLTFNodeConverter, and batching/streaming performance rules."
     "github-branch-pull"             = "Use when scanning local DiGi repositories, identifying SemVer branches, selecting the highest version, and pulling/syncing the local machine with the latest remote state."
     "github-branch-synchronization"  = "Use when running the version-branch to main merge and patch-bump release workflow - syncing a bare SemVer branch into main, bumping the patch version, and pushing both branches."
+    "github-issues"                  = "Use when managing, commenting on, or closing GitHub issues/PRs - mandatory --body-file usage to avoid PowerShell escape mangling."
     "github-wiki-benchmark"          = "Use when creating or updating a repo's Benchmark GitHub wiki page - required page structure, reproducible-numbers conventions, and the checklist for adding a new benchmark entry."
     "github-wiki-general"            = "Use when editing any GitHub wiki page - repo layout, local clones under DigiProject/wiki/, hand-authored vs auto-generated pages, and CI sync mechanics."
     "github-wiki-home"               = "Use when creating or editing a repository's Wiki Home page - template structure, parsing/preservation rules for the sync script, and the standard DiGi ecosystem footer."
