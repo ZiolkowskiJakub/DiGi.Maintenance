@@ -51,7 +51,7 @@ up as part of item 5 below.
 |---|-----|---------|----------|
 | **F1** | Info (by design) | Visibility is opt-out-by-default: base `WebAPIController` (`DiGi.WebAPI/.../Classes/WebAPIController.cs:9`) has `[ApiExplorerSettings(IgnoreApi=true)]`; an action appears only if it sets `IgnoreApi=false`. 14 controllers deployed, 7 documented. This is a deliberate security control (e.g. `user/*` login/secure-data, all `updateitem(s)` writes). Keep it; expose reads only by conscious choice. | `information/controllers` = 14 controllers; `gis/building/itembylatestcreatedat?countyid=5` → 200 (12.6 KB) yet absent from swagger. |
 | **F2** | Critical | **Schema fidelity gap.** Swagger documents DTOs camelCase, no `_type`, enums-as-strings; the wire is DiGi `SerializableObject`: PascalCase + mandatory `_type` + integer enums. `Table.Columns` returns `ExtendedColumn` (`{_type,Name,Type,Index,Category,Description}`), not the documented `Column`. AI cannot build request bodies or parse responses for any object payload. Cause: Swashbuckle reflects public getters + `CamelCaseSchemaFilter` (`DiGi.WebAPI.WindowsService/.../Classes/CamelCaseSchemaFilter.cs`) + `JsonStringEnumConverter`, but serialization runs through the DiGi writer. | `administrativeareal2dreferencebyid?id=5` → `{"_type":"DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference,DiGi.GIS.PostgreSQL","CountyId":null,"AdministrativeArealType":2,...}`. |
-| **F3** | High | `AdministrativeArealType` member misspelled `Subdivison` (value 4) — `DiGi.GIS.PostgreSQL/.../Enums/AdministrativeArealType.cs:38`. It is the wire token; correct `Subdivision` is rejected. | `...referencesbyadministrativearealtype?administrativearealtype=Subdivison` → 200; `=Subdivision` → 400. |
+| **F3** | ~~High~~ **DONE** | `AdministrativeArealType` member was misspelled `Subdivison` (value 4). **Renamed to `Subdivision` on 2026-08-19** (issue #9) as a single breaking release rather than the staged migration below — no alias was kept, so the old token now 400s. The value `4` is unchanged, so `type_id` needed no migration. | `...referencesbyadministrativearealtype?administrativearealtype=Subdivision` → 200; `=Subdivison` → 400; `=4` → 200 on every build. |
 | **F4** | High | **Opaque request/response bodies.** `gltf/gltfscene/glb` and `gltf/gltfscene/fromobjects` bind `[FromBody] JsonObject?/JsonArray?` and rehydrate via `Core.Create.SerializableObject<T>`. Swagger shows `object`+`additionalProperties:JsonNode` — no usable shape. Real shapes: `GLTFScene`, `GLTFNode[]`. **Update 2026-07-29:** the two `communication/geometricalpropagationmodel` actions originally listed here no longer exist. `/propagationresults` had already been removed when this was written (the cited line numbers never matched), and the remaining `segment3d` placeholder was deleted along with `GeometricalPropagationModelController` — it had no consumers. `DiGi.Communication.WebAPI` now ships result contract types only and exposes no endpoints. | Controller: `DiGi.GLTF.WebAPI/.../GLTFSceneController.cs:31,71`. |
 | **F5** | High (fixed upstream) | `gis/building/itembyreference` without `countyid` → 500 on the deployed 0.8.7 build. `countyId` is intentionally optional (all-counties lookup); the `42P18` crash is fixed in current source (typed `NpgsqlParameter`). Controller now also try/catch-wrapped. | `?reference=ID-abc` → 500; `&countyid=5` → 204. |
 | **F6** | Med | Empty/opaque response schemas. `WeatherRecord`, `GLTFScene` show zero properties (state in `private [JsonInclude]` fields + `[JsonIgnore]` getters → invisible to Swashbuckle). `histogramsummary`/`aggregatesummary/*`/`uniquevalues` return raw `JsonNode`/`{}`. | `DiGi.Weather/.../Classes/WeatherRecord.cs`; `DiGi.GLTF/.../Classes/GLTFScene.cs`. |
@@ -105,18 +105,18 @@ communication endpoints left to document. When the propagation calculation is ex
 `DiGi.Test/files/GeometricalPropagationModel.json`, and the response will be the existing
 `DiGi.Communication.WebAPI.Classes.GeometricalPropagationResult` contract.
 
-### 3. Rename `Subdivison` → `Subdivision` (F3) — **breaking wire change**
+### 3. ~~Rename `Subdivison` → `Subdivision` (F3)~~ — **DONE 2026-08-19, breaking**
 
-Migration (do not flip in one step):
-1. Add `Subdivision = 4` as the canonical member and keep `Subdivison` as an alias (e.g. a second
-   member with the same value is not allowed for name-based `JsonStringEnumConverter`; instead accept
-   both tokens at the binding boundary — a custom converter or query-string normalization mapping the
-   old token to the new).
-2. Announce in the changelog / notify known clients; emit the new token in responses.
-3. After a deprecation window, remove old-token acceptance.
-Call sites to update: `DiGi.GIS.PostgreSQL/.../Enums/AdministrativeArealType.cs:38`,
-`DiGi.GIS.PostgreSQL/.../Query/AdministrativeArealType.cs:21,44,45`, both
-`AdministrativeAreal2DController` copies (central `DiGi.GIS.WebAPI` and UI host).
+Shipped as one cutover instead of the staged migration originally planned here. The member is now
+`Subdivision = 4`; no alias was retained, so `Subdivison` returns HTTP 400. `DiGi.Core` keeps
+`Classes/DescriptionEnumConverter.cs` (the alias mechanism built first, under issue #9) as a reusable
+utility with its own test in `DiGi.Core.xUnit`, but the enum no longer carries `[TypeConverter]` — with
+every description equal to its member name there is nothing left to resolve.
+
+Renamed across `DiGi.GIS.PostgreSQL` (9 files), `DiGi.GIS.WebAPI` (`OrtoDatasController`),
+`DiGi.GIS.WebAPI.UI` (controller + `AdministrativeAreal2DView.cshtml`) and `DiGi.GIS.UI`
+(`MainWindow.xaml.cs`). Deploy note: the two clients send the member as `.ToString()` to the deployed
+API, so the API and both clients have to ship together.
 
 ### 4. Standardize error contracts (F9)
 
@@ -200,7 +200,8 @@ Keep opt-out-by-default (F1). Record of every currently-hidden action and the re
 ## Rollout, risk & verification
 
 - **Ordering:** item 1 (schema engine) unblocks items 2 & 7; do it first. Item 3 (breaking enum
-  rename) needs the deprecation window and should ship on its own release with a changelog entry.
+  rename) shipped on 2026-08-19 without a deprecation window — it still needs a changelog entry, and
+  the API plus both `.ToString()` clients have to be deployed together.
 - **Per-repo touch list:** schema engine + tag/description + media-type/operation filters →
   `DiGi.WebAPI.WindowsService` (and/or per-assembly `IWebAPISchemaFilter`); enum + call sites →
   `DiGi.GIS.PostgreSQL` + `DiGi.GIS.WebAPI` (+ UI host); typed schemas → the owning WebAPI assemblies;

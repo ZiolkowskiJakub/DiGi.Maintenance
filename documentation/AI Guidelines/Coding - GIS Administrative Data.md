@@ -171,8 +171,10 @@ never extract them to disk.
 ## 6. Enum & wire gotchas
 
 - `AdministrativeArealType`: `Undefined = -1`, `Country = 0`, `Voivodeship = 1`, `County = 2`,
-  `Municipality = 3`, `Subdivison = 4`. Member 4 is **misspelled in code** (`Subdivison`) and the
-  misspelling is on the wire — sending `Subdivision` returns HTTP 400.
+  `Municipality = 3`, `Subdivision = 4`. Member 4 was misspelled `Subdivison` and was renamed — a
+  breaking wire change with no alias kept, so `Subdivison` is now rejected. The value never changed,
+  so nothing stored under `type_id` was affected. Integer `4` binds against any build; `Subdivision`
+  only against a build carrying the rename.
 - `AdministrativeAreal2DReference.CountyId` is the **parent** county, so it is `null` on a county row.
   A county row's own identity is `Id`. `GetIds()` returns the chain plus `Id`.
 - `GetBuilding2DReferencesByAdministrativeAreal2DIdsAsync` resolves through **Subdivision children**,
