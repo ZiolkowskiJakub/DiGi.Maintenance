@@ -77,10 +77,16 @@ The multi-part codes are `0418 0620 0662 1016 1019 1206 1423 2212 2262 2401 2402
 
 | Consumer | Selection | Picks for `2212` |
 |---|---|---|
-| `GetIdByCodeAsync` (writes) | `ORDER BY id ASC` + `LIMIT 1` → lowest | 73482 |
+| WebAPI `updateitems…?code=` (writes) | `GetIdsByCodeAsync` → **every part**, split per item | 73482 *and* 73485 |
+| `GetIdByCodeAsync` (reads, `idbycode`) | `ORDER BY id ASC` + `LIMIT 1` → lowest | 73482 |
 | `…referencesbyadministrativearealtype&uniquecode=true` | `DISTINCT ON (code) … ORDER BY code, id ASC` → lowest | 73482 |
 | `GetBuilding2DReferenceByReferenceAsync` | `ORDER BY id ASC` → lowest | 73482 |
 | Subdivision import | by geometry — genuinely split across parts | 1 / 356 |
+
+The write path stopped collapsing the code: the five `updateitems…?code=` actions pass every part to
+their `updateitemsbycountyids` counterpart, which files each item under the part it belongs to. The
+remaining `GetIdByCodeAsync` callers are the read endpoint `idbycode` and `DiGi.GIS.UI`'s
+`MainWindow.xaml.cs` (three sites) — the desktop application still picks the lowest part.
 
 `ORDER BY` on the first three was added as part of the issue #1 fix. **Before it, `LIMIT 1` with no
 ordering returned 73485** — heap order differs from id order in this table today, so the pick was
@@ -124,7 +130,8 @@ Still true, and still worth knowing:
 
 | Situation | Do |
 |---|---|
-| Uploading `BuildingModel` / `Building` | POST `updateitemsbycountyid` with `countyid`. The `code` endpoints resolve to the lowest part and log a warning — fallback only. |
+| Uploading `BuildingModel` / `Building` / `OrtoDatas` / `YearBuiltData` / `OccupancyData` | POST `updateitemsbycountyids` with a repeated `countyids` parameter — one occurrence per polygon part (`?countyids=73482&countyids=73485`; a single comma-separated value does **not** bind). The `code` endpoints now do the same thing server-side, so either is correct. |
+| Deciding which part one item belongs to | Don't write it again. Read it from the `building_2d` row the reference is already filed under (`Query.CountyIdsByReferencesAsync` in `DiGi.GIS.WebAPI`), and fall back to `DiGi.GIS.PostgreSQL.Query.CountyId` — inside the part, else nearest, else largest overlap — only for something carrying geometry of its own. An item that neither can place is reported and left unwritten. |
 | A background post task | Set `CountyId` on `BuildingModelsPostTask` / `BuildingsPostTask`; it takes precedence over `Code`. |
 | Client already iterating counties | It is iterating **parts**. Use `AdministrativeAreal2DReference.Id`, and expect 406 entries, not 380. |
 | Need to know a code is ambiguous | `AdministrativeAreal2DPostgreSQLConverter.GetIdsByCodeAsync` (returns every part). `GetIdByCodeAsync` collapses to the lowest and tells you nothing. |
