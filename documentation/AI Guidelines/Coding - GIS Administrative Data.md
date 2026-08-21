@@ -182,6 +182,13 @@ never extract them to disk.
   breaking wire change with no alias kept, so `Subdivison` is now rejected. The value never changed,
   so nothing stored under `type_id` was affected. Integer `4` binds against any build; `Subdivision`
   only against a build carrying the rename.
+- **`Undefined` is `-1`, not `0`, so it is not what an omitted parameter binds to.** A non-nullable
+  `[FromQuery] AdministrativeArealType` left out of the request keeps `default(T)` — which is
+  `Country`. A controller guard written as `administrativeArealType == AdministrativeArealType.Undefined`
+  therefore never fires for the case it looks like it covers, and the request quietly returns countries:
+  omitting the parameter on `administrativeareal2Dreferencesbyadministrativearealtype` returns a payload
+  byte-identical to passing `0`. Bind it as `AdministrativeArealType?` and reject `null`. Same trap, and
+  the fix, in [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) §2.
 - `AdministrativeAreal2DReference.CountyId` is the **parent** county, so it is `null` on a county row.
   A county row's own identity is `Id`. `GetIds()` returns the chain plus `Id`.
 - `GetBuilding2DReferencesByAdministrativeAreal2DIdsAsync` resolves through **Subdivision children**,

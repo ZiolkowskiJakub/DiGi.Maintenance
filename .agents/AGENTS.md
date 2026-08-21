@@ -28,7 +28,8 @@ The files in the `skills/` directory hold the full details for specific tasks an
 - **coding-automatic-tests:** Use when writing or adding xUnit tests — `Facts` structure, naming, shared fixtures, serialization, tolerance boundary, and performance benchmarks.
 - **coding-templates:** Use when creating a new project/solution from a template, or managing templates in the workspace's default `templates/` folder.
 - **coding-webapi-gltf:** Use when building or extending an ASP.NET Core Web API on the `DiGi.GLTF` 3D framework.
-- **coding-deployed-webapi:** Use when verifying a client/server change against the live WebAPI at `api.digiproject.uk` — swagger as the source of truth, the county→reference→building GET test recipe, access rules and gotchas. Manual `curl` checks only, never added to `DiGi.Test`.
+- **coding-webapi-contracts:** Use when changing a WebAPI controller's route, parameter names or validation, or when writing/maintaining an HTTP client of one — why a renamed parameter breaks clients with no compile or runtime error, the query-binding traps (an omitted parameter keeps `default(T)`, an enum sentinel that is not `0`), sending enums as integers, the client `/Query` plumbing pattern, and gating an endpoint that is not deployed yet.
+- **coding-deployed-webapi:** Use when verifying a client/server change against the live WebAPI at `api.digiproject.uk` — swagger as the source of truth, the deployed build lagging the repository, the county→reference→building GET test recipe, access rules and gotchas. Manual `curl` checks only, never added to `DiGi.Test`.
 - **coding-gis-administrative-data:** Use when touching `administrative_areal_2d`, `building_2d`, or anything keyed by a county code or id — why a county code is not a key (one row per polygon part of a multi-part county), the BDOT10k source layout, the `building_2d` duplicates, and the ordering rules that keep resolution deterministic.
 
 ### XML Documentation

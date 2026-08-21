@@ -517,6 +517,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `Coding - Automatic Tests.md` | Writing xUnit tests, shared fixtures, or test report output. |
 | `Coding - Templates.md` | Scaffolding a solution/project from `templates/`. |
 | `Coding - WebAPI GLTF.md` | Building or extending a Web API on the `DiGi.GLTF` 3D framework. |
+| `Coding - WebAPI Contracts.md` | Changing a WebAPI route/parameter, or writing an HTTP client of one. |
 | `Coding - Deployed WebAPI.md` | Verifying a change against the live API at `api.digiproject.uk` (read-only GET; never in `DiGi.Test`). |
 | `Coding - GIS Administrative Data.md` | Touching `administrative_areal_2d`, `building_2d`, or anything keyed by a county code or id. |
 | `XML Documentation - Create.md` / `- Audit.md` | Adding missing `<summary>` docs, or auditing docs against current signatures. |

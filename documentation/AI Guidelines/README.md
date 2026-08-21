@@ -24,7 +24,8 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 | [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) | xUnit testing — `Facts` structure, shared fixtures (`DiGi.Test/files/`), serialization/tolerance/performance tests. |
 | [Coding - Templates.md](Coding%20-%20Templates.md) | Solution/project scaffolding via `templates/` folder (`DiGi.Template`, `DiGi.WebAPI.GLTF.Template`). |
 | [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | `DiGi.GLTF` 3D Web API — 4-step pipeline, `IGLTFNodeConverter` registry, batching (`batched: true`), streaming. |
-| [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) | Live WebAPI testing at `api.digiproject.uk` — swagger caveats, GET test recipe (`countyid` required), gotchas. |
+| [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) | Changing a WebAPI route/parameter, or writing an HTTP client of one — silent contract drift, query-binding traps (omitted parameters, enum sentinels), client `/Query` plumbing, gating undeployed endpoints. |
+| [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) | Live WebAPI testing at `api.digiproject.uk` — swagger caveats, deployed-build lag, GET test recipe (`countyid` required), gotchas. |
 | [Coding - GIS Administrative Data.md](Coding%20-%20GIS%20Administrative%20Data.md) | `administrative_areal_2d` storage — multi-part counties (one row per polygon part), why county `code` is not a key, `building_2d` duplicates, BDOT10k source layout. |
 
 ### XML Documentation

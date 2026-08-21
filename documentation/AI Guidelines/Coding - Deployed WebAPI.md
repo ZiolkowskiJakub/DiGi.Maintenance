@@ -14,6 +14,16 @@ Directives for manual, on-demand testing against live production endpoints (`htt
 1. **Incomplete Endpoint List:** Base `WebAPIController` sets `[ApiExplorerSettings(IgnoreApi = true)]`. Write endpoints (`updateitem(s)`), `user/*`, and several `item*` reads are omitted from Swagger. Query `GET /information/controllers` to discover all endpoints.
 2. **Schema Inaccuracies:** Wire format uses **PascalCase property names**, a mandatory `_type` discriminator (`"Namespace.Type,ShortAssembly"`), and **integer enums**. Ignore Swagger schema camelCase/string-enum definitions.
 
+### The Deployed Build Lags the Repository
+
+> **A 404 usually means "not deployed yet", not "wrong URL".** The host is on its own release cadence, so an endpoint that exists in source may not be running.
+
+`GET /information/controllers` returns an `InformationalVersion` per assembly carrying the **commit hash** — compare it against `git log` for the controller you need before concluding anything from a 404. Worked example, 2026-08-21: the host served `DiGi.GIS.WebAPI` 0.8.7 / commit `e6dd012`, so `idsbycode`, `administrativeareal2Dreferencesbyids`, `building2d/referenceuniquenesssummary` and all five `gis/terrain` diagnostics (`countbycountyid`, `summariesbycountyids`, `densitiesbycountyids`, `coveragebycountyid`, `gapsbyboundingbox`) answered 404 while sitting committed in the repo. The terrain **mesh** endpoints, committed earlier, were live.
+
+Distinguish "route absent" from "no data" by asking for something that certainly exists: `idsbycode?code=1465&administrativearealtype=2` returned 404 while `idbycode` on the same code returned `55417`, which is route-absent, not data-absent.
+
+Writing a client against an endpoint that is not live yet is covered in [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) §4.
+
 ---
 
 ## 2. Access Rules & Tools
@@ -43,4 +53,7 @@ Execute this safe, read-only sequence to verify client/server integration:
 - **A `building_2d` reference is unique only per `countyid`.** The 86 196 rows that were duplicated across sibling parts were removed on 2026-08-14, and `building2dreferencebyreference` → `CountyId` → model now resolves correctly (10/10 on each of the three affected codes). The uniqueness rule still holds — nothing added a constraint — so a future import that files a building under two parts would bring the 404 back.
 - **Reference Key Matching:** `itembyreference` accepts the **Cadastral Building2D reference key** from `referencesbycountyid`. It does NOT match CityGML `UniqueId` values (stripping `ID-` prefix will fail).
 - **Mandatory `countyid` Parameter:** Always pass `countyid` to `GET gis/building/itembyreference`. Omitting `countyid` triggers HTTP 500 on the live server.
+- **An unknown query parameter is silently ignored, so a stale client name reads as "no filter".** Sending `itemsbypoint?…&type=County` against a build that renamed the parameter to `administrativearealtype` returned **every** administrative level covering the point (2 119 202 bytes, headed by `Polska`) instead of the county (387 089 bytes, `m. St. Warszawa`) — HTTP 200 both times. When a live response looks too large or is headed by the wrong kind of row, suspect a parameter name before suspecting the data. Full account in [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) §1.
+- **An omitted parameter is not rejected.** `[ApiController]` answers 400 for a value it cannot parse (`administrativearealtype=` and `administrativearealtype=Nonsense` both 400), but an **absent** parameter keeps `default(T)` and the request succeeds. Omitting `administrativearealtype` on `administrativeareal2Dreferencesbyadministrativearealtype` returns a payload byte-identical to `administrativearealtype=0` — countries. Always pass the filter explicitly when testing.
+- **A `gis/terrain/mesh3d*` 404 can just mean the radius is too small.** Counties are sampled onto a 10–100 m lattice, so a circle narrower than the lattice step encloses no stored point. At `x=638000&y=486000`: radius 50 → 404, radius 100/200/500 → 200 with elevations of 111–112 m. Widen the radius before concluding the elevation table is missing in that environment.
 - **Enum Rename (`Subdivison` → `Subdivision`):** `AdministrativeArealType` member 4 was misspelled `Subdivison` and has been **renamed to `Subdivision`** — a deliberate breaking wire change, not an alias. From that build onward `Subdivison` returns **HTTP 400**; against an older deployment `Subdivision` returns **HTTP 400**. **Integer `4` is the only token that binds on every build**, so use it whenever the deployed version is unknown. Responses always carry the integer `4`.
