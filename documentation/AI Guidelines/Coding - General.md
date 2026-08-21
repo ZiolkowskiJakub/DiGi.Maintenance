@@ -162,6 +162,13 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 - Use property-like names without verb prefixes (e.g., `BoundingBox()`, NOT `GetBoundingBox()`).
 - **Allowed verb prefixes:** Only `Is`, `Has`, and `Try` (e.g., `IsPlanar()`, `HasMaterial()`, `TryConvert()`).
 
+### Result Type Naming — `IResult` Implementations End in `Result`
+- **Any class implementing `IResult` / `ISerializableResult` (in practice, anything deriving from `SerializableResult` or `UniqueResult`) MUST have a name ending in `Result`.** `TerrainPointDensityResult`, not `TerrainPointDensity`; `TerrainPointCoverageResult`, not `TerrainPointCoverage`.
+- **Do not stack a second noun for the same idea.** The suffix already says the type reports an outcome, so drop `Summary`, `Report`, `Info`, `Data` and the like rather than keeping both: `TerrainPointCountyResult`, NOT `TerrainPointCountySummaryResult` and NOT `TerrainPointCountySummary`.
+- **The `Create` factory is named after the type it returns**, so it takes the suffix too — `Create.TerrainPointDensityResult(...)` in `/Create/TerrainPointDensityResult.cs`, per [File Organisation](#file-organisation--one-member-per-file).
+- **Why it matters beyond consistency:** the JSON `_type` discriminator carries the class name, so the name is part of the wire contract. Getting it right at creation is free; changing it afterwards breaks every stored document and every deployed client.
+- **Existing violations are NOT to be renamed opportunistically.** `Building2DReferenceUniquenessSummary` and `Building2DReferenceDuplicate` (both `: SerializableResult`, both served by deployed `Building2DController` endpoints) predate this rule. Renaming them is a breaking wire change and needs its own decision, migration and version bump — not a drive-by fix. The rule governs new types.
+
 ---
 
 ## 3. Solution Assets — `files/` vs `user files/`
