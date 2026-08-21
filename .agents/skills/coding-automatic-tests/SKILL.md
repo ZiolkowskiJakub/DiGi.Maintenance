@@ -69,6 +69,7 @@ System.IO.File.WriteAllLines(reportFilePath, reportLines);
   - Call `Core.xUnit.Query.SerializationCheck(instance)`.
   - Validate string conversion: `Convert.ToSystem_String(object)` and `Convert.ToDiGi<T>(json)?.FirstOrDefault()`.
   - Every `SerializableObject` class must have a `[Fact]` testing constructor state, string conversion, and `SerializationCheck`.
+  - For models holding timestamps or dates, test `DateTimeOffset` properties to ensure timezone and UTC offset stability across round-trip conversions (avoiding `DateTimeKind.Unspecified` equality mismatches).
 - **Tolerance Boundaries:** Test floating-point operations with test cases exactly *inside* and *outside* the boundary (`Constants.Tolerance.Distance` or `1e-3`).
 - **Performance Benchmarks:**
   1. Execute a single warm-up run to trigger JIT compilation.

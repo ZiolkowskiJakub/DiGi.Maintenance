@@ -1,4 +1,4 @@
-﻿# AI Guidelines: C# General Coding Standards & Architecture
+# AI Guidelines: C# General Coding Standards & Architecture
 
 **Environment:** Visual Studio 2026 / Windows 11 / .NET 9.0+ / C# 10+.  
 **Domain:** C# plugins & engineering software (Revit API, RhinoCommon, Grasshopper, Dynamo).
@@ -169,6 +169,12 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 - **Why it matters beyond consistency:** the JSON `_type` discriminator carries the class name, so the name is part of the wire contract. Getting it right at creation is free; changing it afterwards breaks every stored document and every deployed client.
 - **Existing violations are NOT to be renamed opportunistically.** `Building2DReferenceUniquenessSummary` and `Building2DReferenceDuplicate` (both `: SerializableResult`, both served by deployed `Building2DController` endpoints) predate this rule. Renaming them is a breaking wire change and needs its own decision, migration and version bump — not a drive-by fix. The rule governs new types.
 
+### Standard Tolerance Constants (`DiGi.Core.Constants.Tolerance.*`)
+Never introduce arbitrary magic numbers (e.g. `0.001`, `1e-5`, `0.00001`) when invoking or implementing geometric, spatial, or mathematical calculation routines requiring a tolerance parameter. Always reference canonical constants defined in `DiGi.Core.Constants.Tolerance`:
+- `Tolerance.Distance` (`1e-6`): Primary spatial/distance tolerance for point proximity, segment/polygon intersection, vertex deduplication, and bounding box overlap checks.
+- `Tolerance.Angle`: Angular tolerance for vector parallelism, orthogonality, and angle comparisons.
+- `Tolerance.General` / `Tolerance.Macro`: Macro-level numeric comparison tolerances.
+
 ---
 
 ## 3. Solution Assets — `files/` vs `user files/`
@@ -178,6 +184,11 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
   - Solution `.gitignore` MUST contain `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/file.conf"`.
   - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
   - Automated test reports, diagnostic dumps, and text logs produced during test execution MUST be saved to `user files/reports/` (resolved via `assembly.ReportsDirectory()`).
+- **Solution Items (`.sln` / `.slnx`):** In Visual Studio 2026 solutions, root-level configuration and build assets must be organized under the `Solution Items` virtual folder:
+  - `Directory.Build.props`
+  - `Directory.Build.targets`
+  - `.editorconfig`
+  - `DefaultDocumentation.json` (if present)
 
 ---
 
@@ -249,6 +260,9 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
      - Single nested `SerializableObject`: `field = Core.Query.Clone(source.field);`.
    - **JSON:** `ClassName(JsonObject? jsonObject) : base(jsonObject)` — empty body delegation.
 4. **Properties:** `[JsonIgnore]` get-only returning field.
+5. **Timestamp & Date Fields (`DateTimeOffset` Standard):**
+   - Always use `DateTimeOffset` (or `DateTimeOffset?`) for timestamps and date-time properties and backing fields instead of `DateTime`.
+   - `DateTime` values with `DateTimeKind.Unspecified` cause timezone offset ambiguity, local time drift, and round-trip equality assertion failures in `SerializationCheck` / JSON deserialization across environments with different UTC offsets. `DateTimeOffset` guarantees standard `ISO 8601` serialization with explicit UTC offset persistence.
 
 ---
 
