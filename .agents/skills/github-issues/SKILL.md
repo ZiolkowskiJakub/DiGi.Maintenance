@@ -24,6 +24,7 @@ Always write the formatted markdown body to a temporary/scratch `.md` file encod
    ```bash
    gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>"
    ```
+   *(Note: During label synchronization or audits, update labels **ONLY on open issues** by default. Modify closed issues **ONLY if explicitly instructed by the user**).*
 
 2. **Adding a Comment:**
    ```bash

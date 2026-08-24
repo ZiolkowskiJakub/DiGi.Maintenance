@@ -1,6 +1,6 @@
 ---
 name: github-labels
-description: Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories - Type, Priority, and Status taxonomy, requiring Type and Priority on every new issue.
+description: Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories - Type, Priority, and Status taxonomy, requiring Type and Priority on every new issue, and updating labels only on open issues by default.
 ---
 
 # AI Guidelines: GitHub Labels
@@ -52,6 +52,9 @@ Every DiGi repository adheres to a uniform label taxonomy categorized into **Typ
 2. **Pull Requests:** Every pull request must have at least one `type: *` label matching the nature of the change.
 3. **Workflow State:** Use `status: *` labels when an issue is blocked by an external component or actively pending code review. Remove status labels once resolved.
 4. **No Legacy or Ad-hoc Labels:** Avoid creating custom un-prefixed labels (e.g. bare `bug`, `enhancement`, `help wanted`, `wontfix`). All repositories maintain this exact 16-label standard.
+5. **GitHub Label Synchronization Scope:**
+   - **Default Behavior:** Update labels **ONLY on open issues**.
+   - **Exception:** Modify labels on closed issues **ONLY if explicitly instructed by the user**.
 
 ---
 
