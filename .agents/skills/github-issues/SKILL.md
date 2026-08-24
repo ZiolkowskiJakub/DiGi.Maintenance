@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when managing, commenting on, or closing GitHub issues/PRs - mandatory --body-file usage to avoid PowerShell escape mangling.
+description: Use when creating, managing, commenting on, or closing GitHub issues/PRs - mandatory Type and Priority labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -19,12 +19,18 @@ In PowerShell (`pwsh`), the backtick (`` ` ``) is the escape character. An inlin
 ### Safe Execution Pattern
 Always write the formatted markdown body to a temporary/scratch `.md` file encoded as **UTF-8 without BOM**, and pass the file path via `--body-file` or `@<path>`:
 
-1. **Adding a Comment:**
+1. **Creating a New Issue (Mandatory Type + Priority Labels):**
+   Every new issue added to any repository **must** be assigned at least one `type: *` label and one `priority: *` label upon creation:
+   ```bash
+   gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>"
+   ```
+
+2. **Adding a Comment:**
    ```bash
    gh issue comment <issue_number> --repo <owner>/<repo> --body-file <path_to_markdown_file>
    ```
 
-2. **Closing an Issue with Resolution Comment:**
+3. **Closing an Issue with Resolution Comment:**
    ```bash
    gh issue comment <issue_number> --repo <owner>/<repo> --body-file <path_to_markdown_file>
    gh issue close <issue_number> --repo <owner>/<repo>

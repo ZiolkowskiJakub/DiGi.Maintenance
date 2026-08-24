@@ -40,7 +40,8 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 |------|--------------|
 | [GitHub - Branch Pull.md](GitHub%20-%20Branch%20Pull.md) | Local repo scanning, highest SemVer branch selection, git remote fetch/sync. |
 | [GitHub - Branch Synchronization.md](GitHub%20-%20Branch%20Synchronization.md) | Version branch sync with `main`, patch version bump workflow. |
-| [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — mandatory `--body-file` usage to avoid PowerShell escape mangling. |
+| [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — mandatory Type and Priority labels on new issues, and `--body-file` usage to avoid PowerShell escape mangling. |
+| [GitHub - Labels.md](GitHub%20-%20Labels.md) | Standardized GitHub label taxonomy (type, priority, status), color standard, mandatory Type + Priority on new issues, and multi-repo sync. |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing GitHub wiki pages — repo structure, local clones, CI sync. |
 | [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Structuring/updating wiki `Home.md` landing page. |
 | [GitHub Wiki - Benchmark.md](GitHub%20Wiki%20-%20Benchmark.md) | Authoring/updating wiki `Benchmark.md` performance pages. |

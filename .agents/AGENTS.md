@@ -40,7 +40,8 @@ The files in the `skills/` directory hold the full details for specific tasks an
 ### GitHub
 - **github-branch-pull:** Use when scanning local repositories, identifying SemVer branches, finding the highest version, and pulling remote branches.
 - **github-branch-synchronization:** Use when synchronizing version branch to `main`, bump patch version, creating a new branch, and updating `Directory.Build.props`.
-- **github-issues:** Use when managing, commenting on, or closing GitHub issues/PRs — mandatory `--body-file` usage to avoid PowerShell escape mangling.
+- **github-issues:** Use when managing, commenting on, or closing GitHub issues/PRs — mandatory Type and Priority labels on all new issues, and mandatory `--body-file` usage to avoid PowerShell escape mangling.
+- **github-labels:** Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories — Type, Priority, and Status taxonomy, requiring Type and Priority on every new issue.
 
 ### GitHub Wiki
 - **github-wiki-general:** Use when editing any GitHub wiki page — repo layout, local clones, CI sync mechanics.
