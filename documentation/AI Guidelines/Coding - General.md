@@ -43,6 +43,7 @@
    - **Tag:** `TODO [MarkerName]:` where `MarkerName` is PascalCase and names the **migration**, not the issue (`[ReferenceFormat]`, `[ReferencedObjectIndexes]`). Reuse the one tag at every site belonging to that migration, so `grep -rn "MarkerName"` returns the complete deletion checklist rather than a sample of it.
    - **State the removal condition** — the observable fact that makes deletion safe ("once every storage archive has been rewritten", "once every deployed database has run this DDL at least once"), not merely that the code is temporary. A marker without one cannot be acted on and never gets removed. Name the tracking issue when there is one.
    - **Placement:** an inline comment at the site; a file header above the `using` block when the whole file is temporary (`DiGi.Core/Query/TryParseLegacy.cs`); `[TEMPORARY]` as the first token of the XML `<summary>` when a whole public member is provisional and removing it is a public-API change (`DiGi.GIS.WebAPI.UI/Controllers/SolarController.cs`).
+   - **A workaround for a defect in another DiGi repository is temporary code too.** Name the marker after the workaround, and make the removal condition the upstream fix, naming its issue. `DiGi.GIS.WebAPI.UI`'s `TerrainCuttingMaxBuildingCount = 250` silently skipped terrain footprint cutting above 250 buildings to dodge a `DiGi.Geometry` crash. It said *"Temporary limitation ... until spatial batching optimization is implemented"* in prose but carried no grep-able tag, so no sweep could collect it; it outlived its cause and was found only by reading the call site while investigating something else. Correct form: `TODO [TerrainCuttingCap]: remove once ZiolkowskiJakub/DiGi.Geometry#2 ships the triangulator fix.`
    - **Mark only what is actually temporary.** Permanent code shipped in the same change must not carry the tag, or the sweep stops being a checklist.
 
 ---
@@ -198,6 +199,33 @@ DiGi projects reference each other with `<Reference><HintPath>..\..\X\bin\X.dll<
 `<ProjectReference>`. A raw assembly reference is **opaque to NuGet**, and the DiGi class libraries do
 not copy their own NuGet dependencies into their `bin`. A library's third-party dependencies therefore
 never reach a host that consumes it by `HintPath`.
+
+### Before Adding One — Check What You Already Reference
+The cheapest package is the one you do not add. Because of the rule below, every new dependency has to be
+re-declared on every deployed host at the same version, so spending a few minutes enumerating the packages
+already in the tree is always the better trade. A package is usually far larger than the slice of it
+currently in use.
+
+- **Read the package's own XML docs.** Every NuGet package ships them beside the DLL, in the NuGet global
+  package folder (`%USERPROFILE%\.nuget\packages\`) under `<id>/<version>/lib/<tfm>/<Id>.xml`. Grep it by
+  namespace — it lists every public type with its `<summary>`, which is faster and more complete than a web
+  search. Reflect over the assembly (`Assembly.GetExportedTypes()`) for the bare type list, or byte-scan the
+  DLL for a type name when reflection-only loading is unavailable on the platform.
+- **Check the target framework the consuming project actually builds for.** `DiGi.Geometry` is
+  `netstandard2.0`; a type found in a package's `netstandard2.1` folder is not automatically present in the
+  `netstandard2.0` one. Verify against the right `lib/<tfm>/` folder before designing around it.
+- **Worked example.** [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2) carried
+  two proposals: add `Clipper2` + `Cutear`, or hand-write ~200 lines of ear clipping with hole bridging.
+  Both were for a triangulator that keeps the polygon's own vertices and supports holes.
+  `NetTopologySuite` 2.6.0 — already referenced — ships exactly that as
+  `NetTopologySuite.Triangulate.Polygon.PolygonTriangulator` and `PolygonHoleJoiner`, in both TFM folders.
+  Zero packages added, and this section never had to be applied.
+- **NetTopologySuite corollary, because it has cost time twice.**
+  `NetTopologySuite.Triangulate.ConformingDelaunayTriangulationBuilder` is **not** the general polygon
+  triangulator. It inserts Steiner points of its own and throws `ConstraintEnforcementException` when
+  constraint splitting fails to converge, which narrow slivers reliably cause. Use
+  `NetTopologySuite.Triangulate.Polygon.PolygonTriangulator` (ear clipping, holes joined onto the shell) or
+  `ConstrainedDelaunayTriangulator` when triangle quality matters.
 
 ### The Rule
 - When a `HintPath`-referenced DiGi library needs a NuGet package, re-declare that `PackageReference`

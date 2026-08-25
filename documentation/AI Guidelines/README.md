@@ -17,11 +17,11 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 ### Coding
 | File | Trigger Task |
 |------|--------------|
-| [Coding - General.md](Coding%20-%20General.md) | C# coding, naming/typing rules, `Query`/`Modify`/`Create`/`Convert` architecture, `SerializableObject` pattern, host `PackageReference` rules for `HintPath`-dropped NuGet dependencies. |
+| [Coding - General.md](Coding%20-%20General.md) | C# coding, naming/typing rules, `Query`/`Modify`/`Create`/`Convert` architecture, `SerializableObject` pattern, checking an already-referenced package before adding a NuGet one, host `PackageReference` rules for `HintPath`-dropped NuGet dependencies, `TODO [Marker]` temporary-code tags. |
 | [Coding - Editor Config.md](Coding%20-%20Editor%20Config.md) | `.editorconfig` rules, explicit typing (`no var`), block namespaces, collection expressions (`[]`), `new()`. |
 | [Coding - API Documentation.md](Coding%20-%20API%20Documentation.md) | Public API lookup — consult `documentation/API/` before `.cs` source. |
 | [Coding - References.md](Coding%20-%20References.md) | `IReference`/`IUniqueReference` comparison — prohibit `==`/`!=` on interface references, use `Core.Query.Equals`. |
-| [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) | xUnit testing — `Facts` structure, shared fixtures (`DiGi.Test/files/`), serialization/tolerance/performance tests. |
+| [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) | xUnit testing — `Facts` structure, shared fixtures (`DiGi.Test/files/`), serialization/tolerance/performance tests, benchmark isolation, reproduce-before-fixing. |
 | [Coding - Templates.md](Coding%20-%20Templates.md) | Solution/project scaffolding via `templates/` folder (`DiGi.Template`, `DiGi.WebAPI.GLTF.Template`). |
 | [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | `DiGi.GLTF` 3D Web API — 4-step pipeline, `IGLTFNodeConverter` registry, batching (`batched: true`), streaming. |
 | [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) | Changing a WebAPI route/parameter, or writing an HTTP client of one — silent contract drift, query-binding traps (omitted parameters, enum sentinels), client `/Query` plumbing, gating undeployed endpoints. |
@@ -40,7 +40,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 |------|--------------|
 | [GitHub - Branch Pull.md](GitHub%20-%20Branch%20Pull.md) | Local repo scanning, highest SemVer branch selection, git remote fetch/sync. |
 | [GitHub - Branch Synchronization.md](GitHub%20-%20Branch%20Synchronization.md) | Version branch sync with `main`, patch version bump workflow. |
-| [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — mandatory Type and Priority labels on new issues, and `--body-file` usage to avoid PowerShell escape mangling. |
+| [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — verifying an issue's premises before implementing it, mandatory Type and Priority labels on new issues, and `--body-file` usage to avoid PowerShell escape mangling. |
 | [GitHub - Labels.md](GitHub%20-%20Labels.md) | Standardized GitHub label taxonomy (type, priority, status), color standard, mandatory Type + Priority on new issues, and multi-repo sync. |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing GitHub wiki pages — repo structure, local clones, CI sync. |
 | [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Structuring/updating wiki `Home.md` landing page. |
