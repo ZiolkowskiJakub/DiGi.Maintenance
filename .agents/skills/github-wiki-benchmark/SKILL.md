@@ -58,6 +58,7 @@ Standard specification for authoring `Benchmark.md` performance pages across DiG
 7. **Deterministic Randomness:** Seed RNGs with explicit constants and document seed.
 8. **Noise Transparency:** Note measurement noise or GC overhead at small scales.
 9. **In-Place Refresh:** Overwrite existing tables when re-running benchmarks — do not append historical duplicate runs.
+10. **Isolated Execution:** Every figure on the page is measured with its `[Fact]` run **alone** (`dotnet test <project> -c Release --filter "FullyQualifiedName~<TestName>"`), three times, with the range reported. A number read off a full-suite run is contaminated by xUnit's parallel collections and is not comparable to an isolated one — the same case has reported 983 ms in-suite against 1306-1402 ms isolated. See `Coding - Automatic Tests.md` §4.
 
 ---
 
@@ -67,6 +68,6 @@ Standard specification for authoring `Benchmark.md` performance pages across DiG
 - [ ] Expose sweep size as `const`/`static readonly` field at top of class.
 - [ ] Implement warm-up call prior to `Stopwatch.StartNew()`.
 - [ ] Add `Assert` statements verifying matching results between compared implementations.
-- [ ] Execute test in **Release** build configuration; capture machine specs.
+- [ ] Execute test in **Release** build configuration, **filtered to that test alone**, three times; capture machine specs.
 - [ ] Add/update `Benchmark.md` section: Title, test name, file, qualified signatures, knobs, result table, analysis.
 - [ ] Commit, push to `master` on wiki clone, and verify link in `Home.md`.

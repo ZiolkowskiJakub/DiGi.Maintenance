@@ -1,6 +1,6 @@
 ---
 name: coding-automatic-tests
-description: Use when writing or adding xUnit tests for C# classes, structs, or extension methods - Facts partial class structure, naming, shared test-data fixtures in DiGi.Test/files/, test reports and diagnostic dumps written to DiGi.Test/user files/reports/, and serialization, tolerance-boundary, and performance test patterns.
+description: Use when writing or adding xUnit tests for C# classes, structs, or extension methods - Facts partial class structure, naming, shared test-data fixtures in DiGi.Test/files/, test reports and diagnostic dumps written to DiGi.Test/user files/reports/, and serialization, tolerance-boundary, and performance test patterns. Also covers measuring a benchmark Fact in isolation (a figure read off a full-suite run is contaminated by xUnit parallel collections and is not comparable to an isolated one), opening a defect fix with a Fact that reproduces the reported symptom on the unmodified code, and proving a kept fallback unreachable before deleting it.
 ---
 
 # AI Guidelines: Automatic Tests
@@ -72,9 +72,14 @@ System.IO.File.WriteAllLines(reportFilePath, reportLines);
   - For models holding timestamps or dates, test `DateTimeOffset` properties to ensure timezone and UTC offset stability across round-trip conversions (avoiding `DateTimeKind.Unspecified` equality mismatches).
 - **Tolerance Boundaries:** Test floating-point operations with test cases exactly *inside* and *outside* the boundary (`Constants.Tolerance.Distance` or `1e-3`).
 - **Performance Benchmarks:**
+  0. **Measure the benchmark `[Fact]` in isolation** — `dotnet test <project> -c Release --filter "FullyQualifiedName~<TestName>"`. Never read a figure off a full-suite run: xUnit executes collections in parallel, so the rest of the suite competes for cores with the thing being timed. Same code, same machine, `Mesh3D_Difference_Performance`: **983 ms in-suite vs 1306-1402 ms isolated** before a fix, then **1134 ms in-suite vs 623-790 ms isolated** after it. The distortion is not a constant offset, so an in-suite number and an isolated number are **not comparable at all** — comparing the two here would have reversed the apparent sign of a 1.9x improvement.
   1. Execute a single warm-up run to trigger JIT compilation.
   2. Measure execution time using `System.Diagnostics.Stopwatch.StartNew()`.
-  3. Assert execution time remains below the designated threshold (`Assert.True(stopwatch.ElapsedMilliseconds < limit)`).
+  3. Repeat the measurement three times and report the **range**, not a single figure.
+  4. Assert execution time remains below the designated threshold (`Assert.True(stopwatch.ElapsedMilliseconds < limit)`). The asserted threshold must clear the **in-suite** time, because that is how CI runs it; report the isolated range, assert against the slower path.
+  5. **A/B against a real baseline, never a stale report.** To compare two implementations, keep a copy of the pre-change file, swap it back in, and re-run isolated under identical conditions. A number from an earlier report was almost certainly produced under different conditions.
+- **Reproduce Before Fixing:** a defect fix opens with a `[Fact]` that fails **on the unmodified code with the reported symptom** — matching the reported stack trace when there is one — and that `[Fact]` is committed in the same change. If a synthetic fixture will not reproduce the defect, build one from real data already in `DiGi.Test/files/`. `Mesh3D_Difference_DenseCluster` and `Mesh3D_Difference_FaultIsolation` reproduced [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2)'s `ConstraintEnforcementException` with its exact stack before a line of the fix was written.
+- **Proving a Kept Fallback Is Dead:** when a change keeps the previous implementation as a safety net, establish whether it is reachable instead of guessing — replace the fallback call with `throw`, run the whole suite. If nothing fails, the fallback is unreached and should be deleted rather than carried. That is how `DiGi.Geometry`'s conforming-Delaunay triangulation path was retired (326 to 126 lines) with evidence.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when creating, managing, commenting on, or closing GitHub issues/PRs - mandatory Type and Priority labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
+description: Use when creating, managing, commenting on, or closing GitHub issues/PRs - verifying an issue's stated premises against the code before implementing it (does the missing optimization already exist, is the quoted latency reproducible, does the failure reproduce) and correcting the record when a claim is wrong, mandatory Type and Priority labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -44,7 +44,29 @@ Always write the formatted markdown body to a temporary/scratch `.md` file encod
 
 ---
 
-## 2. Standard Issue Resolution Comment Structure
+## 2. Verifying an Issue Before Implementing It
+
+An issue's problem statement is a hypothesis — including one you wrote yourself. Confirm each claim
+against the code before building to it, because an issue that is wrong about the cause is usually also
+wrong about the fix.
+
+- **Does the optimization it says is missing already exist?** Open the file it names.
+- **Is the quoted latency reproducible?** Run the repository's own benchmark `[Fact]` (isolated — see
+  `Coding - Automatic Tests.md` §4) rather than trusting a figure in the description.
+- **Does the described failure reproduce at all?** Write the reproducing `[Fact]` first.
+
+When a claim turns out to be wrong, **correct the record in a comment with the evidence**. The issue text
+is what the next reader trusts, and a closed issue keeps teaching whatever it last said.
+
+**Worked example.** [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2) asked for
+spatial partitioning to cut a reported 15-60 s latency. `Difference.cs` already held an `STRtree`, and the
+`< 3.0 s` acceptance criterion was already met at ~1.3 s measured. The real defect was a crash on dense
+input. Implementing the issue as written would have added a second spatial index and two NuGet packages
+for no measurable gain.
+
+---
+
+## 3. Standard Issue Resolution Comment Structure
 
 When resolving and closing an issue, provide a structured comment covering:
 
