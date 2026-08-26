@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Regenerates the '.agents' rules and skills of every DiGi repository from the canonical AI Guidelines.
 
@@ -70,6 +70,7 @@ $descriptions = @{
     "coding-references"              = "Use when comparing, matching, keying or de-duplicating an IReference/IUniqueReference - why == between two interface-typed references is a silent bug, what to use instead, and how to detect and fix existing occurrences."
     "coding-templates"               = "Use when creating a new project/solution from a template, or adding/modifying templates in the workspace's default templates/ folder."
     "coding-webapi-contracts"        = "Use when changing a WebAPI controller's route, parameter names or validation, or when writing or maintaining an HTTP client of one - why a renamed query parameter breaks clients with no compile error and no runtime error (ASP.NET silently ignores an unknown parameter and returns the unfiltered result), the binding traps where an omitted parameter keeps default(T) and an enum sentinel that is not 0 makes the obvious guard dead code, sending enum values as integers, the client base-URI constant and /Query plumbing pattern, and gating an endpoint that is not deployed yet."
+    "coding-webapi-simple-authorization" = "Use when implementing or auditing lightweight API-key-based tiered authorization for WebAPI controllers - deny-by-default IsAuthorized, [Feature]Configuration model with an Open escape hatch, files/*.conf.template vs user files/ secrets, [FromHeader(Name = ""key"")] binding, constant-time key comparison, singleton registration on the host, MSBuild copy targets, and SyncDirectories.ps1 deployment synchronization."
     "coding-webapi-gltf"             = "Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D framework - the decoupled pipeline, onboarding a new consuming project, adding a 3D object type via IGLTFNodeConverter, and batching/streaming performance rules."
     "github-ai-issue-classification" = "Use when assigning the mandatory ai: complexity tier to a GitHub issue - the four tiers (light, standard, heavy, ultra), the criteria and capability band of each, and the decision procedure (estimate files touched and depth of architectural understanding, and err to the higher tier when core abstractions or core business logic are involved)."
     "github-branch-pull"             = "Use when scanning local DiGi repositories, identifying SemVer branches, selecting the highest version, and pulling/syncing the local machine with the latest remote state."

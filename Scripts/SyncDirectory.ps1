@@ -31,8 +31,12 @@ if (-not (Test-Path -Path $Source)) {
 if (Test-Path -Path $Destination) {
     Write-Host "Cleaning destination folder: $Destination..." -ForegroundColor Cyan
     try {
-        # Remove all items inside destination without removing the root folder itself
-        Get-ChildItem -Path $Destination | Remove-Item -Recurse -Force -ErrorAction Stop
+        # Remove all items inside destination without removing the root folder itself.
+        # Top-level *.conf files are preserved: they hold machine-specific settings and secrets
+        # (e.g. WebAPI_Diagnostics.conf) that belong to the target machine, not to the build output.
+        # A conf the source also carries is still overwritten by the copy below, so this only
+        # protects configuration that exists ONLY on the target - previously wiped every deployment.
+        Get-ChildItem -Path $Destination -Exclude "*.conf" | Remove-Item -Recurse -Force -ErrorAction Stop
     }
     catch {
         Write-Warning "Could not completely clean destination folder. Some files may be locked or in use. Error: $_"
