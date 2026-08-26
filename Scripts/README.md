@@ -141,3 +141,36 @@ Applies XML documentation build targets to project files.
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File ".\ApplyDocumentationSetup.ps1"
 ```
+
+### Filter GitHub Issues by Labels
+Searches, filters, and inspects GitHub issues across a single repository or all DiGi repositories by labels, repository, state, and search terms with token-efficient output. Automatically normalizes shorthand label names (`standard`, `high`, `bug`, etc.) to standard DiGi taxonomy names.
+```powershell
+# Filter issues in a specific repository by labels
+PowerShell -ExecutionPolicy Bypass -File ".\FilterIssues.ps1" -Repo "DiGi.Core" -Labels "ai: standard, priority: high"
+
+# Filter issues across all repositories using label shorthands
+PowerShell -ExecutionPolicy Bypass -File ".\FilterIssues.ps1" -Labels "standard, high"
+
+# Search keyword in titles/descriptions
+PowerShell -ExecutionPolicy Bypass -File ".\FilterIssues.ps1" -Repo "DiGi.GIS.PostgreSQL" -Search "subdivision"
+
+# Inspect specific issue with description preview
+PowerShell -ExecutionPolicy Bypass -File ".\FilterIssues.ps1" -Repo "DiGi.GIS.PostgreSQL" -Issue 42 -Detail
+
+# Output clean JSON for programmatic processing
+PowerShell -ExecutionPolicy Bypass -File ".\FilterIssues.ps1" -Labels "critical" -Json
+```
+
+### Sync GitHub Labels Across All Repositories
+Synchronizes the standardized 20-label taxonomy across all DiGi repositories on GitHub.
+```powershell
+# Preview label sync changes across all repositories
+PowerShell -ExecutionPolicy Bypass -File ".\SyncLabelsAllRepos.ps1" -DryRun
+
+# Sync labels for a single target repository
+PowerShell -ExecutionPolicy Bypass -File ".\SyncLabelsAllRepos.ps1" -Repo "DiGi.Core"
+
+# Sync labels across all DiGi repositories
+PowerShell -ExecutionPolicy Bypass -File ".\SyncLabelsAllRepos.ps1"
+```
+

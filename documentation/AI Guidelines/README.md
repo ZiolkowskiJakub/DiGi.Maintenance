@@ -28,6 +28,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 | [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) | Live WebAPI testing at `api.digiproject.uk` — swagger caveats, deployed-build lag, GET test recipe (`countyid` required), gotchas. |
 | [Coding - GIS Administrative Data.md](Coding%20-%20GIS%20Administrative%20Data.md) | `administrative_areal_2d` storage — multi-part counties (one row per polygon part), why county `code` is not a key, `building_2d` duplicates, BDOT10k source layout. |
 | [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) | PostgreSQL / Npgsql database engineering — `Classes/Converter/` architecture, `NULLS NOT DISTINCT` unique index syntax, query batching (`batchSize = 1000`, `ANY(@array)`), `commandTimeout` parameter standard, whitelisting dynamic SQL identifiers, connection asset isolation in `user files/` and why a `.conf` never measures production. |
+| [Coding - PostgreSQL Distributed Queue Processing.md](Coding%20-%20PostgreSQL%20Distributed%20Queue%20Processing.md) | Distributed background bulk update queues — queue table schema (`claimed_at`, `created_at`, natural key uniqueness), atomic lease claiming with `FOR UPDATE SKIP LOCKED`, native interval arithmetic (`@minutes * interval '1 minute'`), two-phase explicit batch acknowledgment (`DELETE ... WHERE id = ANY(@ids)`), crash recovery, and non-destructive queue observation. |
 
 ### XML Documentation
 | File | Trigger Task |
@@ -38,10 +39,11 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 ### GitHub & Wiki
 | File | Trigger Task |
 |------|--------------|
+| [GitHub - AI Issue Classification.md](GitHub%20-%20AI%20Issue%20Classification.md) | Assigning the mandatory `ai: *` complexity tier (light, standard, heavy, ultra) to an issue - tier criteria, capability bands, and the decision procedure. |
 | [GitHub - Branch Pull.md](GitHub%20-%20Branch%20Pull.md) | Local repo scanning, highest SemVer branch selection, git remote fetch/sync. |
 | [GitHub - Branch Synchronization.md](GitHub%20-%20Branch%20Synchronization.md) | Version branch sync with `main`, patch version bump workflow. |
-| [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — verifying an issue's premises before implementing it, mandatory Type and Priority labels on new issues, and `--body-file` usage to avoid PowerShell escape mangling. |
-| [GitHub - Labels.md](GitHub%20-%20Labels.md) | Standardized GitHub label taxonomy (type, priority, status), color standard, mandatory Type + Priority on new issues, and multi-repo sync. |
+| [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — verifying an issue's premises before implementing it, mandatory Type, Priority and AI Complexity labels on new issues, and `--body-file` usage to avoid PowerShell escape mangling. |
+| [GitHub - Labels.md](GitHub%20-%20Labels.md) | Standardized GitHub label taxonomy (type, priority, status, ai), color standard, mandatory Type + Priority + AI Complexity on new issues, and multi-repo sync. |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing GitHub wiki pages — repo structure, local clones, CI sync. |
 | [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Structuring/updating wiki `Home.md` landing page. |
 | [GitHub Wiki - Benchmark.md](GitHub%20Wiki%20-%20Benchmark.md) | Authoring/updating wiki `Benchmark.md` performance pages. |

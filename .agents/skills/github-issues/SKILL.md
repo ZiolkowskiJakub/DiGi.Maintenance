@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when creating, managing, commenting on, or closing GitHub issues/PRs - verifying an issue's stated premises against the code before implementing it (does the missing optimization already exist, is the quoted latency reproducible, does the failure reproduce) and correcting the record when a claim is wrong, mandatory Type, Priority and AI Complexity labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
+description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, verifying an issue's stated premises against the code before implementing it (does the missing optimization already exist, is the quoted latency reproducible, does the failure reproduce) and correcting the record when a claim is wrong, mandatory Type, Priority and AI Complexity labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -79,3 +79,31 @@ When resolving and closing an issue, provide a structured comment covering:
    - Test facts added to `DiGi.Test` and verification commands run.
 4. **Live Deployed Verification (if applicable):**
    - Results of manual verification against deployed WebAPI endpoints or services.
+
+---
+
+## 4. Searching & Filtering Issues (`FilterIssues.ps1`)
+
+To locate, triage, or inspect GitHub issues across repositories without wasting context tokens on bloated JSON payloads, use the dedicated maintenance script `DiGi.Maintenance/Scripts/FilterIssues.ps1`:
+
+```powershell
+# Filter issues in a specific repository by labels (supports standard names and shorthands)
+PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.ps1" -Repo "DiGi.Core" -Labels "ai: standard, priority: high"
+
+# Search across all repositories by label shorthands
+PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.ps1" -Labels "standard, high"
+
+# Search by keyword in title/body
+PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.ps1" -Repo "DiGi.GIS.PostgreSQL" -Search "subdivision"
+
+# Inspect a single issue with description preview
+PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.ps1" -Repo "DiGi.GIS.PostgreSQL" -Issue 42 -Detail
+
+# Emit minimal JSON for programmatic handling
+PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.ps1" -Labels "critical" -Json
+```
+
+### Key Advantages for AI Agents:
+- **Token Efficiency:** Formats issue summaries into 1–2 lines per issue, saving >90% of tokens compared to raw GitHub CLI JSON.
+- **Label Shorthands:** Automatically normalizes common terms (`high` $\rightarrow$ `priority: high`, `standard` $\rightarrow$ `ai: standard`, `bug` $\rightarrow$ `type: bug`, `in-progress` $\rightarrow$ `status: in-progress`).
+- **Flexible Scope:** Omit `-Repo` to search across all DiGi repositories under the owner in one command.
