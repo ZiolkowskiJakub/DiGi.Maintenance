@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when creating, managing, commenting on, or closing GitHub issues/PRs - verifying an issue's stated premises against the code before implementing it (does the missing optimization already exist, is the quoted latency reproducible, does the failure reproduce) and correcting the record when a claim is wrong, mandatory Type and Priority labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
+description: Use when creating, managing, commenting on, or closing GitHub issues/PRs - verifying an issue's stated premises against the code before implementing it (does the missing optimization already exist, is the quoted latency reproducible, does the failure reproduce) and correcting the record when a claim is wrong, mandatory Type, Priority and AI Complexity labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -19,10 +19,10 @@ In PowerShell (`pwsh`), the backtick (`` ` ``) is the escape character. An inlin
 ### Safe Execution Pattern
 Always write the formatted markdown body to a temporary/scratch `.md` file encoded as **UTF-8 without BOM**, and pass the file path via `--body-file` or `@<path>`:
 
-1. **Creating a New Issue (Mandatory Type + Priority Labels):**
-   Every new issue added to any repository **must** be assigned at least one `type: *` label and one `priority: *` label upon creation:
+1. **Creating a New Issue (Mandatory Type + Priority + AI Complexity Labels):**
+   Every new issue added to any repository **must** be assigned at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` complexity tier upon creation (tier criteria: `GitHub - AI Issue Classification.md`):
    ```bash
-   gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>"
+   gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>,ai: <tier>"
    ```
    *(Note: During label synchronization or audits, update labels **ONLY on open issues** by default. Modify closed issues **ONLY if explicitly instructed by the user**).*
 

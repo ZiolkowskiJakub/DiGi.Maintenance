@@ -1,6 +1,6 @@
 ---
 name: github-labels
-description: Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories - Type, Priority, and Status taxonomy, requiring Type and Priority on every new issue, and updating labels only on open issues by default.
+description: Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories - Type, Priority, Status and AI Complexity taxonomy, requiring Type, Priority and an ai: tier on every new issue, and updating labels only on open issues by default.
 ---
 
 # AI Guidelines: GitHub Labels
@@ -11,7 +11,7 @@ Guidelines for standardizing, applying, and managing labels on GitHub issues and
 
 ## 1. Taxonomy & Color Standards
 
-Every DiGi repository adheres to a uniform label taxonomy categorized into **Type**, **Priority**, and **Status**. Standardizing prefixes (`type:`, `priority:`, `status:`) ensures clean organization, auto-complete efficiency in GitHub, and clear visual triage.
+Every DiGi repository adheres to a uniform label taxonomy categorized into **Type**, **Priority**, **Status**, and **AI Complexity**. Standardizing prefixes (`type:`, `priority:`, `status:`, `ai:`) ensures clean organization, auto-complete efficiency in GitHub, and clear visual triage.
 
 ### A. Type Labels (`type: *`) — *What is being changed?*
 
@@ -44,14 +44,25 @@ Every DiGi repository adheres to a uniform label taxonomy categorized into **Typ
 | `status: blocked` | `#b60205` | Blocked by upstream dependency or external issue |
 | `status: needs-review` | `#fb8c00` | Implementation ready for verification or code review |
 
+### D. AI Complexity Labels (`ai: *`) — *How much AI capability does it need?*
+
+| Label | Color | Description |
+| :--- | :--- | :--- |
+| `ai: light` | `#ffd3eb` | Trivial task: typos, docs, comments, boilerplate, or an obvious localized fix |
+| `ai: standard` | `#f692ce` | Narrow-scope task: a single method or feature in 1-2 files, unit tests, contained refactoring |
+| `ai: heavy` | `#d03592` | Complex task: multi-file refactoring, concurrency debugging, or cross-cutting concerns |
+| `ai: ultra` | `#99286e` | Extreme complexity: architecture design, deep performance work, or heavy domain deduction |
+
+The tier criteria and the decision procedure live in `GitHub - AI Issue Classification.md`.
+
 ---
 
 ## 2. Labeling Rules for Issues & Pull Requests
 
-1. **Mandatory Type & Priority on Creation:** Every new issue created in any repository **must** have at least one `type: *` label and one `priority: *` label assigned at creation time (e.g. `type: bug`, `priority: high`).
+1. **Mandatory Type, Priority & AI Complexity on Creation:** Every new issue created in any repository **must** have at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` label assigned at creation time (e.g. `type: bug`, `priority: high`, `ai: standard`). See `GitHub - AI Issue Classification.md` for the tier criteria.
 2. **Pull Requests:** Every pull request must have at least one `type: *` label matching the nature of the change.
 3. **Workflow State:** Use `status: *` labels when an issue is blocked by an external component or actively pending code review. Remove status labels once resolved.
-4. **No Legacy or Ad-hoc Labels:** Avoid creating custom un-prefixed labels (e.g. bare `bug`, `enhancement`, `help wanted`, `wontfix`). All repositories maintain this exact 16-label standard.
+4. **No Legacy or Ad-hoc Labels:** Avoid creating custom un-prefixed labels (e.g. bare `bug`, `enhancement`, `help wanted`, `wontfix`). All repositories maintain this exact 20-label standard.
 5. **GitHub Label Synchronization Scope:**
    - **Default Behavior:** Update labels **ONLY on open issues**.
    - **Exception:** Modify labels on closed issues **ONLY if explicitly instructed by the user**.
