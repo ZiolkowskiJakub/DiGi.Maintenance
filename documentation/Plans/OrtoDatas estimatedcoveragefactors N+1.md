@@ -59,10 +59,12 @@ it is not currently timing out and `priority: high` overstates it.
 
 ---
 
-## Status — implemented 2026-08-26, uncommitted
+## Status — implemented, committed, deployed and verified, 2026-08-26. Issue closed.
 
 Phases 1-4 and the tests are done and build clean across all four repos (0 warnings, 0 errors).
-**Nothing is committed and nothing is deployed**, so the production verification below has not run.
+Committed to `0.8.8` in all four code repos, pushed, redeployed by the user, and verified live.
+**#9 is closed.** A distinct, pre-existing N+1 that #9's fix exposed - rather than caused - is tracked
+separately as #45 (below).
 
 | step | state |
 |---|---|
@@ -73,7 +75,37 @@ Phases 1-4 and the tests are done and build clean across all four repos (0 warni
 | Phase 3 `DiGi.GIS.WebAPI` | done - three loops replaced by two batched reads, `commandtimeout` on both coverage endpoints |
 | Phase 4 siblings | done - `Building`, `Building2DReferencedObject`, `TerrainPoint`; F8 guard added |
 | Tests | done - 3 + 180 + 30 pass, 30 integration skipped |
-| Commit / deploy / production verification / close #9 | **not started** |
+| Commit | done - `DiGi.PostgreSQL` `31955ae`, `DiGi.GIS.PostgreSQL` `0c6860e`, `DiGi.GIS.WebAPI` `36d9d53`, `DiGi.Test` `b45bfad` |
+| Deploy | done - user rebuilt and redeployed the host; `/information/controllers` confirmed commit `36d9d53` live |
+| Production verification | done - see below |
+| Close #9 | done |
+
+### Production verification, post-deploy
+
+Confirmed the counting-side fix is exactly what it was designed to be, but a second measurement
+exposed a *different*, pre-existing N+1 that had been hiding behind this one:
+
+| request | predicted | measured |
+|---|---|---|
+| single county `[5]` | ~21 ms | 20-24 ms - matches |
+| **150 explicit county ids** (bypasses country expansion, exercises the new batched reads at scale) | - | **20 ms** - proves the fix is O(1)-ish in county count |
+| one voivodeship | - | 32-39 ms |
+| country `[7]`, expands to 406 counties | ~21 ms | **280-322 ms - does not match** |
+
+The 150-county row is the decisive one: it goes through exactly the code this issue added, at
+country-comparable scale, and costs the same as a single county. So the counting fix is confirmed
+correct and confirmed fast. The country-scale request stays slow for an unrelated reason: expanding a
+country id to its 406 counties calls
+`AdministrativeAreal2DPostgreSQLConverter.GetAdministrativeAreal2DReferencesByParentCodeAsync`, which
+loops `GetIdsByCodeAsync` once per parent row instead of batching by distinct code - 406 near-identical
+round trips for the Country grouping alone, since **all 406 `Country`-type rows share `code = "10"`**.
+That loop was introduced in an unrelated commit (`8b9b61b`, #16, a correctness fix) and was invisible
+until this issue's much larger N+1 was removed. Filed as
+[DiGi.GIS.PostgreSQL#45](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/45).
+
+**Lesson for next time:** a "the number didn't move as far as predicted" result is itself a finding,
+not a shortfall to gloss over - isolating it (explicit county ids vs. country-code expansion) is what
+turned an ambiguous "smaller win than hoped" into two clean, separately-fixable defects.
 
 Three things turned up during implementation that the plan did not predict:
 
