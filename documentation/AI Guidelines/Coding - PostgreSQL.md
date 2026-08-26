@@ -111,19 +111,119 @@ public static async Task<List<Building2D>> Building2DsByReferencesAsync(
    npgsqlCommand.CommandTimeout = commandTimeout;
    await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
    ```
-2. **Parameterized Queries:** Always parameterize input values using `NpgsqlParameter` or `Parameters.AddWithValue`. Never concatenate user input or identifiers into raw SQL strings to prevent SQL injection and enable PostgreSQL query plan caching.
+2. **Parameterized Queries:** Always parameterize input **values** using `NpgsqlParameter` or `Parameters.AddWithValue`. Never concatenate user input into raw SQL strings — it prevents SQL injection and lets PostgreSQL cache the query plan. An **identifier** (a column or table name) cannot be a parameter and needs the whitelist treatment in §5 instead.
 3. **`CancellationToken` Threading:** Always pass `cancellationToken` to all asynchronous Npgsql operations (`ExecuteNonQueryAsync`, `ExecuteReaderAsync`, `ExecuteScalarAsync`, `ReadAsync`).
 
 ---
 
-## 5. Database Connection Assets & Security
+## 5. Dynamic SQL Identifiers (Column and Table Names)
+
+A value can be a parameter. **An identifier cannot** — `@column` is not valid syntax for a column
+name, so a query that names a column chosen at runtime is forced to build that name into the
+statement text. "Never concatenate" is not a rule anyone can follow there, which is how this was got
+wrong.
+
+The rule that can be followed:
+
+> **Resolve a dynamic identifier against the stored column list, reject anything not on it, and
+> double-quote what survives.** The list is the guard, because nothing else can be.
+
+### The reference implementation
+
+`TablePostgreSQLConverter.GetUniqueValuesAsync` in `DiGi.PostgreSQL.Table` does this correctly and is
+what to copy — or better, to delegate to:
+
+```csharp
+// Column whitelist validation to prevent SQL injection (target column + every filter column)
+HashSet<string> uniqueIds = [columnUniqueId];
+filterGroup?.CollectColumnUniqueIds(uniqueIds);
+
+List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+if (columns_Existing is null || !columns_Existing.Exists(x => x?.UniqueId() == columnUniqueId))
+{
+    return null;
+}
+
+string commandQuery = $@"
+    SELECT DISTINCT ""{columnUniqueId}""
+    FROM ""{TableName}""
+    WHERE {stringBuilder_Where}
+    ORDER BY ""{columnUniqueId}""";
+```
+
+Note that it validates **every** identifier the statement will carry, not only the obvious one: the
+filter columns reach the SQL too.
+
+### An override must delegate, not reimplement
+
+`BuildingDataPostgreSQLConverter.GetUniqueValuesAsync` added a county filter by writing its own
+statement, and in doing so dropped the whitelist:
+
+```csharp
+// WRONG - what this replaced
+string commandQuery = $@"
+    SELECT DISTINCT {columnUniqueId}
+    FROM {TableName}
+    WHERE (@countyId IS NULL OR county_id = @countyId)
+      AND {columnUniqueId} IS NOT NULL
+    ORDER BY {columnUniqueId}";
+```
+
+`columnUniqueId` arrives from the `columnuniqueid` query parameter of
+`gis/buildingdata/uniquevalues`, which is public and takes no authentication — so caller-supplied
+text was being parsed as SQL, `ORDER BY` included. The fix folded the county into a `FilterGroup` and
+called the base method, deleting the raw statement: about 45 lines removed for 18 added, and one code
+path instead of two. **A subclass that needs an extra condition expresses it as a filter and
+delegates.**
+
+### Finding it from outside
+
+An unknown identifier that answers **500 instead of 404 reached the database**. That is the whole
+test, and it needs no payload:
+
+| request | result |
+|---|---|
+| `uniquevalues?columnuniqueid=no_such_column` | 404 — rejected before any SQL was built |
+| `uniquevalues?columnuniqueid=no_such_column&countyid=…` | 500 — the identifier reached PostgreSQL |
+
+A regression test belongs with the fix. `GetUniqueValuesAsync_UnknownColumn_Integration` in
+`DiGi.GIS.PostgreSQL.xUnit` asserts that an unknown column is rejected identically on every branch,
+and it fails against the unfixed code.
+
+---
+
+## 6. Database Connection Assets & Security
 
 - **Connection Configurations:** Connection strings and server credentials must be loaded from `*.conf` files located in the git-ignored `user files/` directory (e.g. `user files/GIS_PostgreSQL_Main.conf`).
 - **Never hardcode credentials:** Never commit connection strings containing passwords, host IPs, or secret tokens to source control.
 
+### A `.conf` never points at production
+
+A `*.conf` resolves to a **development** database: partial, not current, and specific to whichever
+machine it sits on. It is the right place to exercise a code path, prove a statement parses, or
+create and drop a scratch table. It is **not** the estate.
+
+Production is reached only through the API at `api.digiproject.uk`, and it runs on its own machine —
+which also hosts `DiGi.GIS.PostgreSQL.UI`, so a background task's Serilog file is there, not on the
+machine the code was edited on.
+
+> **Never answer a question about production by measuring through a `.conf`.** Row counts, coverage,
+> "how many rows look like X" — those are production questions and they go through the API. When a
+> number measured locally and a number from the API disagree, suspect the databases before the code.
+
+Two conclusions were retracted for want of this rule. A diagnostic run through a conf reported every
+one of a county's 155 287 buildings as having a NULL `subdivision_id`, while the deployed
+`gis/buildingdata/coveragebycountyid` reported **zero** for the same county — both correct about
+their own database, and briefly read as a converter defect. The same mistake later produced "the task
+run never happened", from searching an editing machine's log folders for a run that had happened on
+the server.
+
+A diagnostic test that reads a database must say **in its own summary** which database its figures
+describe. `BuildingDataUnreachableBuildings` in `DiGi.GIS.PostgreSQL.xUnit` is the worked example.
+
 ---
 
-## 6. Verification & Detection Checklist
+## 7. Verification & Detection Checklist
 
 - [ ] Composite unique indexes on nullable columns use `NULLS NOT DISTINCT`?
 - [ ] Large collection queries batched in chunks (`batchSize = 1000`) using `ANY(@parameter)`?
@@ -132,3 +232,5 @@ public static async Task<List<Building2D>> Building2DsByReferencesAsync(
 - [ ] `CancellationToken` is the final parameter and passed to all async Npgsql calls?
 - [ ] `await using` used for commands, readers, and transactions?
 - [ ] Queries use parameterization rather than string concatenation?
+- [ ] Dynamic identifiers resolved against the stored column list and quoted, never interpolated raw?
+- [ ] Any figure quoted about production measured through the API rather than through a `*.conf`?

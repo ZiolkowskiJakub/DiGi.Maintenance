@@ -27,7 +27,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 | [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) | Changing a WebAPI route/parameter, or writing an HTTP client of one — silent contract drift, query-binding traps (omitted parameters, enum sentinels), client `/Query` plumbing, gating undeployed endpoints. |
 | [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) | Live WebAPI testing at `api.digiproject.uk` — swagger caveats, deployed-build lag, GET test recipe (`countyid` required), gotchas. |
 | [Coding - GIS Administrative Data.md](Coding%20-%20GIS%20Administrative%20Data.md) | `administrative_areal_2d` storage — multi-part counties (one row per polygon part), why county `code` is not a key, `building_2d` duplicates, BDOT10k source layout. |
-| [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) | PostgreSQL / Npgsql database engineering — `Classes/Converter/` architecture, `NULLS NOT DISTINCT` unique index syntax, query batching (`batchSize = 1000`, `ANY(@array)`), `commandTimeout` parameter standard, connection asset isolation in `user files/`. |
+| [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) | PostgreSQL / Npgsql database engineering — `Classes/Converter/` architecture, `NULLS NOT DISTINCT` unique index syntax, query batching (`batchSize = 1000`, `ANY(@array)`), `commandTimeout` parameter standard, whitelisting dynamic SQL identifiers, connection asset isolation in `user files/` and why a `.conf` never measures production. |
 
 ### XML Documentation
 | File | Trigger Task |

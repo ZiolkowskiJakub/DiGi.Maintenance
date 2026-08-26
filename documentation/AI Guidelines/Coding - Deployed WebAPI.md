@@ -31,6 +31,7 @@ Writing a client against an endpoint that is not live yet is covered in [Coding 
 - **Tooling:** Use `curl` (Bash) for API testing. Avoid `WebFetch` (GET-only).
 - **Authentication:** GET endpoints require no auth.
 - **Production Guardrail:** Treat `api.digiproject.uk` as live production. Read-only GET requests are safe. **Do NOT invoke POST/PUT/DELETE write endpoints** without explicit authorization.
+- **This API is the only way to measure production.** A `*.conf` resolves to a development database, not the estate, so a figure taken through one describes neither the deployed data nor a run that happened on the server — see [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) §6.
 
 ---
 
