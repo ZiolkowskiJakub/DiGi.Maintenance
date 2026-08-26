@@ -170,10 +170,15 @@ The deployed host lags the repository, so an endpoint that exists in source may 
 Check what is actually running before writing a client against it:
 
 ```bash
+# Check deployed controller builds and commit hashes
 curl -s "https://api.digiproject.uk/information/controllers"
+
+# Check exact active routes and parameter names (including unlisted endpoints)
+curl -s "https://api.digiproject.uk/information/endpoints?includeignored=true"
 ```
 
 `InformationalVersion` carries the commit hash. Compare it with `git log` for the controller you need.
+Querying `/information/endpoints` confirms whether the specific action route, HTTP verb, and query parameter names match what your client expects.
 
 When a client must ship before the endpoint does, gate the call and mark it with a grep-able
 `TODO [MarkerName]` per the temporary-code rule in
