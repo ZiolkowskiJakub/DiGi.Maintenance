@@ -46,9 +46,13 @@ PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1" -FailOnMi
 ```
 
 ### Sync Output Directories
-Synchronizes output binary directories across web services and the configured software output directory (`SOFTWARE_DIRECTORY` in `user files/Directories.conf`).
+Synchronizes output binary directories across web services and the configured software output directory (`SOFTWARE_DIRECTORY` in `user files/Directories.conf`). By default, purges `logs` directories and log files from software output folders unless `-RemoveLogs:$false` is specified.
 ```powershell
+# Sync directories and clean logs in software destinations (default)
 PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1"
+
+# Sync directories preserving log files
+PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1" -RemoveLogs:$false
 ```
 
 ### Copy User Files
