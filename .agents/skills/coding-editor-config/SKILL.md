@@ -176,7 +176,7 @@ dotnet_diagnostic.CA1711.severity = none
    ```
 2. **Collection Expressions:** Use `[]` for arrays and collections (`List<int> numbers = [];`).
 3. **Block-Scoped Namespaces:** Always use `namespace DiGi.Domain { ... }`.
-4. **Parameter Line Breaks (`<= 7` Rule):** Keep parameters on a single line if count <= 7, however long the line becomes; multi-line only for >= 8 parameters. Line length is never the trigger.
+4. **Parameter Line Breaks (`<= 7` Rule):** Keep parameter declarations on a single line if count <= 7, however long the line becomes; multi-line only for >= 8 parameters (strictly one parameter per line, enforced via `DIGI0001`). Line length is never the trigger. Call sites prefer single-line but allow multi-line formatting for complex expressions, lambdas, or readability.
 5. **Member Body Rules:** Full block bodies `{ ... }` for methods, constructors, operators, local functions; `=>` for single-line properties/getters.
 6. **Async & Token Placement:** Async method names end with `Async`. `CancellationToken` must be the LAST parameter (CA1068). Pass by name at call sites (`cancellationToken: cancellationToken`).
 7. **C# 13 Thread Synchronization:** Use `private readonly Lock lockObject = new();` and `lock (lockObject)`.
@@ -186,6 +186,6 @@ dotnet_diagnostic.CA1711.severity = none
 - [ ] Explicit typing declared (no `var`)?
 - [ ] Target-typed `new()` and collection `[]` applied?
 - [ ] Method bodies use `{ ... }`?
-- [ ] Parameters single-line if count <= 7?
+- [ ] Parameter declarations single-line if count <= 7 (or strictly one per line if >= 8)?
 - [ ] `CancellationToken` is final parameter in async methods?
 - [ ] Async methods end with `Async`?

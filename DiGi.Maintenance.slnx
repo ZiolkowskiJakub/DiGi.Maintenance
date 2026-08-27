@@ -5,7 +5,10 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
   </Folder>
-  <Project Path="DiGi.Maintenance.UI.Application/DiGi.Maintenance.UI.Application.csproj" />
-  <Project Path="DiGi.Maintenance.UI/DiGi.Maintenance.UI.csproj" />
   <Project Path="DiGi.Maintenance/DiGi.Maintenance.csproj" />
+  <Project Path="DiGi.Maintenance.Analyzers/DiGi.Maintenance.Analyzers.csproj" />
+  <Project Path="DiGi.Maintenance.Analyzers.CodeFixes/DiGi.Maintenance.Analyzers.CodeFixes.csproj" />
+  <Project Path="DiGi.Maintenance.Analyzers.xUnit/DiGi.Maintenance.Analyzers.xUnit.csproj" />
+  <Project Path="DiGi.Maintenance.UI/DiGi.Maintenance.UI.csproj" />
+  <Project Path="DiGi.Maintenance.UI.Application/DiGi.Maintenance.UI.Application.csproj" />
 </Solution>

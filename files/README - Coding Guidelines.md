@@ -1,4 +1,4 @@
-﻿## 💻 Coding Guidelines for Developers & AI Agents
+## 💻 Coding Guidelines for Developers & AI Agents
 
 To maintain codebase health, performance, and compatibility within Visual Studio 2026 / C# 10+ environments, all developers and AI agents must strictly comply with these guidelines.
 
@@ -11,20 +11,34 @@ To maintain codebase health, performance, and compatibility within Visual Studio
    - **Primitives** may use plain camelCase (`double tolerance`, `string name`, `int count`).
 4. **Zero warnings/analyzer messages** — nullability, parameter validation, clean code.
 5. **C# 10+ / C# 13/14** (`LangVersion` ≥ 10) — modern features (enhanced pattern matching, target-typed `new`, collection expressions, `System.Threading.Lock`, etc.) are fine within these architectural constraints. **Namespaces must be block-scoped** (as in every example below); file-scoped namespaces are disallowed and enforced via `.editorconfig` (`csharp_style_namespace_declarations = block_scoped`). See `Coding - Editor Config.md` for the unified baseline rules.
-6. **Line breaks in parameters:** If a method or constructor has fewer than 6 input parameters, do not break lines between parameters.
-   - **Correct:**
+6. **Parameter Line Breaks (`<= 7` Rule):** If a method, constructor, or delegate declaration has 7 or fewer parameters, keep them on a single line however long the line becomes. Multi-line parameter lists are reserved for 8 or more parameters (strictly one parameter per line, enforced via `DIGI0001`). Call sites prefer single-line but allow multi-line formatting when arguments are complex expressions, lambdas, or object initializers.
+   - **Correct (<= 7 parameters):**
      ```csharp
      public void Calculate(double centerX, double centerY, double radius, double? storeyHeight = null)
      {
      }
      ```
-   - **Incorrect:**
+   - **Incorrect (<= 7 parameters):**
      ```csharp
      public void Calculate(
          double centerX,
          double centerY,
          double radius,
          double? storeyHeight = null)
+     {
+     }
+     ```
+   - **Correct (>= 8 parameters, one per line):**
+     ```csharp
+     public void Calculate(
+         double centerX,
+         double centerY,
+         double radius,
+         double? storeyHeight,
+         double wallThickness,
+         double slabThickness,
+         string materialName,
+         CancellationToken cancellationToken = default)
      {
      }
      ```

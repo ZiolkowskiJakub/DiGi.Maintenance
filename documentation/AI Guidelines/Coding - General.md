@@ -20,8 +20,9 @@
 5. **Block-Scoped Namespaces:** Enforce block-scoped `namespace DiGi.Domain { ... }`. Prohibit file-scoped namespaces (`csharp_style_namespace_declarations = block_scoped`).
 6. **Parameter Line Breaks (`<= 7` Rule):**
    - **<= 7 parameters:** Must remain on a **single line**, however long that line becomes.
-   - **>= 8 parameters:** Split parameters onto multiple lines, one per line.
-   - Applies to declarations *and* call sites, to methods, constructors and delegates alike.
+   - **>= 8 parameters:** Split parameters onto multiple lines, **strictly one parameter per line** (multiple parameters on the same line violate `DIGI0001`).
+   - **Scope:** Applies strictly to **parameter declarations** on methods, constructors, local functions, and delegates (enforced via analyzer `DIGI0001`).
+   - **Call Sites (`ArgumentList`):** Single-line formatting is standard and preferred for simple argument lists. Multi-line formatting (one argument per line or aligned) is permitted when arguments are complex expressions, multi-line lambdas (`x => { ... }`), object/collection initializers, or when line breaking improves readability.
    - A long signature is not a reason to wrap. Line length is not the trigger — the parameter count
      is, because a signature that reads as one line stays greppable and diffs as one line. A WebAPI
      action binding six query parameters plus a `CancellationToken` is exactly the shape this rule
@@ -410,3 +411,18 @@ namespace DiGi.EPW.Classes
     }
 }
 ```
+
+---
+
+## 7. Roslyn Analyzers & CodeFix Architecture
+
+When implementing custom Roslyn analyzers and code fix providers (e.g. in `DiGi.Maintenance`):
+
+1. **Project Decoupling (Rule RS1038):**
+   - A Roslyn `DiagnosticAnalyzer` project must **never** reference `Microsoft.CodeAnalysis.Workspaces` or IDE packages.
+   - Command-line compilers (`dotnet build`, `csc.exe`, CI pipelines) intentionally do not provide workspace assemblies, and referencing them emits compiler warning `RS1038` and risks runtime resolution crashes.
+2. **Two-Project Layout:**
+   - **`[Namespace].Analyzers`** (`netstandard2.0`): References only `Microsoft.CodeAnalysis.CSharp` and `Microsoft.CodeAnalysis.Analyzers`. Contains `DiagnosticAnalyzer` types that run during compilation and in IDEs.
+   - **`[Namespace].Analyzers.CodeFixes`** (`netstandard2.0`): References `[Namespace].Analyzers` and `Microsoft.CodeAnalysis.CSharp.Workspaces`. Contains `CodeFixProvider` types loaded on-demand by IDEs and formatting tools (`dotnet format`).
+3. **Target Framework:** `netstandard2.0` ensures broad compatibility across .NET SDKs and Visual Studio versions.
+
