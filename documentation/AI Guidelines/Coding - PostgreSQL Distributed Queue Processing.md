@@ -262,6 +262,7 @@ Controllers expose two endpoints for queue interaction:
 public async Task<IActionResult> NextBuilding2DReferencesAsync(
     [FromQuery(Name = "count")] int count = 100,
     [FromQuery(Name = "claimtimeoutminutes")] int claimTimeoutMinutes = 30,
+    [FromQuery(Name = "commandtimeout")] int commandTimeout = 60,
     CancellationToken cancellationToken = default)
 {
     if (count <= 0) return BadRequest("Count must be greater than 0.");
@@ -269,7 +270,7 @@ public async Task<IActionResult> NextBuilding2DReferencesAsync(
     if (ortoDatasPostgreSQLConverter is null) return BadRequest();
 
     List<Building2DReference>? references = await ortoDatasPostgreSQLConverter.GetNextBuilding2DReferencesAsync(
-        count, claimTimeoutMinutes, cancellationToken: cancellationToken);
+        count, claimTimeoutMinutes, commandTimeout, cancellationToken: cancellationToken);
 
     if (references is null || references.Count == 0) return NoContent();
 
