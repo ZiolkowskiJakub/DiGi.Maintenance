@@ -568,6 +568,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `Coding - Templates.md` | Scaffolding a solution/project from `templates/`. |
 | `Coding - WebAPI GLTF.md` | Building or extending a Web API on the `DiGi.GLTF` 3D framework. |
 | `Coding - WebAPI Contracts.md` | Changing a WebAPI route/parameter, or writing an HTTP client of one. |
+| `Coding - WebAPI Simple Authorization.md` | Simple API-key-based tiered authorization for WebAPI controllers (deny-by-default, `key` request header, `.conf` assets, `SyncDirectories.ps1` alignment). |
 | `Coding - Deployed WebAPI.md` | Verifying a change against the live API at `api.digiproject.uk` (read-only GET; never in `DiGi.Test`). |
 | `Coding - GIS Administrative Data.md` | Touching `administrative_areal_2d`, `building_2d`, or anything keyed by a county code or id. |
 | `Coding - PostgreSQL.md` | Designing schemas, composite unique constraints, batching, timeouts, or converters in PostgreSQL/Npgsql. |
