@@ -269,7 +269,7 @@ inside Facts — the affected test projects are `DiGi.Analytical.xUnit` and
 
 ## Status
 
-**Implemented and closed** on 2026-08-28. D4 confirmed by the user: **exclude**
+**Implemented and closed** on 2026-08-27. D4 confirmed by the user: **exclude**
 `TimGreatrexArchitect` (scope fixed at 32 sites). D1-D3 and D5 were settled by the evidence above.
 Commits are local on each repository's version branch; **not pushed** (no push was requested).
 
