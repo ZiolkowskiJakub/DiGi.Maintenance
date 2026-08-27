@@ -85,6 +85,11 @@ CREATE INDEX IF NOT EXISTS idx_{tableName}_claimed_at
 3. **`UNIQUE (county_id, reference)`:** Enforces that a refresh run appending tens of thousands of references never enqueues duplicates.
 4. **Composite Claim Index:** `(claimed_at ASC NULLS FIRST, created_at ASC)` allows PostgreSQL to quickly scan for unclaimed items (`NULLS FIRST`) or expired leases in FIFO creation order.
 
+### DDL Ownership — Every Path Runs It
+The DDL method in `Create/TableAsync.cs` is the migration, and a consumer may be the first path to reach a table that predates a schema change. **Every path that reads or writes the queue table — enqueue, claim, acknowledge — runs the DDL before its own statement**, not just the producer.
+
+`TableExistsAsync` is `SELECT to_regclass(...)`: it answers for the table and knows nothing about its columns. On a table created before `claimed_at` existed, the guard passes and the claim then raises `42703` on the column the migration was supposed to add — the failure behind `ZiolkowskiJakub/DiGi.GIS.PostgreSQL#46`, which made the deployed download task report Failed. Because every DDL statement is conditional (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`), running it from every path costs a catalog lookup and is exactly what the enqueue path already does.
+
 ---
 
 ## 3. Atomic Lease Claiming (`FOR UPDATE SKIP LOCKED`)
@@ -98,7 +103,7 @@ SET claimed_at = now()
 WHERE id IN (
     SELECT id FROM {TableName.OrtoDatas_Building2DReference_Update}
     WHERE claimed_at IS NULL OR claimed_at < now() - (@claimTimeoutMinutes * interval '1 minute')
-    ORDER BY created_at ASC
+    ORDER BY claimed_at ASC NULLS FIRST, created_at ASC
     FOR UPDATE SKIP LOCKED
     LIMIT @count
 )
@@ -107,6 +112,8 @@ RETURNING id, county_id, reference, subdivision_id;
 
 ### Critical Mechanics & Gotchas
 - **`FOR UPDATE SKIP LOCKED`:** Tells PostgreSQL to skip any rows currently locked by other concurrent worker transactions rather than waiting. This allows dozens of worker machines to pull batches simultaneously without lock contention or duplicate work.
+- **`ORDER BY claimed_at ASC NULLS FIRST, created_at ASC` — the index it scans.** This matches the composite claim index created in section 2, so the claim scans that index instead of sorting a heap. The order is also a fairness rule: never-claimed rows sort first, so a row whose lease expired waits behind everything never attempted. Ordered by `created_at` alone, an expired lease returns to the **head** of the queue, and a worker failing on the rows it reaches first can re-attempt them forever ahead of the rest.
+- **The claim path runs the DDL first (section 2), not a `TableExistsAsync` guard.** The claim statement reads and writes `claimed_at`; on a table predating the column the existence guard passes and the statement raises `42703`.
 - **Lease Timeout via Native Arithmetic:** Use `(@claimTimeoutMinutes * interval '1 minute')` rather than string concatenation (`(@claimTimeoutMinutes || ' minutes')::interval`). In PostgreSQL, integer multiplication with an `interval` is native and prevents syntax or type-casting errors.
 - **Re-Queueing on Crash:** If a worker machine dies or drops network connection, the lease expires when `now() - claimed_at > claimTimeoutMinutes`. The next claiming worker will automatically pick up the abandoned rows.
 
@@ -153,9 +160,12 @@ public static async Task<long> AcknowledgeBuilding2DReferencesAsync(
         return 0;
     }
 
-    if (!await DiGi.PostgreSQL.Query.TableExistsAsync(npgsqlConnection, TableName.OrtoDatas_Building2DReference_Update))
+    // The DDL rather than a mere existence check, for the same reason the claim runs it: a queue
+    // table predating the claim column has to be brought up to the current shape by whichever path
+    // reaches it first. Every statement in it is conditional, so this is a catalog lookup.
+    if (!await Create.TableAsync_Building2DReference(npgsqlConnection, TableName.OrtoDatas_Building2DReference_Update, commandTimeout, cancellationToken))
     {
-        return 0;
+        return -1;
     }
 
     string commandText = $@"
@@ -178,15 +188,55 @@ public static async Task<long> AcknowledgeBuilding2DReferencesAsync(
 }
 ```
 
+`-1` and `0` are different answers: `0` is a count of rows retired and must never stand for a failure, so the path returns `-1` whenever the table cannot be prepared. The WebAPI layer maps any negative result to `500` (section 6).
+
 ### The Golden Rule of Acknowledgment
 > **NEVER acknowledge items before their target data is committed.**
 > Acknowledgment belongs strictly *after* `UpdateAsync` / storage commit succeeds. If saving fails or throws, skip acknowledgment so the lease expires and the work is safely retried.
+
+### Poison Rows — Attempt Counter & Retirement Ceiling
+
+With acknowledgment correctly confined to work that was stored, a reference that can **never** resolve is never retired: the lease expires, the row is claimed again, it fails again, and the queue acquires a floor of permanently failing rows that a worker keeps reaching. A queue without an attempt counter cannot tell a transient fault from a data defect.
+
+The standard guard has three parts:
+
+1. **Attempt counter.** New queue tables carry an attempt count, added by migration for existing ones:
+   ```sql
+   ALTER TABLE {tableName} ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 1;
+   ```
+   The claim increments it, so every re-attempt after an expired lease is counted:
+   ```sql
+   UPDATE {tableName}
+   SET claimed_at = now(), attempts = COALESCE(attempts, 0) + 1
+   WHERE id IN (
+       SELECT id FROM {tableName}
+       WHERE claimed_at IS NULL OR claimed_at < now() - (@claimTimeoutMinutes * interval '1 minute')
+         AND COALESCE(attempts, 0) < @maxAttempts
+       ORDER BY claimed_at ASC NULLS FIRST, created_at ASC
+       FOR UPDATE SKIP LOCKED
+       LIMIT @count
+   )
+   RETURNING id, county_id, reference, subdivision_id;
+   ```
+   `COALESCE` keeps rows predating the column claimable. `@maxAttempts` is a method parameter beside `claimTimeoutMinutes`; the ceiling is a policy decision — high enough that transient faults (network, service outage) recover before it is reached, low enough that a reference that can never resolve is retired rather than cycled forever.
+2. **Retirement ceiling.** The claim method retires exhausted rows **before** it claims, so no worker ever sees them again:
+   ```sql
+   DELETE FROM {tableName}
+   WHERE COALESCE(attempts, 0) >= @maxAttempts
+   RETURNING id, county_id, reference;
+   ```
+   Every retired reference is logged at error level with enough identity (partition + reference) to file a data defect — a permanently failing reference is a problem worth a ticket, never a silent drop.
+3. **Retirement is not acknowledgment.** Acknowledgment retires rows whose work was **stored**; retirement discards rows whose work **provably failed** its ceiling of attempts. Both are explicit deletions, but they answer different questions, and only the former belongs inside the worker loop.
+
+> **Current state:** the `orto_datas_building_2d_reference_update` queue predates this standard and carries no attempt counter yet — adoption is tracked in `ZiolkowskiJakub/DiGi.GIS.PostgreSQL#48`. The samples in sections 2–4 reflect the queue as it exists today; this subsection is the target for new queues.
 
 ---
 
 ## 5. Non-Destructive Queue Observation
 
 Distributed queues must be observable without modifying state or disturbing worker nodes.
+
+The observation path is the one deliberate exception to the DDL ownership rule in section 2: it keeps `TableExistsAsync` on purpose, because an observation endpoint must not create anything. `null` there correctly means no refresh has ever run — a fact, not a fault.
 
 ### Query Implementation Pattern
 ```csharp
@@ -329,11 +379,14 @@ while (postResponse_References?.Result is List<Building2DReference> references &
 When implementing a new distributed queue in DiGi solutions, verify:
 
 - [ ] Queue table schema includes `claimed_at timestamptz` and migration statement?
+- [ ] Every claim and acknowledge path runs the DDL rather than checking existence?
 - [ ] Unique constraint on `(partition_id, reference)` prevents duplicate queuing?
 - [ ] Composite index on `(claimed_at ASC NULLS FIRST, created_at ASC)` created?
+- [ ] Claim statement orders by `claimed_at ASC NULLS FIRST, created_at ASC`, so an expired lease cannot pre-empt never-attempted rows?
 - [ ] Claim statement uses `FOR UPDATE SKIP LOCKED` and native interval multiplication (`@minutes * interval '1 minute'`)?
 - [ ] Claim method accepts `count`, `claimTimeoutMinutes`, `commandTimeout`, and `CancellationToken`?
 - [ ] Acknowledge method deletes by ID array (`WHERE id = ANY(@ids)`)?
+- [ ] Attempt counter with a retirement ceiling retires permanently failing references, logged at error?
 - [ ] Workers invoke acknowledgment **only after** storage write completes successfully?
 - [ ] Read-only observation endpoint (`queuesummaries...`) exists and does not drain the queue?
 - [ ] All public methods and endpoints have comprehensive XML documentation?
