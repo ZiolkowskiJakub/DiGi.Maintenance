@@ -32,10 +32,27 @@ Always write the formatted markdown body to a temporary/scratch `.md` file encod
    gh issue close <issue_number> --repo <owner>/<repo>
    ```
 
-3. **Updating an Existing Comment via API:**
+4. **Updating an Existing Comment via API:**
    ```bash
    gh api -X PATCH repos/<owner>/<repo>/issues/comments/<comment_id> -F "body=@<path_to_markdown_file>"
    ```
+
+### Line Endings, `\r\r\n` Translation & Markdown Table Integrity
+When writing markdown body files programmatically (e.g. using Python or PowerShell scripts on Windows):
+1. **The Double-Carriage-Return Trap (`\r\r\n`):** On Windows, writing in default text mode (`open(path, 'w')`) automatically translates `\n` to `\r\n`. If the input text or template already contains Windows `\r\n` line endings, this translation creates `\r\r\n` (CR CR LF).
+2. **Table Rendering Destruction:** GitHub Flavored Markdown (GFM) parses `\r\r\n` as an empty line (`\r` followed by `\r\n`). Because GFM requires table rows to be strictly contiguous, any empty line inside a table breaks parsing and renders raw text with pipes instead of a formatted grid.
+3. **Safe File Writing Pattern:** Always write markdown files with explicit `newline='\n'` in Python, or strip/normalize `\r` before writing:
+   ```python
+   # Python — explicit LF newlines and UTF-8 encoding (no BOM):
+   with open(path, 'w', newline='\n', encoding='utf-8') as f:
+       f.write(markdown_content)
+   ```
+   In PowerShell:
+   ```powershell
+   [System.IO.File]::WriteAllText($path, ($content -replace "`r`n", "`n"), [System.Text.UTF8Encoding]::new($false))
+   ```
+4. **Table Contiguity Rule:** Markdown tables must never contain blank lines between the header row (`| Col1 | Col2 |`), separator row (`|---|---|`), and data rows (`| Data1 | Data2 |`).
+5. **Unicode Typography Preservation:** Always use UTF-8 without BOM to preserve typographic characters (`—` em-dash, `–` en-dash, `§` section sign, `→` arrow, `·` bullet) and prevent codepage replacement artifacts (`` / `ÔÇö`).
 
 ---
 
