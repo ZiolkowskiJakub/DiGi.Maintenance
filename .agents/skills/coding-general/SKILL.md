@@ -186,8 +186,9 @@ Never introduce arbitrary magic numbers (e.g. `0.001`, `1e-5`, `0.00001`) when i
 
 ## 3. Solution Assets — `files/` vs `user files/`
 
-- **`files/` (Committed):** Non-sensitive, shared deployment assets (`web.config`, `app_offline.htm.bak`). Copied to build output via `CopyFiles` MSBuild target.
+- **`files/` (Committed):** Non-sensitive, shared deployment assets (`web.config`, `app_offline.htm.bak`). Copied to build output via `CopyFiles` MSBuild target (`AfterTargets="Build"`).
 - **`user files/` (Git-Ignored):** Sensitive, user-specific, local machine data (DB credentials `*.conf`, API keys, local paths), and test report outputs (`user files/reports/`). Copied via `CopyUserFiles` target.
+  - **Precedence / Overriding Rule:** In case of duplicate relative file paths between `files/` and `user files/`, assets from `user files/` MUST ALWAYS take precedence and override assets from `files/`. To guarantee execution ordering, `CopyUserFiles` MUST specify `AfterTargets="CopyFiles"`.
   - Solution `.gitignore` MUST contain `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/file.conf"`.
   - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
   - Automated test reports, diagnostic dumps, and text logs produced during test execution MUST be saved to `user files/reports/` (resolved via `assembly.ReportsDirectory()`).

@@ -191,12 +191,21 @@ never in `files/`.** Both are copied to the build output by a `.csproj` target; 
   ```
 - **`user files/`** — git-**ignored**. Fragile / user-specific / secret data: database connection
   configs (`*.conf` with host/user/password), API keys, local paths, per-machine settings. Copied by
-  a `CopyUserFiles` target with the identical shape but `..\user files\**\*.*`. The consuming code
-  reads these from next to the executing assembly at runtime, so the app works locally and on the
-  server without the secrets ever entering the repo.
+  a `CopyUserFiles` target specifying `AfterTargets="CopyFiles"` so user files overwrite any duplicates
+  copied by `CopyFiles`:
+  ```xml
+  <Target Name="CopyUserFiles" AfterTargets="CopyFiles">
+    <ItemGroup>
+      <_UserFiles Include="$(ProjectDir)..\user files\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_UserFiles)" DestinationFiles="@(_UserFiles->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+  ```
   - **Generated output also belongs here.** Test reports, diagnostic dumps, benchmark logs and text
     logs written during a run go to `user files/reports/` — never to `files/`. In tests, resolve the
     folder with `assembly.ReportsDirectory()` rather than a hardcoded path (see §7).
+
+**Overriding Rule:** In case of duplicate relative file paths between `files/` and `user files/`, assets from `user files/` MUST ALWAYS take precedence and override assets from `files/`. Specifying `AfterTargets="CopyFiles"` ensures `CopyUserFiles` runs strictly after `CopyFiles` to overwrite any duplicates.
 
 **Enforcement:** the solution-root `.gitignore` must contain the case-insensitive rule
 `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/<file>"` — git must report the rule
