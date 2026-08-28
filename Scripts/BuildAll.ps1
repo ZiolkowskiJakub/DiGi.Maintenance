@@ -86,6 +86,7 @@ $solutionOrder = @(
 	"DiGi.GIS.SQLite\DiGi.GIS.SQLite.slnx",
 	"DiGi.GIS.ML\DiGi.GIS.ML.slnx",
 	"DiGi.GIS.WebAPI\DiGi.GIS.WebAPI.slnx",
+	"DiGi.GIS.YOLO\DiGi.GIS.YOLO.slnx",
 	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
 	"DiGi.Communication\DiGi.Communication.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
