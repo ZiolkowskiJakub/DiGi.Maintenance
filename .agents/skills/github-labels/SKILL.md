@@ -1,6 +1,6 @@
 ---
 name: github-labels
-description: Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories - Type, Priority, Status and AI Complexity taxonomy, requiring Type, Priority and an ai: tier on every new issue, and updating labels only on open issues by default.
+description: Use when standardizing, applying, or syncing GitHub issue and PR labels across repositories - Type, Priority, Status and AI Complexity taxonomy, requiring Type, Priority and an 'ai: *' tier on every new issue, and updating labels only on open issues by default.
 ---
 
 # AI Guidelines: GitHub Labels

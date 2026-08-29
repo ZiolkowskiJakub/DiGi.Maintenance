@@ -1,6 +1,6 @@
 ---
 name: github-ai-issue-classification
-description: Use when assigning the mandatory ai: complexity tier to a GitHub issue - the four tiers (light, standard, heavy, ultra), the criteria and capability band of each, and the decision procedure (estimate files touched and depth of architectural understanding, and err to the higher tier when core abstractions or core business logic are involved).
+description: Use when assigning the mandatory 'ai: *' complexity tier to a GitHub issue - the four tiers (light, standard, heavy, ultra), the criteria and capability band of each, and the decision procedure (estimate files touched and depth of architectural understanding, and err to the higher tier when core abstractions or core business logic are involved).
 ---
 
 # AI Guidelines: AI Issue Classification
