@@ -189,9 +189,9 @@ Two rules this encodes:
 
 ## 4. Alignment with Build & Deployment Process
 
-### A. Template (`files/`) vs Secrets (`user files/`)
-- **Committed template — `files/WebAPI_[Feature].conf.template`.** The `.template` suffix is required, not cosmetic: `CopyFiles` and `CopyUserFiles` both flatten into the same output root, so a template sharing the secret's filename lands on the same `bin/` path and the winner is MSBuild target-ordering luck.
-- **Runtime secret — `user files/WebAPI_[Feature].conf`.** Never committed.
+### A. Committed Default (`files/`) vs Secrets (`user files/`)
+- **Committed default — `files/WebAPI_[Feature].conf`.** Ships deny-by-default values (`Enabled=false`, `Key=""`). Deployed to `bin/` by the `CopyFiles` target.
+- **Runtime secret — `user files/WebAPI_[Feature].conf`.** Never committed. `CopyUserFiles` runs `AfterTargets="CopyFiles"`, guaranteeing that `user files/*.conf` always overwrites `files/*.conf` in `bin/`.
 
 ### B. `.gitignore` Enforcement
 ```gitignore
@@ -208,7 +208,7 @@ Verify with `git check-ignore -v "user files/WebAPI_Diagnostics.conf"`.
   <Copy SourceFiles="@(_Files)" DestinationFiles="@(_Files->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 </Target>
 
-<Target Name="CopyUserFiles" AfterTargets="Build">
+<Target Name="CopyUserFiles" AfterTargets="CopyFiles">
   <ItemGroup>
     <_UserFiles Include="$(ProjectDir)..\user files\**\*.*" />
   </ItemGroup>

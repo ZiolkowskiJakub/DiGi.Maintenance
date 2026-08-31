@@ -1,4 +1,4 @@
-﻿# AI Guidelines — Index
+# AI Guidelines — Index
 
 > [!IMPORTANT]
 > **Portability Rule:** All markdown files must use **relative paths** for file references. Do not include absolute machine paths (e.g. `C:\Users\...`).
@@ -25,7 +25,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 | [Coding - Templates.md](Coding%20-%20Templates.md) | Solution/project scaffolding via `templates/` folder (`DiGi.Template`, `DiGi.WebAPI.GLTF.Template`). |
 | [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | `DiGi.GLTF` 3D Web API — 4-step pipeline, `IGLTFNodeConverter` registry, batching (`batched: true`), streaming. |
 | [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) | Changing a WebAPI route/parameter, or writing an HTTP client of one — silent contract drift, query-binding traps (omitted parameters, enum sentinels), client `/Query` plumbing, gating undeployed endpoints. |
-| [Coding - WebAPI Simple Authorization.md](Coding%20-%20WebAPI%20Simple%20Authorization.md) | Simple API-key-based tiered authorization for WebAPI controllers — deny-by-default `IsAuthorized`, `[Feature]Configuration` with an `Open` escape hatch, `files/*.conf.template` vs `user files/` secrets, `[FromHeader(Name = "key")]` binding, constant-time comparison, MSBuild copy targets, and `SyncDirectories.ps1` alignment. |
+| [Coding - WebAPI Simple Authorization.md](Coding%20-%20WebAPI%20Simple%20Authorization.md) | Simple API-key-based tiered authorization for WebAPI controllers — deny-by-default `IsAuthorized`, `[Feature]Configuration` with an `Open` escape hatch, `files/*.conf` committed defaults vs `user files/` secrets, `[FromHeader(Name = "key")]` binding, constant-time comparison, MSBuild copy targets, and `SyncDirectories.ps1` alignment. |
 | [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) | Live WebAPI testing at `api.digiproject.uk` — swagger caveats, deployed-build lag, GET test recipe (`countyid` required), gotchas. |
 | [Coding - GIS Administrative Data.md](Coding%20-%20GIS%20Administrative%20Data.md) | `administrative_areal_2d` storage — multi-part counties (one row per polygon part), why county `code` is not a key, `building_2d` duplicates, BDOT10k source layout. |
 | [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) | PostgreSQL / Npgsql database engineering — `Classes/Converter/` architecture, `NULLS NOT DISTINCT` unique index syntax, query batching (`batchSize = 1000`, `ANY(@array)`), `commandTimeout` parameter standard, whitelisting dynamic SQL identifiers, connection asset isolation in `user files/` and why a `.conf` never measures production. |
