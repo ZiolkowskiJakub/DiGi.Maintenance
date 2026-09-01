@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, verifying an issue's stated premises against the code before implementing it (does the missing optimization already exist, is the quoted latency reproducible, does the failure reproduce) and correcting the record when a claim is wrong, mandatory Type, Priority and AI Complexity labels on all new issues, and mandatory --body-file usage to avoid PowerShell escape mangling.
+description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, avoiding PowerShell pipeline decoding mangling on existing issue bodies via dedicated Python scripts, verifying an issue's stated premises against the code before implementing it, mandatory Type, Priority and AI Complexity labels on all new issues, mandatory --body-file usage, and GraphQL revision recovery.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -58,6 +58,65 @@ When writing markdown body files programmatically (e.g. using Python or PowerShe
    ```
 4. **Table Contiguity Rule:** Markdown tables must never contain blank lines between the header row (`| Col1 | Col2 |`), separator row (`|---|---|`), and data rows (`| Data1 | Data2 |`).
 5. **Unicode Typography Preservation:** Always use UTF-8 without BOM to preserve typographic characters (`—` em-dash, `–` en-dash, `§` section sign, `→` arrow, `·` bullet) and prevent codepage replacement artifacts (`` / `ÔÇö`).
+
+### The PowerShell Pipeline Decoding Trap (Capture Mangling)
+When reading or modifying an existing issue body, pull request, or comment:
+1. **The Native Pipeline Decoding Failure:** In Windows PowerShell (`pwsh` or `powershell.exe`), the standard output of external executables (like `gh issue view ... --json body` or `gh api ...`) is automatically decoded by PowerShell's pipeline using `[Console]::OutputEncoding`, which defaults to legacy OEM/ANSI codepages (e.g. CP437 or Windows-1252), **not UTF-8**.
+2. **Irreversible In-Memory Corruption:** Any multi-byte UTF-8 character (`—` em-dash `\u2014`, `–` en-dash `\u2013`, `·` middle dot `\u00b7`, `→` arrow `\u2192`, `§` section sign `\u00a7`, `✅` checkmark `\u2705`) is irrevocably converted to `\ufffd` replacement characters (``) or broken multi-character mojibake (`ÔÇö`) the instant it enters a PowerShell variable or pipeline (`$body = gh ...` or `gh ... | ConvertFrom-Json`). Saving that string out to disk—even with explicit UTF-8 encoding—writes the corrupted replacement characters permanently.
+3. **Inline Command Mangling:** Running inline scripts via `python -c "..."` inside PowerShell causes PowerShell to treat backticks as escape characters and re-encode arguments. Always write scripts to a standalone `.py` file and execute via `python <script_path>`.
+
+### Safe Reading, Modifying, and Editing Workflow (Python Scripts)
+To inspect, check off sub-tasks, or modify existing issue bodies without text corruption:
+1. **Use a Standalone Python Script:** Run a script using `subprocess.run` with explicit `encoding="utf-8"`:
+   ```python
+   import subprocess
+   import json
+
+   res = subprocess.run(["gh", "api", "repos/<owner>/<repo>/issues/<number>"], capture_output=True, text=True, encoding="utf-8")
+   body = json.loads(res.stdout)["body"]
+
+   # Apply the modification (e.g. check off a sub-task)
+   target = "- [ ] **S8 · Add a `building_data` write endpoint"
+   replacement = "- [x] **S8 · Add a `building_data` write endpoint"
+   assert target in body, "Target text not found in issue body!"
+   modified_body = body.replace(target, replacement)
+
+   # Mandatory Pre-Save Integrity Assertions
+   assert "\ufffd" not in modified_body, "Corruption detected: replacement character present!"
+   assert "ÔÇ" not in modified_body, "Corruption detected: CP1252 mojibake present!"
+
+   # Write with explicit LF newlines and UTF-8
+   with open("temp_body.md", "w", newline="\n", encoding="utf-8") as f:
+       f.write(modified_body)
+
+   # Edit via --body-file
+   subprocess.run(["gh", "issue", "edit", "<number>", "--repo", "<owner>/<repo>", "--body-file", "temp_body.md"], check=True)
+   ```
+2. **Mandatory Pre-Save Integrity Assertions:**
+   Before updating any issue body or comment, verify:
+   - Zero replacement characters: `assert "\ufffd" not in text`
+   - Zero codepage artifacts (`ÔÇ`, `â`)
+   - All expected markdown tables and headers remain structurally contiguous.
+
+### Recovery via GitHub GraphQL API History
+If an issue's markdown body is ever accidentally corrupted or mangled:
+1. **Do not attempt manual reconstruction or lossy rewriting.**
+2. **Query GitHub's GraphQL API:** GitHub maintains the complete immutable edit history under `userContentEdits`:
+   ```graphql
+   query {
+     repository(owner: "<owner>", name: "<repo>") {
+       issue(number: <number>) {
+         userContentEdits(first: 5) {
+           nodes {
+             editedAt
+             diff
+           }
+         }
+       }
+     }
+   }
+   ```
+3. **Extract Pristine Revision:** Each edit node provides `diff` containing the exact, pristine text of that revision. Retrieve the uncorrupted revision, apply the intended change with strict UTF-8 (`newline='\n'`, `encoding='utf-8'`), and update via `--body-file`.
 
 ---
 

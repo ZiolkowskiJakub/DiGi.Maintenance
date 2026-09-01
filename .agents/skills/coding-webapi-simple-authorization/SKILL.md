@@ -1,6 +1,6 @@
 ---
 name: coding-webapi-simple-authorization
-description: Use when implementing or auditing lightweight API-key-based tiered authorization for WebAPI controllers - deny-by-default IsAuthorized, [Feature]Configuration model with an Open escape hatch, files/*.conf committed defaults vs user files/ secrets, [FromHeader(Name = "key")] binding, constant-time key comparison, singleton registration on the host, MSBuild copy targets, and SyncDirectories.ps1 deployment synchronization.
+description: Use when implementing or auditing lightweight API-key-based tiered authorization for WebAPI controllers - deny-by-default IsAuthorized, [Feature]Configuration model with an Open escape hatch, files/*.conf.template vs user files/ secrets, [FromHeader(Name = "key")] binding, constant-time key comparison, singleton registration on the host, MSBuild copy targets, and SyncDirectories.ps1 deployment synchronization.
 ---
 
 # Coding — WebAPI Simple Authorization (Tiered Access & API Key Protection)
