@@ -65,6 +65,12 @@ $DeploymentUnits = @(
 		Ignore  = @("Emgu.CV")  # As DiGi.WebAPI.WindowsService above.
 	},
 	@{
+		Name    = "DiGi.GIS.YOLO.UI"
+		Path    = "DiGi.GIS.YOLO.UI\bin"
+		Recurse = $false
+		Ignore  = @("Emgu.CV")
+	},
+	@{
 		Name    = "DiGi.Maintenance"
 		Path    = "DiGi.Maintenance\bin"
 		Recurse = $false

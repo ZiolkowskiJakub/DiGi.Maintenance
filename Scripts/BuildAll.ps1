@@ -96,6 +96,7 @@ $solutionOrder = @(
 	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
 	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx",
 	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx",
+	"DiGi.GIS.YOLO.UI\DiGi.GIS.YOLO.UI.slnx",
 	"DiGi.Maintenance\DiGi.Maintenance.slnx",
 	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
 	# add more in the order you need
