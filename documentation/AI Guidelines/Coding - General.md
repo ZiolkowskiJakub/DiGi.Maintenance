@@ -38,6 +38,24 @@
 9. **Simplify Member Access & Shadowing (IDE0002/IDE0001):**
    - Omit redundant `DiGi.` namespace prefixes when types resolve unambiguously.
    - **Innermost-Namespace Shadowing Exception:** Keep full prefix when a parent namespace shares a segment name with an inner namespace (e.g., `DiGi.WebAPI.Query` vs `DiGi.GIS.WebAPI`). Always rebuild after removing a prefix; keep qualifier if CS0234/CS0246 occurs or if both namespaces contain matching types.
+   - **Same-Named Extension Methods Bind By `using`, And The Wrong One Compiles.** The rule above is about
+     types and fails loudly as CS0234/CS0246. Its sibling fails silently: when two extension methods share a
+     name and both apply to the argument, C# picks the one with the more derived parameter type — but only
+     from namespaces that are actually imported. Which one binds is therefore decided by a `using` directive,
+     not by anything a reader of the call site can see, and the loser compiles just as happily.
+     - **Worked example.** `Core.Query.UniqueId(this ISerializableObject?)` returns a content hash of the
+       serialized object. `Core.IO.Query.UniqueId(this IColumn?)` returns the stored column slug
+       (`floor_area`) that PostgreSQL and the WebAPI address a column by. `IColumn` derives from
+       `ISerializableObject`, so the slug version wins **where `DiGi.Core.IO` is imported** and the hash
+       version wins where it is not. `column.UniqueId()` reads identically in both files.
+     - **The failure is not an exception.** A projection built from hashes matched no column server side; the
+       endpoint returned only the identity columns it always includes and the caller defaulted the rest,
+       producing a full-looking 174-column, 1 823-row table in which every feature was `0`. It parsed, it had
+       the right shape, and a regressor fitted it without complaint.
+     - **Rule:** when more than one same-named extension method can apply, **call the intended one fully
+       qualified** (`Core.IO.Query.UniqueId(column)`). An import is not a decision anyone reviews, and
+       tidying a `using` block must not be able to change which method runs. Prefer this over relying on
+       overload resolution even when the current imports happen to be right.
 10. **Project Structure:** Treat codebase as multiple SEPARATE projects, not a monolithic solution.
 11. **Output Efficiency:** Direct, technical responses. Omit conversational filler.
 12. **Temporary Code Markers (`TODO [MarkerName]`):** Code that exists only until a migration completes must say so at every site, in a form one `grep` can collect.
@@ -46,6 +64,22 @@
    - **Placement:** an inline comment at the site; a file header above the `using` block when the whole file is temporary (`DiGi.Core/Query/TryParseLegacy.cs`); `[TEMPORARY]` as the first token of the XML `<summary>` when a whole public member is provisional and removing it is a public-API change (`DiGi.GIS.WebAPI.UI/Controllers/SolarController.cs`).
    - **A workaround for a defect in another DiGi repository is temporary code too.** Name the marker after the workaround, and make the removal condition the upstream fix, naming its issue. `DiGi.GIS.WebAPI.UI`'s `TerrainCuttingMaxBuildingCount = 250` silently skipped terrain footprint cutting above 250 buildings to dodge a `DiGi.Geometry` crash. It said *"Temporary limitation ... until spatial batching optimization is implemented"* in prose but carried no grep-able tag, so no sweep could collect it; it outlived its cause and was found only by reading the call site while investigating something else. Correct form: `TODO [TerrainCuttingCap]: remove once ZiolkowskiJakub/DiGi.Geometry#2 ships the triangulator fix.`
    - **Mark only what is actually temporary.** Permanent code shipped in the same change must not carry the tag, or the sweep stops being a checklist.
+13. **Hand-Fixes To Generated Code Are Lost On Regeneration — Put Them In The Generator.** Files produced by
+   a tool (ML.NET Model Builder's `*.consumption.cs` / `*.evaluate.cs` / `*.training.cs`, the `mlnet` CLI's
+   output, anything carrying an auto-generated header) get corrected by hand and the correction survives
+   exactly until the next regeneration, which reverts it in silence. The build then fails, or worse does not.
+   - **Record every fix where regeneration cannot reach it:** in the generator or post-processing script that
+     produces the file, or failing that in a checklist beside it naming each correction and why. A comment
+     inside the generated file is not a record — it is regenerated away with everything else.
+   - **Worked example.** One regeneration of `DiGi.GIS.ML/OrtoBuildingDetectionModel.*.cs` reverted five
+     previously-applied corrections at once: `Plotly.NET`'s `LinearAxis.init` needs its eight type arguments
+     stated because they cannot be inferred; a `<param>` written inside a `<summary>` reads as a duplicate
+     param tag (`<paramref>` is what refers to a parameter from prose); non-nullable `string` and `float[]`
+     members need initialisers or the build warns; a deployment-aware model path resolver replaced the
+     generated `Path.GetFullPath`; and an unqualified `Query.UniqueId` bound to the wrong overload per §1.9.
+   - **Generated defaults often embed the machine that ran the tool.** Check for absolute paths before
+     committing — `RetrainFilePath` and a Model Builder `.mbconfig` `DataSource.FilePath` both arrive
+     hard-coded to the generating workstation. Make them relative to the file that carries them.
 
 ---
 
