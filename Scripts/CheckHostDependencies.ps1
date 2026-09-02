@@ -71,6 +71,15 @@ $DeploymentUnits = @(
 		Ignore  = @("Emgu.CV")
 	},
 	@{
+		# Three console applications deploy here - the model consumer, the training-table assembler and
+		# the accuracy evaluator - so the folder is a deployment unit even though the repository is
+		# mostly a class library.
+		Name    = "DiGi.GIS.ML"
+		Path    = "DiGi.GIS.ML\bin"
+		Recurse = $false
+		Ignore  = @("Emgu.CV")
+	},
+	@{
 		Name    = "DiGi.Maintenance"
 		Path    = "DiGi.Maintenance\bin"
 		Recurse = $false
