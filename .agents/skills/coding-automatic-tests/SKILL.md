@@ -69,6 +69,7 @@ System.IO.File.WriteAllLines(reportFilePath, reportLines);
   - Call `Core.xUnit.Query.SerializationCheck(instance)`.
   - Validate string conversion: `Convert.ToSystem_String(object)` and `Convert.ToDiGi<T>(json)?.FirstOrDefault()`.
   - Every `SerializableObject` class must have a `[Fact]` testing constructor state, string conversion, and `SerializationCheck`.
+  - **`SerializationCheck` only sees the members your instance populates.** It compares the instance's JSON against the JSON of `Clone()` — which for `SerializableObject` runs the **copy constructor** — so a member the copy constructor forgot is caught only if the fact set that member to something. A member left at its default is invisible to it, and the JSON leg keeps passing regardless, because serialization is reflection-driven and never notices. **When you add a member to a serializable type, populate it in the existing fact in the same change.** `DiGi.GIS.YOLO.UI`'s `YearBuiltPredictionPipelineOptions` gained `Radiuses`, and the same commit omitted it from the copy constructor *and* from the committed `.json.template`; the green fact could see neither, because it set `Years` and never `Radiuses`.
   - For models holding timestamps or dates, test `DateTimeOffset` properties to ensure timezone and UTC offset stability across round-trip conversions (avoiding `DateTimeKind.Unspecified` equality mismatches).
 - **Tolerance Boundaries:** Test floating-point operations with test cases exactly *inside* and *outside* the boundary (`Constants.Tolerance.Distance` or `1e-3`).
 - **Performance Benchmarks:**
@@ -78,8 +79,41 @@ System.IO.File.WriteAllLines(reportFilePath, reportLines);
   3. Repeat the measurement three times and report the **range**, not a single figure.
   4. Assert execution time remains below the designated threshold (`Assert.True(stopwatch.ElapsedMilliseconds < limit)`). The asserted threshold must clear the **in-suite** time, because that is how CI runs it; report the isolated range, assert against the slower path.
   5. **A/B against a real baseline, never a stale report.** To compare two implementations, keep a copy of the pre-change file, swap it back in, and re-run isolated under identical conditions. A number from an earlier report was almost certainly produced under different conditions.
+- **Comparing Two Implementations (Parity Tests):** when a rewrite, a port or a second engine has to
+  agree with an existing one, the acceptance is a comparison rather than a threshold, and the shape of
+  the bound decides whether the test is worth anything.
+  - **Measure the distribution before stating the tolerance.** A bound guessed up front is either so
+    tight it fails on legitimate noise or so loose it proves nothing. Run the comparison, look at the
+    median, the percentiles and the outliers, then write the assertion.
+  - **Bound a percentile, plus a structural invariant that holds for every item.** A maximum has to be
+    widened until it stops detecting regressions. Proving an ONNX detector reproduced a CUDA/torch one
+    over 2 000 images: median coordinate deviation **0.004 px**, 99th percentile **0.034 px**, but 2 of
+    1 639 matched detections moved over a pixel and the worst moved **3.31 px**. A maximum would have
+    had to be ~4 px — against a 0.004 px median, a bound that can no longer notice a real regression
+    while still looking green. The percentile carries bulk agreement; a per-item invariant (there, the
+    overlap of each matched pair staying above 0.95) carries the guarantee that no individual item
+    drifted into being a different thing.
+  - **Diagnose the outlier before excusing it.** "Floating point" is a hypothesis, not a finding. That
+    3.31 px pair had **one** item on each side, so it was not a tie broken differently, and its
+    confidence agreed to **1e-5** while the geometry moved — an asymmetry that pointed at one specific
+    stage (a softmax expectation in stride units) rather than at noise everywhere. An outlier you
+    cannot account for is a defect until shown otherwise.
+  - **Put a guard band around any reporting threshold.** An item whose score sits on the cutoff
+    legitimately appears on one side and not the other; counting that as disagreement makes the bar
+    unmeetable. Exclude a band around the threshold from count comparisons and say so in the report.
+  - **Write the report, and keep the evidence on failure.** The fact should emit the figures it
+    measured to `assembly.ReportsDirectory()` and preserve both outputs when a bound is missed —
+    otherwise a red build tells you a number without letting you look at the case that produced it.
+  - **Guard machine-specific inputs.** A parity fact needing large models or an external interpreter
+    reads their paths from a git-ignored conf and **returns without asserting** when it is absent, so
+    the suite still runs everywhere. Sample size belongs in that conf too: a percentile over a handful
+    of items is just the maximum again, so assert it only above a stated minimum count.
 - **Reproduce Before Fixing:** a defect fix opens with a `[Fact]` that fails **on the unmodified code with the reported symptom** — matching the reported stack trace when there is one — and that `[Fact]` is committed in the same change. If a synthetic fixture will not reproduce the defect, build one from real data already in `DiGi.Test/files/`. `Mesh3D_Difference_DenseCluster` and `Mesh3D_Difference_FaultIsolation` reproduced [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2)'s `ConstraintEnforcementException` with its exact stack before a line of the fix was written.
 - **Proving a Kept Fallback Is Dead:** when a change keeps the previous implementation as a safety net, establish whether it is reachable instead of guessing — replace the fallback call with `throw`, run the whole suite. If nothing fails, the fallback is unreached and should be deleted rather than carried. That is how `DiGi.Geometry`'s conforming-Delaunay triangulation path was retired (326 to 126 lines) with evidence.
+- **A Guard Must Be Shown To Fail:** *Reproduce Before Fixing* covers a `[Fact]` written against a known defect. A guard written **proactively** — asserting a property nobody has yet violated — gets no such proof for free, and an assertion that cannot fail for the reason it exists is worse than no test, because a comment claiming it guards something stops anyone looking again.
+  - **Construct the violation and watch the assertion fail**, then restore. If it still passes, the guard is decoration.
+  - **Worked example.** A smoke `[Fact]` asserted a predicted year fell between 1900 and 2100, with a comment claiming an all-default row would land outside that range and so prove features were reaching the model. Measured: a row carrying **nothing but an identifier** scored `2012`. The assertion could never have caught the binding failure it was written for — the same failure that had the deployed path scoring an R² of −1.771 while throwing nothing.
+  - **Prefer a differential assertion to a plausibility range.** Ranges pass on garbage. Score the same input twice — once complete, once stripped of the thing under test — and assert the results **differ**. That tests the mechanism rather than the shape of the output.
 
 ---
 

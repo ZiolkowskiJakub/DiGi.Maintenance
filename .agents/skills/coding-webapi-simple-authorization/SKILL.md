@@ -189,6 +189,11 @@ Two rules this encodes:
    A query string is written to Kestrel and IIS access logs, to `Referer` headers, to browser history, to shell history, and to the plaintext first leg of a `UseHttpsRedirection` 307. A header is not. Use `[FromHeader]` rather than reading `Request.Headers` directly so the parameter still appears in Swagger. HTTP header names are case-insensitive, and `RouteOptions.LowercaseQueryStrings` does not apply to them.
 3. **Keep `CancellationToken` last (CA1068)** — insert the key parameter before it.
 4. **Response protocol**: unauthorized → **`HTTP 401 Unauthorized`** (`return Unauthorized();`); authorized → **`HTTP 200 OK`** with the JSON payload.
+5. **A second gate on the same action is indistinguishable from the first.** Write endpoints commonly check the key *and* a per-dataset feature flag, and both `return Unauthorized()`. On the wire they are one 401 with no body, so a caller cannot tell "your key is wrong" from "this dataset is not writable here" — and will spend the time on the wrong one.
+   - **An absent flag denies.** `ConfigurationFile.GetValue<bool>(nameof(AllowUpdateX))` with **no `defaultValue`** returns `false` when the key is missing, so a conf written before the flag existed rejects every write and **no key can fix it**. That is correct deny-by-default behaviour and must not be "fixed" by defaulting to `true`; the deployment is what needs updating.
+   - **Ship every flag in the committed default** (`files/WebAPI_[Feature].conf`) so a diff against a deployed conf shows what it is missing. A flag added to the code but not to the committed default leaves every existing host silently denying.
+   - **Log the two cases differently** even though the response is identical — the server log is the only place the distinction survives.
+   - **Worked example.** `BuildingDataController.UpdateItemsByCountyIdsAsync` returns `Unauthorized()` from the key check and again from `if (!GISWebAPIConfigurationFileWatcher.AllowUpdateBuildingData)`. A deployed `GIS_WebAPI.conf` predating that flag produced 401s that survived two key rotations and two full pipeline runs before the second gate was found.
 
 ---
 
