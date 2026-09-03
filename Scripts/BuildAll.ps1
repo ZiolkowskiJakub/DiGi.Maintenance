@@ -1,4 +1,4 @@
-param(
+﻿param(
 	[string]$Root = "$PSScriptRoot\..\..",  # Default to one level above script folder
 	[string]$Configuration = "Release",
 	[string]$VsMsbuildPath = "",
@@ -46,6 +46,7 @@ $solutionOrder = @(
 	"DiGi.GML\DiGi.GML.slnx",
 	"DiGi.OSM\DiGi.OSM.slnx",
 	"DiGi.YOLO\DiGi.YOLO.slnx",
+	"DiGi.YOLO.ONNX\DiGi.YOLO.ONNX.slnx",
 	"DiGi.VoTT\DiGi.VoTT.slnx",
 	"DiGi.GitHub\DiGi.GitHub.slnx",
 	"DiGi.PostgreSQL\DiGi.PostgreSQL.slnx",
