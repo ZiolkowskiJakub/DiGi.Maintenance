@@ -256,6 +256,16 @@ currently in use.
   `NetTopologySuite` 2.6.0 — already referenced — ships exactly that as
   `NetTopologySuite.Triangulate.Polygon.PolygonTriangulator` and `PolygonHoleJoiner`, in both TFM folders.
   Zero packages added, and this section never had to be applied.
+- **An already-referenced package can still be the wrong answer — check the *variant* you need is
+  published.** The rule above says prefer what you already have; this is its counterweight. `Emgu.CV`
+  **4.12.0.5764** is referenced across the workspace and exposes an ONNX-capable DNN module
+  (`DnnInvoke.ReadNetFromONNX`, `BlobFromImage`, `NMSBoxes`), so scoring a network through it looked
+  free. It is not: **`Emgu.CV.runtime.windows.cuda` is published on nuget.org only up to
+  `4.4.0.4099`**, so at 4.12 there is no GPU runtime to install and OpenCV DNN through Emgu is CPU-only
+  — for a 258-GFLOP network that is the difference between minutes and days. `DiGi.YOLO.ONNX` therefore
+  takes `Microsoft.ML.OnnxRuntime.Managed` for inference and keeps Emgu for imaging only. **Presence of
+  the package is not availability of the capability:** check the runtime, native or platform-specific
+  companion package exists at the version actually in use, not just that the main package does.
 - **NetTopologySuite corollary, because it has cost time twice.**
   `NetTopologySuite.Triangulate.ConformingDelaunayTriangulationBuilder` is **not** the general polygon
   triangulator. It inserts Steiner points of its own and throws `ConstraintEnforcementException` when
@@ -277,7 +287,15 @@ currently in use.
   Audit the whole closure, not just the assemblies listed in the `.csproj`.
 - Do **NOT** fix this with `CopyLocalLockFileAssemblies=true` on the netstandard2.0 library — it bloats
   its `bin` with `System.*` 4.3.0 shims.
-- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally there.
+- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally there.
+- **A `HintPath` also does not carry the *assembly* reference onward, and that half fails loudly.** A
+  project consuming library A by `ProjectReference`, where A reaches library B by `HintPath`, cannot
+  see B's types at compile time — `CS0234`/`CS0246` on B's namespaces. Re-declare B with its own
+  `HintPath` in the consumer. This is why every `.xUnit` project lists the DiGi assemblies its subject
+  depends on rather than just the subject: `DiGi.YOLO.ONNX.xUnit` project-references
+  `DiGi.YOLO.ONNX` and still needs `DiGi.YOLO` declared, because `DiGi.YOLO.ONNX` reaches it by
+  `HintPath`. Unlike the NuGet half above this cannot ship silently — it will not compile — so it costs
+  diagnosis time rather than a corrupted run.
 
 ### The Failure Signature — Read This Before Suspecting the Data
 **A missing transitive dependency produces a partial result, not an error.** `FileNotFoundException` is
