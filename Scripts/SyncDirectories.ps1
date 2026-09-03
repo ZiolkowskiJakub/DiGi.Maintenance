@@ -60,6 +60,7 @@ $SyncList = @(
 if (-not [string]::IsNullOrWhiteSpace($softwareDir)) {
     $SyncList += @(
         @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin";           Destination = "$softwareDir\DiGi.GIS.PostgreSQL.UI";   IsSoftware = $true },
+        @{ Source = "$baseDir\DiGi.GIS.YOLO.UI\bin";                 Destination = "$softwareDir\DiGi.GIS.YOLO.UI";         IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.GIS.UI\bin";                      Destination = "$softwareDir\DiGi.GIS.UI";              IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.GIS.WebAPI.UI\bin";               Destination = "$softwareDir\DiGi.GIS.WebAPI.UI";       IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$softwareDir\DiGi.WebAPI.WindowsService"; IsSoftware = $true }
