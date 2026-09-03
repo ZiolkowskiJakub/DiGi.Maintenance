@@ -1,0 +1,5 @@
+Investigate issue XXX. Create implementation plan if still valid. Make sure plan is aligned with guidelines "GitHub\DigiProject\DiGi.Maintenance\documentation\AI Guidelines"
+
+Double check for potential issues and bugs
+
+Commit and push the changes. Add final comments and implementation summary then close the issue.
