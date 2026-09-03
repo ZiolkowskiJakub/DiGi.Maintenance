@@ -267,6 +267,12 @@ currently in use.
 - When a `HintPath`-referenced DiGi library needs a NuGet package, re-declare that `PackageReference`
   on the **deployed host** (the `Exe`/`WinExe`/`Microsoft.NET.Sdk.Web` project), at the **exact same
   version**. Add a comment naming the library that owns the dependency.
+- **Unless the target framework already provides it.** `System.Drawing.Common` on `net10.0-windows`, and
+  anything else in the Windows Desktop or ASP.NET shared frameworks, is already in the deployment unit —
+  re-declaring it earns `NU1510` ("will not be pruned … does not need to be referenced explicitly")
+  against a house standard of zero warnings. `CheckHostDependencies.ps1` indexes the shared frameworks and
+  will not report such an assembly missing, so **build first and let the script name what is actually
+  absent**, rather than pre-emptively declaring every package a library mentions.
 - The chain runs deeper than the direct reference: `DiGi.Geometry` → `DiGi.Math` → `MathNet.Numerics`.
   Audit the whole closure, not just the assemblies listed in the `.csproj`.
 - Do **NOT** fix this with `CopyLocalLockFileAssemblies=true` on the netstandard2.0 library — it bloats
