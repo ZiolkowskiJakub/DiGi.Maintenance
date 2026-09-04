@@ -39,7 +39,8 @@ if (-not (Test-Path $templatePath)) {
 $marker = "## " + [char]0xD83D + [char]0xDCBB + " Coding Guidelines for Developers & AI Agents"
 
 $templateText = [System.IO.File]::ReadAllText($templatePath)
-$templateText = $templateText -replace "`r`n", "`n"
+# Strip every CR (a CRLF -> LF step would leave a stray '\r' from '\r\r\n' behind).
+$templateText = $templateText -replace "`r", ""
 $templateText = $templateText.TrimEnd("`n")
 
 if (-not $templateText.StartsWith($marker)) {
@@ -62,7 +63,7 @@ foreach ($dir in $targetDirectories) {
     }
 
     $readmeText = [System.IO.File]::ReadAllText($readmePath)
-    $normalizedText = $readmeText -replace "`r`n", "`n"
+    $normalizedText = $readmeText -replace "`r", ""
 
     $index = $normalizedText.IndexOf($marker)
     if ($index -ge 0) {
@@ -97,7 +98,9 @@ foreach ($dir in $targetDirectories) {
     $status = git status --porcelain README.md
     if ($status) {
         Write-Host "    Committing updated README.md in: $dirName" -ForegroundColor Cyan
-        git add README.md
+        # '-c core.autocrlf=false' keeps the CRLF bytes in the committed blob (repo convention)
+        # and avoids a whole-file line-ending diff when the machine has core.autocrlf=true.
+        git -c core.autocrlf=false add README.md
         git commit -m $Message | Out-Null
     }
     Pop-Location

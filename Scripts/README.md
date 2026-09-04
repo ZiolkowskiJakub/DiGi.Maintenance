@@ -111,7 +111,7 @@ PowerShell -ExecutionPolicy Bypass -File ".\CheckWikiPages.ps1"
 ```
 
 ### Update AI Agents & Guidelines
-Regenerates `.agents/AGENTS.md` and `.agents/skills/*/SKILL.md` across all DiGi repositories from `DiGi.Maintenance/documentation/AI Guidelines`, and refreshes the machine-global `AGENTS.md` when `GLOBAL_AGENTS_FILE` is configured. Changes are committed per repository unless `-NoCommit` is passed.
+Regenerates `.agents/AGENTS.md` and `.agents/skills/*/SKILL.md` across all DiGi repositories from `DiGi.Maintenance/documentation/AI Guidelines`, and refreshes the machine-global `AGENTS.md` when `GLOBAL_AGENTS_FILE` is configured. Changes are committed per repository unless `-NoCommit` is passed. Fails before writing anything if a source file (a guideline, the reference `AGENTS.md`, the repository `README.md`, or the `files/README - Coding Guidelines.md` template) carries a stray `\r\r\n` line ending - the sequence its own normalisation would otherwise propagate silently.
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File ".\UpdateAgents.ps1"
 

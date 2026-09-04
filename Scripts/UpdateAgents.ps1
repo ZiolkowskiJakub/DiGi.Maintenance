@@ -44,6 +44,31 @@ if (-not (Test-Path $referenceAgentsFile)) {
     exit 1
 }
 
+# Pre-flight guard: fail when a source file carries a stray '\r\r\n' line ending. Without
+# this, the sync below would silently propagate the sequence into every generated file
+# (see 'GitHub - Issues.md' - Line Endings, \r\r\n Translation & Markdown Table Integrity).
+$guardFiles = @(Get-ChildItem -Path $guidelinesDir -Filter "*.md" | ForEach-Object { $_.FullName })
+$guardFiles += $referenceAgentsFile
+$guardFiles += Join-Path $baseDir "DiGi.Maintenance\README.md"
+$guardFiles += Join-Path $baseDir "DiGi.Maintenance\files\README - Coding Guidelines.md"
+$corrupted = @()
+foreach ($guardFile in $guardFiles) {
+    if (-not (Test-Path $guardFile)) {
+        continue
+    }
+    if ([System.IO.File]::ReadAllText($guardFile).Contains("`r`r`n")) {
+        $corrupted += $guardFile
+    }
+}
+if ($corrupted.Count -gt 0) {
+    Write-Host "Stray '\r\r\n' line endings detected in:" -ForegroundColor Red
+    foreach ($corruptedFile in $corrupted) {
+        Write-Host "  - $corruptedFile" -ForegroundColor Yellow
+    }
+    Write-Error "Fix the files above (byte-level '\r\r\n' -> '\r\n' replacement) before syncing."
+    exit 1
+}
+
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 function Write-TextFile {
@@ -52,7 +77,9 @@ function Write-TextFile {
         [string]$Text
     )
 
-    $normalizedText = ($Text -replace "`r`n", "`n").TrimEnd("`n") + "`n"
+    # Strip every CR first: a CRLF -> LF step leaves a stray '\r' from '\r\r\n' behind,
+    # which the LF -> CRLF step then re-doubles - the round-trip is the identity on '\r\r\n'.
+    $normalizedText = ($Text -replace "`r", "").TrimEnd("`n") + "`n"
     $normalizedText = $normalizedText -replace "`n", "`r`n"
     [System.IO.File]::WriteAllText($Path, $normalizedText, (New-Object System.Text.UTF8Encoding($false)))
 }
@@ -187,7 +214,9 @@ foreach ($dir in $targetDirectories) {
     $status = git status --porcelain .agents
     if ($status) {
         Write-Host "    Committing updated rules and skills in: $dirName" -ForegroundColor Cyan
-        git add .agents
+        # '-c core.autocrlf=false' keeps the CRLF bytes in the committed blob (repo convention)
+        # and avoids a whole-file line-ending diff when the machine has core.autocrlf=true.
+        git -c core.autocrlf=false add .agents
         git commit -m $Message | Out-Null
     } else {
         Write-Host "    No changes in .agents for: $dirName" -ForegroundColor Gray
