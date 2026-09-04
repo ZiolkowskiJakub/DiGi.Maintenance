@@ -287,7 +287,7 @@ currently in use.
   Audit the whole closure, not just the assemblies listed in the `.csproj`.
 - Do **NOT** fix this with `CopyLocalLockFileAssemblies=true` on the netstandard2.0 library — it bloats
   its `bin` with `System.*` 4.3.0 shims.
-- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally there.
+- `<ProjectReference>` consumers (siblings, `.xUnit`, `.Rhino`) are unaffected; NuGet flows normally there.
 - **A `HintPath` also does not carry the *assembly* reference onward, and that half fails loudly.** A
   project consuming library A by `ProjectReference`, where A reaches library B by `HintPath`, cannot
   see B's types at compile time — `CS0234`/`CS0246` on B's namespaces. Re-declare B with its own
