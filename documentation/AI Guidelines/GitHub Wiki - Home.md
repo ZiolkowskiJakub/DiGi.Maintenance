@@ -26,8 +26,8 @@ Template structure, compilation order, and parsing rules for repository `Home.md
 [Custom Content Block - Preserved across syncs]
 
 ### 🔗 Dependencies
-*   [[DependencyRepoName1]|https://github.com/ZiolkowskiJakub/[DependencyRepoName1]/wiki]
-*   [[DependencyRepoName2]|https://github.com/ZiolkowskiJakub/[DependencyRepoName2]/wiki]
+*   [[DependencyRepoName1|https://github.com/ZiolkowskiJakub/[DependencyRepoName1]/wiki]]
+*   [[DependencyRepoName2|https://github.com/ZiolkowskiJakub/[DependencyRepoName2]/wiki]]
 
 ---
 
