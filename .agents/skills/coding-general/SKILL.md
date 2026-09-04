@@ -322,6 +322,28 @@ with cross-directory `AssemblyDependencyResolver`s. Audit the host output **toge
 `extensions\*` folders, and declare shared dependencies once on `DiGi.WebAPI.WindowsService` — that is
 already how `Microsoft.OpenApi` and `Serilog` reach the extensions.
 
+### The Other `extensions\` Folder Is Not A Probing Set
+The section above is about assemblies loaded **into** a host process. `DiGi.GIS.PostgreSQL.UI` uses the
+same folder name for something structurally different, and the two must not be reasoned about together:
+`bin\extensions\<tool>\` there holds a **standalone executable started with `Process.Start`**, never
+loaded into the tray application. `DiGi.GIS.YOLO.UI.ConsoleApp` is the first of them.
+
+- **It is its own deployment unit.** It carries its own dependency closure and its own `*.conf` — the Year
+  Built runner authorizes with the `GIS_WebAPI_Client.conf` beside its own executable, not with the tray
+  application's. `CheckHostDependencies.ps1` audits it as a unit of its own rather than with `Recurse`.
+- **Its absence is a supported state, not a gap.** `SyncDirectories.ps1` assembles it only when
+  `INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION` is set in `user files/Directories.conf`, so a database host that
+  will never score a building never receives it — the runner's models are most of its deploy payload. The
+  tray application withholds the task rather than offering a row whose only outcome is a missing
+  executable, discovered after the counties have been chosen.
+- **Assemble it as a LOCAL sync into the host's own `bin`, never as a software destination of its own.**
+  `SyncDirectory.ps1` clears each destination's top level, so a destination nested *underneath* another one
+  is deleted by that one's sync, and the ordering of `$SyncList` silently becomes load-bearing. Assembled
+  into `bin` first, the extension travels to the host as part of the application, and a workspace checkout
+  and a deployed machine then resolve it by the same path.
+- **Do not drop a plugin assembly in it expecting it to be loaded.** Nothing resolves assemblies from these
+  folders.
+
 ### The Check
 Run after building; it inspects compiled output, not project files.
 ```powershell
