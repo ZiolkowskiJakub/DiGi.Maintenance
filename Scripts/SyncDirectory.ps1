@@ -12,13 +12,21 @@
 
 .PARAMETER Destination
     Path to the destination folder.
+
+.PARAMETER ExcludeDirectory
+    Top-level directory names in the source that are not copied. Run artifacts live inside a build
+    output without being part of the deployment - a runner's 'scratch' folder of exported imagery
+    reached 14 GB and was copied to every host - and excluding them here avoids copying what the
+    caller would only delete again afterwards.
 #>
 param (
     [Parameter(Mandatory=$true)]
     [string]$Source,
 
     [Parameter(Mandatory=$true)]
-    [string]$Destination
+    [string]$Destination,
+
+    [string[]]$ExcludeDirectory = @()
 )
 
 # Check if source directory exists
@@ -49,8 +57,16 @@ if (Test-Path -Path $Destination) {
 # Perform recursive copy from source to destination
 Write-Host "Copying files from $Source to $Destination..." -ForegroundColor Green
 try {
-    # Use \* to copy the content of the folder, not the folder itself
-    $copiedItems = Copy-Item -Path "$Source\*" -Destination $Destination -Recurse -Force -PassThru -ErrorAction Stop
+    # The source's top-level entries rather than the folder itself, so the content lands directly in
+    # the destination. -Force lists hidden entries too, matching what "$Source\*" used to copy.
+    $sourceItems = Get-ChildItem -Path $Source -Force | Where-Object { -not ($_.PSIsContainer -and $ExcludeDirectory -contains $_.Name) }
+
+    if (-not $sourceItems) {
+        Write-Host "Success: Synchronization complete (nothing to copy)." -ForegroundColor Yellow
+        return
+    }
+
+    $copiedItems = $sourceItems | Copy-Item -Destination $Destination -Recurse -Force -PassThru -ErrorAction Stop
     if ($copiedItems) {
         $files = $copiedItems | Where-Object { -not $_.PSIsContainer }
         if ($files) {

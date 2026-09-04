@@ -7,6 +7,12 @@
     2. Synchronizes UI and WindowsService bin directories to the target SOFTWARE_DIRECTORY configured in 'user files/Directories.conf'.
     3. Optionally removes 'logs' directories and log files from all directories copied to the software directory.
 
+    The Year Built prediction runner is opt-in. Set INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION=true in
+    'user files/Directories.conf' on a machine that deploys to an ML-capable host, and DiGi.GIS.YOLO.UI's
+    output is assembled into DiGi.GIS.PostgreSQL.UI\bin\extensions\DiGi.GIS.YOLO.UI.ConsoleApp before the
+    software sync carries it there - the same way the WebAPI extensions reach DiGi.WebAPI.WindowsService.
+    Left unset, that folder is removed and no host receives the models the runner needs.
+
 .PARAMETER RemoveLogs
     If true (default), removes 'logs' directories and *.log files from directories copied to the software directory after synchronization.
 #>
@@ -26,6 +32,7 @@ $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 # Read and parse SOFTWARE_DIRECTORY from config file if available
 $confPath = Join-Path $PSScriptRoot "..\user files\Directories.conf"
 $softwareDir = ""
+$includeYearBuiltPredictionExtension = $false
 
 if (Test-Path $confPath) {
     foreach ($line in Get-Content $confPath) {
@@ -40,6 +47,11 @@ if (Test-Path $confPath) {
             }
             if ($key -eq "SOFTWARE_DIRECTORY") {
                 $softwareDir = $val
+            }
+            if ($key -eq "INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION") {
+                # Anything but an explicit true leaves the runner out. A value nobody can read must not mean
+                # "ship the models to a database host that will never score anything".
+                $includeYearBuiltPredictionExtension = ($val -match '^(?i:true|1|yes)$')
             }
         }
     }
@@ -56,11 +68,38 @@ $SyncList = @(
     @{ Source = "$baseDir\DiGi.Communication.WebAPI\bin";            Destination = "$baseDir\DiGi.WebAPI.WindowsService\bin\extensions\communication"; IsSoftware = $false }
 )
 
+# The Year Built prediction runner, opt-in per machine.
+#
+# A LOCAL synchronization on purpose, so the extension is assembled inside DiGi.GIS.PostgreSQL.UI's own
+# bin BEFORE the software block below copies that bin to the host - the extension then travels as part of
+# the tray application rather than as a destination of its own. Making it a software destination instead
+# would put it underneath one: SyncDirectory.ps1 clears each destination's top level, so the tray
+# application's own sync would delete the extensions folder, and the ordering of $SyncList would silently
+# become load-bearing.
+#
+# 'scratch' and 'logs' are excluded because they are run artifacts rather than deployment content - the
+# runner writes its exported imagery into its own bin, which had reached 14 GB.
+$yearBuiltPredictionExtensionDir = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin\extensions\DiGi.GIS.YOLO.UI.ConsoleApp"
+
+if ($includeYearBuiltPredictionExtension) {
+    $SyncList += @(
+        @{ Source = "$baseDir\DiGi.GIS.YOLO.UI\bin";                 Destination = $yearBuiltPredictionExtensionDir; IsSoftware = $false; ExcludeDirectory = @("scratch", "logs") }
+    )
+} elseif (Test-Path $yearBuiltPredictionExtensionDir) {
+    # Left behind by an earlier run with the flag on. Without this it keeps riding along inside the tray
+    # application's bin, and turning the flag off would deploy exactly what it was turned off to avoid.
+    Write-Host "INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION is not set - removing $yearBuiltPredictionExtensionDir..." -ForegroundColor Cyan
+    try {
+        Remove-Item -Path $yearBuiltPredictionExtensionDir -Recurse -Force -ErrorAction Stop
+    } catch {
+        Write-Warning "Could not remove '$yearBuiltPredictionExtensionDir': $_"
+    }
+}
+
 # Append Software synchronizations if Software directory was successfully parsed
 if (-not [string]::IsNullOrWhiteSpace($softwareDir)) {
     $SyncList += @(
         @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin";           Destination = "$softwareDir\DiGi.GIS.PostgreSQL.UI";   IsSoftware = $true },
-        @{ Source = "$baseDir\DiGi.GIS.YOLO.UI\bin";                 Destination = "$softwareDir\DiGi.GIS.YOLO.UI";         IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.GIS.UI\bin";                      Destination = "$softwareDir\DiGi.GIS.UI";              IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.GIS.WebAPI.UI\bin";               Destination = "$softwareDir\DiGi.GIS.WebAPI.UI";       IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$softwareDir\DiGi.WebAPI.WindowsService"; IsSoftware = $true }
@@ -85,7 +124,8 @@ foreach ($Pair in $SyncList) {
     Write-Host "Processing: $($Pair.Source) -> $($Pair.Destination)" -ForegroundColor White
     
     # Execute the sync script using the call operator (&) and the full path
-    & $HelperScript -Source $Pair.Source -Destination $Pair.Destination
+    $excludeDirectory = if ($Pair.ContainsKey("ExcludeDirectory")) { $Pair.ExcludeDirectory } else { @() }
+    & $HelperScript -Source $Pair.Source -Destination $Pair.Destination -ExcludeDirectory $excludeDirectory
 
     if ($RemoveLogs -and $Pair.IsSoftware) {
         if (Test-Path $Pair.Destination) {
