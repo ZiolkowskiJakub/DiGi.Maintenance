@@ -13,8 +13,12 @@
     Fill rates come from one POST gis/buildingdata/tablebybuildingdatabypagingparameter page, counted per column.
 
     A fill rate is not the same question as whether the values are usable. -Distribution summarizes that same page per
-    numeric column - count, exact zeros, minimum, median, maximum - which is what separates written measurements from
-    placeholder zeros.
+    numeric column - count, missing cells, exact zeros, minimum, median, maximum - which is what separates written
+    measurements from placeholder zeros.
+
+    One page is a sample. -All pages through the whole county instead, seeking on the Reference of the last row read, so
+    a gap that sits outside the first page cannot hide. Combined with -Column the request is narrowed server-side to the
+    matching columns, which is what makes reading a whole county cheap.
 
     Written for the Year Built prediction retrain gate, where 108 of the 172 allow-list columns existed nowhere and a
     training table assembled anyway would have been 63 percent silently defaulted values. The -Group switch reports the
@@ -48,6 +52,12 @@
     Optional wildcard filter for the distribution pass, matched against the column name (for example 'Radial*'). Without
     it every numeric column of the sampled page is reported. Ignored without -Distribution.
 
+.PARAMETER All
+    Reads every row of the county rather than one page, seeking on the Reference of the last row of the previous page.
+    Requires -CountyId. With -Column the request is narrowed server-side to the matching columns; without it every
+    column of every row is transferred, which is a great deal of payload. Because a narrowed page carries no data for
+    the other columns, the fill counts of the -Group table are suppressed rather than reported as a collapse.
+
 .PARAMETER Json
     Emit the result as JSON instead of formatted text.
 
@@ -59,6 +69,9 @@
 
 .EXAMPLE
     PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/CheckBuildingDataColumns.ps1" -CountyId 8948 -Group -Distribution -Column "Radial*"
+
+.EXAMPLE
+    PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/CheckBuildingDataColumns.ps1" -CountyId 8948 -Distribution -Column "Radial*" -All
 
 .NOTES
     Call this sequentially, never concurrently against several counties at once - concurrent calls exhaust the
@@ -73,6 +86,7 @@ param(
     [int[]] $Years = @(2008, 2025),
     [switch] $Distribution,
     [string] $Column,
+    [switch] $All,
     [switch] $Json
 )
 
@@ -127,23 +141,76 @@ Write-Verbose "GET $uri_Columns"
 $columns = Invoke-RestMethod -Uri $uri_Columns -Method Get -TimeoutSec 300
 $names_Catalogue = @($columns | ForEach-Object { $_.Name })
 
-# --- Fill rates: one page, counted per column ---------------------------------------------------
+# --- Fill rates: one page, or the whole county with -All, counted per column ---------------------
 $fill = @{}
 $distributions = @()
 $rowCount = 0
+$pageCount = 0
+$narrowed = $false
+
+if ($All -and $CountyId -le 0) {
+    Write-Warning '-All needs -CountyId: there is no county to page through.'
+}
+
 if ($CountyId -gt 0) {
-    $body = @{
-        '_type'    = 'DiGi.GIS.WebAPI.Classes.BuildingDataByPagingParameter,DiGi.GIS.WebAPI'
-        'CountyId' = $CountyId
-        'PageSize' = $PageSize
-    } | ConvertTo-Json -Compress
-
     $uri_Page = "$HostUri/gis/buildingdata/tablebybuildingdatabypagingparameter"
-    Write-Verbose "POST $uri_Page (CountyId $CountyId, PageSize $PageSize)"
-    $table = Invoke-RestMethod -Uri $uri_Page -Method Post -Body $body -ContentType 'application/json' -TimeoutSec 600
 
-    $names_Page = @($table.Columns | ForEach-Object { $_.Name })
-    $rows = @($table.Rows)
+    # Narrowed only when the whole county is read. One page of every column costs nothing, and
+    # narrowing it would leave the -Group fill counts describing eight columns out of 172.
+    $columnUniqueIds = $null
+    if ($All -and -not [string]::IsNullOrWhiteSpace($Column)) {
+        $columnUniqueIds = @($columns | Where-Object { $_.Name -like $Column } | ForEach-Object { $_.UniqueId })
+        if ($columnUniqueIds.Count -eq 0) {
+            Write-Warning "No catalogue column matches '$Column'. Reading every column instead."
+            $columnUniqueIds = $null
+        }
+    }
+
+    $narrowed = $null -ne $columnUniqueIds
+    if ($All -and -not $narrowed) {
+        Write-Warning 'Reading every column of every row. Pass -Column to narrow the request server-side.'
+    }
+
+    $rows = [System.Collections.Generic.List[object]]::new()
+    $names_Page = @()
+    $cursor = $null
+
+    while ($true) {
+        $parameter = [ordered]@{
+            '_type'    = 'DiGi.GIS.WebAPI.Classes.BuildingDataByPagingParameter,DiGi.GIS.WebAPI'
+            'CountyId' = $CountyId
+            'PageSize' = $PageSize
+        }
+
+        if ($narrowed) { $parameter['ColumnUniqueIds'] = $columnUniqueIds }
+        if ($null -ne $cursor) { $parameter['Cursor'] = $cursor }
+
+        Write-Verbose "POST $uri_Page (CountyId $CountyId, PageSize $PageSize, page $($pageCount + 1))"
+        $table = Invoke-RestMethod -Uri $uri_Page -Method Post -Body ($parameter | ConvertTo-Json -Compress) -ContentType 'application/json' -TimeoutSec 600
+
+        if ($pageCount -eq 0) { $names_Page = @($table.Columns | ForEach-Object { $_.Name }) }
+
+        $rows_Page = @($table.Rows)
+        foreach ($row in $rows_Page) { $rows.Add($row) }
+        $pageCount++
+
+        # Keyset paging: the cursor is the Reference of the last row read, so a short page is the end
+        # of the county and there is no count to compare against.
+        if (-not $All -or $rows_Page.Count -lt $PageSize) { break }
+
+        $index_Reference = [array]::IndexOf($names_Page, 'Reference')
+        if ($index_Reference -lt 0) {
+            Write-Warning 'The page carries no Reference column, so it cannot be paged. Reporting the first page only.'
+            break
+        }
+
+        $cursor = [string] $rows_Page[$rows_Page.Count - 1][$index_Reference]
+        if ([string]::IsNullOrWhiteSpace($cursor)) {
+            Write-Warning 'The last row read carries no Reference, so paging cannot continue. Reporting what was read.'
+            break
+        }
+    }
+
     $rowCount = $rows.Count
 
     for ($i = 0; $i -lt $names_Page.Count; $i++) {
@@ -200,12 +267,15 @@ if ($CountyId -gt 0) {
             $sorted = @($numbers | Sort-Object)
 
             $distributions += [pscustomobject]@{
-                Column = $name
-                Count  = $numbers.Count
-                Zeros  = @($numbers | Where-Object { $_ -eq 0 }).Count
-                Min    = $sorted[0]
-                Median = $sorted[[int]($sorted.Count / 2)]
-                Max    = $sorted[$sorted.Count - 1]
+                Column  = $name
+                Count   = $numbers.Count
+                # An unmeasured radial ratio is an absent column on that row rather than a zero:
+                # Update_RadialRatios adds no column at all when the neighbour set is empty.
+                Missing = $rowCount - $numbers.Count
+                Zeros   = @($numbers | Where-Object { $_ -eq 0 }).Count
+                Min     = $sorted[0]
+                Median  = $sorted[[int]($sorted.Count / 2)]
+                Max     = $sorted[$sorted.Count - 1]
             }
         }
     }
@@ -217,6 +287,8 @@ $result = [ordered]@{
     CountyId        = if ($CountyId -gt 0) { $CountyId } else { $null }
     CatalogueCount  = $names_Catalogue.Count
     SampledRowCount = $rowCount
+    PageCount       = $pageCount
+    Narrowed        = $narrowed
 }
 
 if ($Group) {
@@ -231,8 +303,10 @@ if ($Group) {
         $total += $expected.Count
         $present += $exists.Count
 
+        # A narrowed page holds no data for the other columns, so a fill count taken from it would
+        # read as a collapse from 172 to the handful asked for.
         $filledFully = $null
-        if ($CountyId -gt 0 -and $rowCount -gt 0) {
+        if ($CountyId -gt 0 -and $rowCount -gt 0 -and -not $narrowed) {
             $filledFully = @($exists | Where-Object { $fill.ContainsKey($_) -and $fill[$_] -eq $rowCount }).Count
         }
 
@@ -252,7 +326,11 @@ if ($Group) {
         Write-Host ''
         Write-Host "building_data columns on $HostUri" -ForegroundColor Cyan
         Write-Host "  catalogue: $($names_Catalogue.Count) columns"
-        if ($CountyId -gt 0) { Write-Host "  county $CountyId sampled over $rowCount rows" }
+        if ($CountyId -gt 0) {
+            $scope = if ($All) { "read over $rowCount rows in $pageCount pages" } else { "sampled over $rowCount rows" }
+            Write-Host "  county $CountyId $scope"
+            if ($narrowed) { Write-Host "  narrowed to columns matching '$Column' - fill counts are not reported" -ForegroundColor DarkGray }
+        }
         Write-Host ''
         foreach ($row in $rowsOut) {
             $flag = if ($row.Present -eq $row.Expected) { '' } else { '   <-- MISSING' }
@@ -279,7 +357,10 @@ else {
     if (-not $Json) {
         Write-Host ''
         Write-Host "building_data catalogue on $HostUri - $($names_Catalogue.Count) columns" -ForegroundColor Cyan
-        if ($CountyId -gt 0) { Write-Host "county $CountyId sampled over $rowCount rows" }
+        if ($CountyId -gt 0) {
+            $scope = if ($All) { "read over $rowCount rows in $pageCount pages" } else { "sampled over $rowCount rows" }
+            Write-Host "county $CountyId $scope"
+        }
         Write-Host ''
         foreach ($row in $rowsOut) {
             if ($null -ne $row.FilledPercent) {
@@ -304,11 +385,12 @@ if ($Distribution) {
             Write-Warning 'No numeric column matched the distribution filter.'
         }
         else {
-            Write-Host "value distribution - county $CountyId over $rowCount rows" -ForegroundColor Cyan
+            $scope = if ($All) { "every one of $rowCount rows, $pageCount pages" } else { "$rowCount sampled rows" }
+            Write-Host "value distribution - county $CountyId over $scope" -ForegroundColor Cyan
             Write-Host ''
             foreach ($row in $distributions) {
-                $colour = if ($row.Zeros -eq 0) { 'Green' } else { 'Yellow' }
-                Write-Host ('  {0,-42} n={1,4}  zeros={2,4}  min={3,12:G6}  median={4,12:G6}  max={5,12:G6}' -f $row.Column, $row.Count, $row.Zeros, $row.Min, $row.Median, $row.Max) -ForegroundColor $colour
+                $colour = if ($row.Zeros -eq 0 -and $row.Missing -eq 0) { 'Green' } else { 'Yellow' }
+                Write-Host ('  {0,-42} n={1,7}  missing={2,7}  zeros={3,7}  min={4,12:G6}  median={5,12:G6}  max={6,12:G6}' -f $row.Column, $row.Count, $row.Missing, $row.Zeros, $row.Min, $row.Median, $row.Max) -ForegroundColor $colour
             }
             Write-Host ''
         }
