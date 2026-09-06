@@ -89,9 +89,11 @@ The multi-part codes are `0418 0620 0662 1016 1019 1206 1423 2212 2262 2401 2402
 | Subdivision import | by geometry — genuinely split across parts | 1 / 356 |
 
 The write path stopped collapsing the code: the five `updateitems…?code=` actions pass every part to
-their `updateitemsbycountyids` counterpart, which files each item under the part it belongs to. The
-remaining `GetIdByCodeAsync` callers are the read endpoint `idbycode` and `DiGi.GIS.UI`'s
-`MainWindow.xaml.cs` (three sites) — the desktop application still picks the lowest part.
+their `updateitemsbycountyids` counterpart, which files each item under the part it belongs to.
+`DiGi.GIS.UI`'s `MainWindow.xaml.cs` upload sites (OrtoDatas, YearBuiltData, OccupancyData) do the same
+since `54a9eaf` — each resolves an item's part via `GetIdsByCodeAsync` + `Query.CountyIdsByReferencesAsync`
+and skips an item no part holds. The remaining `GetIdByCodeAsync` caller is the read endpoint `idbycode`,
+which stays a deliberate lowest-part convenience for reads.
 
 `ORDER BY` on the first three was added as part of the issue #1 fix. **Before it, `LIMIT 1` with no
 ordering returned 73485** — heap order differs from id order in this table today, so the pick was
