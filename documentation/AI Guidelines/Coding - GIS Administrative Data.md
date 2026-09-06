@@ -126,6 +126,52 @@ Still true, and still worth knowing:
 - Re-generating models per county id materialises a model under each part holding that building —
   which after the repair is one part per building for these codes.
 
+### The other half of it: the right building under the wrong part - open
+
+That repair removed **copies**. It skipped, deliberately, every reference held by exactly one part:
+*"Held by one part only - whether that is the right part is a question for the import, not for a repair
+that exists to remove copies."* For twelve codes that one part is the wrong one, and the part holding
+the territory reads back empty. Full evidence, including the audit method, in
+[DiGi.GIS.PostgreSQL#68](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/68).
+
+Audited 2026-09-06 against the deployed API, every multi-part code, footprint centroids against each
+part polygon:
+
+| Code | Populated part | Buildings | Sample lands in |
+|---|---|---|---|
+| 0418 | 8948 | 60 419 | 8957 |
+| 0620 | 16580 | 93 672 | 16589 |
+| 1016 | 25886 | 68 361 | 25887 |
+| 1206 | 29861 | 163 699 | 29866 |
+| 1423 | 50427 | 38 324 | 50447 |
+| 2401 | 75133 | 63 312 | 75138, part 75133 - genuinely split |
+| 2402 | 75348 | 66 319 | 75364 |
+| 2404 | 76453 | 100 543 | 76454 |
+| 2410 | 77971 | 42 951 | 77973 |
+| 2412 | 78238 | 32 728 | 78238, 78244, 78249 - genuinely split |
+| 2479 | 80374 | 13 880 | 80379 |
+| 3020 | 97360 | 37 260 | 97358 |
+
+Roughly **781 000 rows**. Clean: `0662 1019 2262 2405`, plus the main parts of `2212` and `2612`, which
+each still hold one stray row from the 2026-08-14 run. Code `3020` is the clearest case - part 97360 is
+a 246 x 575 m exclave holding all 37 260 buildings of the county.
+
+**Everything keyed on a building inherits it.** For `3020` alone, 105 265 `building` rows and 37 260
+`building_data` rows sit under part 97360 as well, and every read of those tables filters `county_id`
+first.
+
+Landed, not yet run:
+- `GET gis/building2d/countypartmismatches` counts, per part, the rows whose stored bounding box does
+  not touch the box of the part holding them - certainly misfiled, no geometry read. The before and
+  after measurement.
+- `PostgreSQLBuilding2DCountyPartRefreshTask` (tray app, `DryRun` on by default) decides each building
+  with `Query.CountyId` and moves it, carrying `building`, `building_data`, `orto_datas`,
+  `building_model`, `year_built_data` and `occupancy_data_building_2d` with it. Nothing is deleted: a
+  row the destination part will not take is reported and left.
+- `UpdateAsync` no longer takes a caller-supplied `CountyId` on trust when its code holds several parts.
+  That is what made the wrong value permanent - a client resolves the part by reading the row it is
+  about to overwrite.
+
 ---
 
 ## 4. Rules for writing code against this data
