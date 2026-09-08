@@ -171,7 +171,7 @@ Two rules this encodes:
    ```csharp
    [HttpGet("system")]
    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-   public async Task<IActionResult> GetSystemAsync([FromHeader(Name = "key")] string? key = null, CancellationToken cancellationToken = default)
+   public async Task<IActionResult> GetSystemInformationAsync([FromHeader(Name = "key")] string? key = null, CancellationToken cancellationToken = default)
    {
        if (!diagnosticsConfiguration.IsAuthorized(key))
        {
