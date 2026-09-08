@@ -80,6 +80,34 @@
    - **Generated defaults often embed the machine that ran the tool.** Check for absolute paths before
      committing — `RetrainFilePath` and a Model Builder `.mbconfig` `DataSource.FilePath` both arrive
      hard-coded to the generating workstation. Make them relative to the file that carries them.
+14. **Scripted Edits Rewrite Line Endings — Edit Bytes, Not Lines.** The working tree is CRLF by
+   `.editorconfig` (`end_of_line = crlf`), and the obvious tools do not preserve it. The damage compiles, so
+   nothing fails; what it costs is the review.
+   - **`sed -i` on Git Bash converts the whole file to LF.** It reads in text mode and writes `\n`, so a
+     one-line namespace substitution silently rewrites every line in the file. Python does the same through
+     universal newlines — `io.open(p, encoding="utf-8-sig").read()` strips both the CRLFs and the BOM, and
+     writing back with `encoding="utf-8-sig"` *adds* a BOM to a file that never had one.
+   - **The symptom is a diff, not a failure.** The build stays green and the tests pass, while every line of
+     the file shows as changed and the actual edit is invisible inside it.
+   - **`grep -c $'\r'` does not detect it** — it reports every line as matching either way. Count bytes:
+     `tr -cd '\r' < file | wc -c` against `tr -cd '\n' < file | wc -c`. Equal means CRLF survived, zero CR
+     means it did not.
+   - **Edit in binary and assert the match count**, so a pattern that matched nothing — or matched twice —
+     fails loudly instead of writing a file that merely looks edited:
+     ```python
+     data = path.read_bytes()
+     assert data.count(old) == expected
+     path.write_bytes(data.replace(old, new))
+     ```
+     A search string spanning more than one line has to carry `\r\n`. Detect the convention per file rather
+     than assuming it — `.slnx` and some `.csproj` in these repos genuinely are LF:
+     `eol = b"\r\n" if b"\r\n" in data else b"\n"`.
+   - **Check before believing a diff stat.** `git diff --stat --ignore-cr-at-eol` shows the real size of the
+     change; a whole-file stat that collapses to a few lines under that flag is a line-ending rewrite rather
+     than an edit. Note the converse also exists — some committed blobs already hold CRLF, so touching them
+     renders every line as changed through no fault of the edit.
+   - This is the source-file half of the `\r\r\n` trap in [GitHub - Issues.md](GitHub%20-%20Issues.md) §1,
+     which governs the markdown bodies sent to GitHub rather than the files in the tree.
 
 ---
 
@@ -339,6 +367,37 @@ loaded into the tray application. `DiGi.GIS.YOLO.UI.ConsoleApp` is the first of 
 - **Do not drop a plugin assembly in it expecting it to be loaded.** Nothing resolves assemblies from these
   folders.
 
+### A Reference Added To A Library Does Not Reach The Host's `deps.json`
+The two traps above are about an assembly being **absent**. This one is about an assembly being **present
+and still unloadable**. It surfaces as the same `FileNotFoundException` and is diagnosed completely
+differently, so read the message carefully before assuming a missing file.
+
+A `SelfContained` host resolves assemblies through its `*.deps.json`. A file sitting in the output folder
+but missing from that manifest is not on the TPA list and does not load:
+
+```
+Could not load file or assembly 'DiGi.User.PostgreSQL, Version=0.1.0.0, Culture=neutral,
+PublicKeyToken=null'. The system cannot find the file specified.
+```
+
+**…while the dll is right there in `bin`.** The manifest was never regenerated. The new
+`<Reference><HintPath>` went into a **library** (`DiGi.GIS.PostgreSQL.UI`), while the executable
+(`DiGi.GIS.PostgreSQL.UI.Application`) only `ProjectReference`s that library and declares no assembly
+references of its own. The library's copy-local items still reach the executable's output directory, so the
+file appears — but MSBuild judged the executable's dependency file up to date, because none of **its** own
+inputs (its `.csproj`, its `project.assets.json`) had changed. The tell is an `.exe` whose `deps.json` is
+older than the `.exe` itself; the one that shipped this was four days stale.
+
+- **Rebuild the executable with `--no-incremental`** (or clear its `obj`) after changing the assembly
+  references of any library it consumes. A normal incremental build is not enough, and nothing warns.
+- **Confirm membership, not presence:** `grep -oE '"DiGi\.[A-Za-z.]+/[^"]*"' bin/<App>.deps.json`.
+- **The deployed copy is a second instance of the same staleness.** `SyncDirectory.ps1` carries the fresh
+  `.exe` and dlls across next to the stale manifest, so `SOFTWARE_DIRECTORY\<product>` keeps crashing after
+  the workspace has been fixed. Re-sync **after** the full rebuild, and check the destination's `deps.json`
+  timestamp rather than its `.exe`.
+- **Only launching the host proves it.** Unit tests cannot: an `.xUnit` project re-declares its own
+  references and therefore gets its own, correct manifest. Neither can the script below.
+
 ### The Check
 Run after building; it inspects compiled output, not project files.
 ```powershell
@@ -349,6 +408,11 @@ It reads each output assembly's reference table with `System.Reflection.Metadata
 every reference that resolves neither inside the deployment unit nor in a shared framework. Reviewed
 exceptions are declared per unit inside the script, each with a stated reason — an unexplained entry
 there re-hides the exact class of bug the script exists to find.
+
+**What it does not check: `deps.json` membership.** It asks whether a referenced assembly resolves as a
+**file** inside the deployment unit, which is not the same question as whether the host will load it — see
+the section above. It reported *"No missing dependencies"* for a deployment unit whose application could not
+start. Launching the host is the only check that covers both halves.
 
 ---
 
