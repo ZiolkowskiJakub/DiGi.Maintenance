@@ -109,6 +109,28 @@
    - This is the source-file half of the `\r\r\n` trap in [GitHub - Issues.md](GitHub%20-%20Issues.md) §1,
      which governs the markdown bodies sent to GitHub rather than the files in the tree.
 
+15. **A Check That Skips Absent Input Fails Open.** A guard written as "if a value was given, validate it"
+    *passes* when nothing was given — usually the case it most needed to refuse. `DiGi.YOLO`'s
+    `YOLOEnvironmentResult` probes the detector weights only `if (!string.IsNullOrWhiteSpace(path_Model))`,
+    so the preflight `DiGi.GIS.YOLO.UI#6` added to refuse a bad environment "in seconds instead of after
+    exporting a county" did not fire for a `ModelPath` of `null`: the run passed the preflight, exported
+    55 366 images over four and a half minutes, and then failed on the first step that actually opened the
+    file. **Decide explicitly what an absent value means** — refuse it, or default it — rather than letting
+    it fall through the validation as "nothing to check". Where the value is a path, **resolve it the way
+    the consumer will resolve it before deciding it is absent**: a preflight probing a different path from
+    the one the real call receives is not a preflight.
+
+16. **A Configuration Class's Defaults Are The Contract Wherever No File Is Read.** An options class is
+    normally thought of as "what the JSON sets", which makes its property initialisers read as fallbacks.
+    The moment one caller constructs it *without* a file, they stop being fallbacks and become that
+    caller's entire configuration. `YearBuiltPredictionPipelineOptions.ModelPath` defaulted to `null` while
+    its own `<summary>` promised a fallback search that no longer existed — harmless for the console app,
+    which always loads JSON, and fatal to every run started from the tray application, whose dialog
+    deliberately offers no weights control (`DiGi.GIS.PostgreSQL.UI#9`). **Where a UI or a host
+    deliberately omits a control, the default behind it is that surface's answer**, so give it a working
+    value and say so in the `<summary>`. Re-check the defaults whenever a new caller *constructs* the class
+    rather than deserializing one.
+
 ---
 
 ## 2. Architecture — `DiGi.Core` Pattern
@@ -263,6 +285,12 @@ DiGi projects reference each other with `<Reference><HintPath>..\..\X\bin\X.dll<
 `<ProjectReference>`. A raw assembly reference is **opaque to NuGet**, and the DiGi class libraries do
 not copy their own NuGet dependencies into their `bin`. A library's third-party dependencies therefore
 never reach a host that consumes it by `HintPath`.
+
+The same opacity has a build-order consequence inside the workspace, before anything is deployed: MSBuild
+cannot see a `HintPath` reference as a project to build either, so building or testing a consumer **never
+rebuilds the library it consumes**. `dotnet test` in `DiGi.Test` runs against whatever was last built into
+each repository's `bin`, which makes an un-rebuilt edit look like a change that had no effect — see
+[Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) §4.
 
 ### Before Adding One — Check What You Already Reference
 The cheapest package is the one you do not add. Because of the rule below, every new dependency has to be
