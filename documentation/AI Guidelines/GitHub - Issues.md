@@ -14,11 +14,12 @@ In PowerShell (`pwsh`), the backtick (`` ` ``) is the escape character. An inlin
 ### Safe Execution Pattern
 Always write the formatted markdown body to a temporary/scratch `.md` file encoded as **UTF-8 without BOM**, and pass the file path via `--body-file` or `@<path>`:
 
-1. **Creating a New Issue (Mandatory Type + Priority + AI Complexity Labels):**
-   Every new issue added to any repository **must** be assigned at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` complexity tier upon creation (tier criteria: `GitHub - AI Issue Classification.md`):
+1. **Creating a New Issue (Mandatory Type + Priority + AI Complexity Labels + Default Assignee):**
+   Every new issue added to any repository **must** be assigned at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` complexity tier upon creation (tier criteria: `GitHub - AI Issue Classification.md`), **and must be assigned to `ZiolkowskiJakub` by default** (the repository owner) unless the user explicitly names a different assignee:
    ```bash
-   gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>,ai: <tier>"
+   gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>,ai: <tier>" --assignee ZiolkowskiJakub
    ```
+   If an issue is ever created without `--assignee` (e.g. via `gh api` or an existing script that doesn't pass it), assign it immediately after with `gh issue edit <number> --repo <owner>/<repo> --add-assignee ZiolkowskiJakub`.
    *(Note: During label synchronization or audits, update labels **ONLY on open issues** by default. Modify closed issues **ONLY if explicitly instructed by the user**).*
 
 2. **Adding a Comment:**
