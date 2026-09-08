@@ -126,7 +126,7 @@ Still true, and still worth knowing:
 - Re-generating models per county id materialises a model under each part holding that building —
   which after the repair is one part per building for these codes.
 
-### The other half of it: the right building under the wrong part - open
+### The other half of it: the right building under the wrong part - repaired 2026-09-08
 
 That repair removed **copies**. It skipped, deliberately, every reference held by exactly one part:
 *"Held by one part only - whether that is the right part is a question for the import, not for a repair
@@ -160,17 +160,37 @@ a 246 x 575 m exclave holding all 37 260 buildings of the county.
 `building_data` rows sit under part 97360 as well, and every read of those tables filters `county_id`
 first.
 
-Landed, not yet run:
-- `GET gis/building2d/countypartmismatches` counts, per part, the rows whose stored bounding box does
-  not touch the box of the part holding them - certainly misfiled, no geometry read. The before and
-  after measurement.
-- `PostgreSQLBuilding2DCountyPartRefreshTask` (tray app, `DryRun` on by default) decides each building
-  with `Query.CountyId` and moves it, carrying `building`, `building_data`, `orto_datas`,
-  `building_model`, `year_built_data` and `occupancy_data_building_2d` with it. Nothing is deleted: a
-  row the destination part will not take is reported and left.
-- `UpdateAsync` no longer takes a caller-supplied `CountyId` on trust when its code holds several parts.
-  That is what made the wrong value permanent - a client resolves the part by reading the row it is
-  about to overwrite.
+Repaired 2026-09-08 (production, tray task, run twice). The mechanism above - `countypartmismatches`
+as the before/after measurement, `PostgreSQLBuilding2DCountyPartRefreshTask` deciding each building by
+`Query.CountyId` (containing part, else nearest, else most overlap) and moving it with `building`,
+`building_data`, `orto_datas`, `building_model`, `year_built_data` and `occupancy_data_building_2d`,
+deleting nothing - plus `UpdateAsync` no longer taking a caller-supplied `CountyId` on trust when its
+code holds several parts (that trust made the wrong part permanent: a client resolves the part from the
+row it is about to overwrite).
+
+| Run | Read | Moved | Blocked | Carried | Stepped over |
+|---|---|---|---|---|---|
+| 2026-09-06/07 (first) | 989 341 | 758 394 | 0 | 40 | 12 |
+| 2026-09-08 (re-run) | 989 341 | 0 | 0 | 351 562 | 0 |
+
+The first run's 12 stepped-over codes were failures in the child-row carry sweep; the re-run proves they
+were transient (zero stepped over, zero to move - idempotent) and carried the 351 562 rows left behind,
+all `building_model`. After the runs, `building_data` matches the final `building_2d` per-part
+distribution exactly (all 18 codes), `building_model` answers under the destination part, and the
+`building` partitions the first run left are the blocked-duplicate / orphan rows the task leaves for a
+person by design. The union per code is unchanged - no building lost its last row. Full per-part
+before/after in the [#68 comment](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/68).
+
+`0662` keeps its 2: they are **not misfiled**. The geometry decision places them on 17371 and three
+consecutive runs agree 0662 has zero misfiled buildings. `countypartmismatches` counts box-outside as a
+documented lower bound and will keep flagging the two - an explained artifact, not an open defect.
+
+The temporary code was deleted once the estate reached that state (2026-09-08): the task + options +
+result, `GetCountyPartMovesAsync` + `Building2DCountyPartMoveResult`, `Query.CountyIds`, the tray
+registration, and the task-bound Facts. Kept, because they are how a county part is repaired at all:
+`RefreshCountyIdsAsync`, `countypartmismatches`, `Building2DCountyPartMismatchResult`, `Query.CountyId`,
+and the `UpdateAsync` three-tier guard. `a418678` (PostgreSQL `0.8.9`), `1e5db1f` (UI `0.8.9`),
+`9d38cee` (Test `0.8.11`).
 
 ---
 
