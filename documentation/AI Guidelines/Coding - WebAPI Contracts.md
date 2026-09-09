@@ -118,6 +118,35 @@ which works only because that client and the deployed build happen to agree on t
 Cast to `int` instead. See [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) §4 and
 [Coding - GIS Administrative Data.md](Coding%20-%20GIS%20Administrative%20Data.md) §6.
 
+### A JSON request body is renamed on the way out
+
+The query string is not the only half of the contract without a compiler. `System.Net.Http.Json` —
+`JsonContent.Create(value)`, `httpClient.PostAsJsonAsync(uri, value)` — serializes with
+**`JsonSerializerDefaults.Web`** when given no options, and that default's naming policy is **camelCase**. A
+body object declaring `Email` and `Password` therefore goes on the wire as `{"email":"…","password":"…"}`,
+whatever the contract says.
+
+It usually works anyway, which is what makes it a trap: ASP.NET Core's input formatter also runs on web
+defaults, with `PropertyNameCaseInsensitive = true`, so the receiver binds the renamed properties without
+complaint. The dependency stays invisible until a receiver is stricter — and then it surfaces as a *domain*
+refusal, not a format error. Measured on `DiGi.GIS.WebAPI.UI`'s login relay, whose stated contract is
+`DiGi.User.Classes.UserLogin`'s `Email` / `Password`:
+
+| Sent as | Recorded on the wire |
+|---|---|
+| `JsonContent.Create(userLoginParameter)` | `{"email":"…","password":"…"}` |
+| `JsonContent.Create(userLoginParameter, options: JsonSerializerOptions.Default)` | `{"Email":"…","Password":"…"}` |
+
+**Pass `options: JsonSerializerOptions.Default` whenever the contract names the properties.** Its naming
+policy is `null`, so the declared names are kept, and it is a cached framework instance rather than a fresh
+`JsonSerializerOptions` allocated per call.
+
+Two things this does not touch. A body that is a primitive or a collection of them (`string`, `List<int>` —
+what `Query.PostJsonAsync` carries today) has no property names at all. And a `JsonObject` / `JsonArray`
+body, which is how the DiGi update endpoints take their payloads, carries **keys**: those are data rather
+than properties, so no naming policy applies. The exposure is exactly the body *objects* —
+`Building2DReferencesByPagingParameter`, `CountByAdministrativeAreal2DIdsParameter` and their siblings.
+
 ---
 
 ## 3. Client / proxy structure
@@ -181,6 +210,29 @@ When a client must ship before the endpoint does, gate the call and mark it with
 "once `GET /information/controllers` reports a build carrying `idsbycode`" — not merely that the code
 is temporary.
 
+### A live probe verifies the response, not the request
+
+Querying the deployed host proves an endpoint is there. It does not prove the client is sending what you
+think, and on an authentication or validation path it usually *cannot*: those answer the same status for
+every cause. `POST /user/login` returns **401** for an unknown email, for an account with no stored
+credential, for a wrong password — and equally for a correct password sent under the wrong property names,
+or for no body at all. A probe against a deliberately failing credential therefore says nothing whatever
+about the request.
+
+Where the failure status is uniform, **record the request instead of reading the response.** Stand up a
+local stub of the service, point the client's base URI constant at it for the length of the test, and assert
+the exact bytes and headers that arrive. Two defects were found that way in the login relay, neither of them
+reachable by a live probe: the camelCase renaming in §2, and a relay that cleared the session cookie on a
+401 — destroying the token that refresh then had to present, so refresh-and-retry could never succeed.
+
+Two traps in the stub itself:
+
+- `HttpClient` sends `JsonContent` **chunked**, its length not being known up front. A stub that reads
+  `Content-Length` records an empty body and invents a defect that is not there.
+- Revert the base URI and rebuild before committing, then `grep` the stub's host across
+  `--include=*.cs --include=*.cshtml --include=*.js`. If the pointer has to outlive the test, it is
+  temporary code and takes a `TODO [MarkerName]` per the rule above.
+
 ---
 
 ## 5. Checklist
@@ -195,5 +247,7 @@ is temporary.
 - [ ] Base URI from a constant; no literal host anywhere else.
 - [ ] Request/deserialize through the `/Query` helpers, not inline in the action.
 - [ ] Enum values sent as integers.
+- [ ] JSON body serialized with `JsonSerializerOptions.Default` when the contract names the properties.
+- [ ] Body property names confirmed on the wire, not inferred from a uniform failure status.
 - [ ] Absence degrades (`NoContent`), it does not fail the page.
 - [ ] Every endpoint used is present on the deployed host, or gated behind a `TODO [MarkerName]`.
