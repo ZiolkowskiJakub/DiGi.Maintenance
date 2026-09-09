@@ -604,5 +604,9 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 > BDOT10k stores one `administrative_areal_2d` feature per polygon part, so 406 county rows cover 380
 > codes, and 18 counties have several. Key every write and lookup by county **`id`**, give every
 > `LIMIT`/`FirstOrDefault` over that table an explicit `ORDER BY`, and never "deduplicate" those rows —
-> for `2412 rybnicki` the largest polygon is only 52 % of the county. Full model in
+> for `2412 rybnicki` the largest polygon is only 52 % of the county. Two corollaries that have each
+> cost real data: **the number of county ids a caller sent is not evidence about how many parts the code
+> has**, so resolve every item against `building_2d` rather than trusting a single id; and a **read** of
+> a table keyed on a building must pass `fallbackByReference: true`, because it defaults to `false` and
+> a row under a sibling part is then silently not returned. Full model in
 > `Coding - GIS Administrative Data.md`.
