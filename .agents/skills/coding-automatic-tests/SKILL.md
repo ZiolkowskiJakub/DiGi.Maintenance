@@ -64,6 +64,12 @@ System.IO.File.WriteAllLines(reportFilePath, reportLines);
 
 ## 4. Testing Patterns
 
+- **Build what you changed before you test it — `dotnet test` will not.** The xUnit projects reach the code under test through `<Reference><HintPath>`; only `DiGi.Core.xUnit` is a `ProjectReference`. MSBuild cannot see a raw assembly reference as a project to build, so `dotnet test` compiles the test project and its `ProjectReference` chain and then runs **against whatever was last built into the other repositories' `bin`** — your edit included or not. The symptom is the worst kind available: a result identical to the previous run, in either direction. A fix appears not to work; a regression appears not to exist. Build the changed library first, plus any other assembly the facts exercise — the ConsoleApp too, for a fact that calls `Program.Main`:
+  ```powershell
+  dotnet build "..\DiGi.X\DiGi.X\DiGi.X.csproj" -c Debug -m:1
+  dotnet test "DiGi.X.xUnit\DiGi.X.xUnit.csproj" -c Debug -m:1
+  ```
+  **When a run contradicts the change you just made, confirm which binary ran before believing it.** `Get-FileHash` on the consumed `bin` assembly against the build output settles it in one command. Worked example: a corrected exit code kept failing its fact with a byte-identical message across two runs, because both executed the assembly built before the correction — the second "failure" was read as the fix not working. Same `HintPath` opacity in its deployment form: [Coding - General.md](Coding%20-%20General.md) §4.
 - **Assertions:** Use standard xUnit assertions (`Assert.Equal`, `Assert.True`/`False`, `Assert.NotNull`/`Null`, `Assert.Single`).
 - **Serialization Round-Trip:**
   - Call `Core.xUnit.Query.SerializationCheck(instance)`.
