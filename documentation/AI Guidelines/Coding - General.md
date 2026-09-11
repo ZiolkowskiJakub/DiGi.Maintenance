@@ -134,6 +134,20 @@
     value and say so in the `<summary>`. Re-check the defaults whenever a new caller *constructs* the class
     rather than deserializing one.
 
+17. **An Extension-Syntax Receiver Only Boxes — It Never Converts Numerically.** `x.Method()` admits only
+    identity, implicit reference and boxing conversions on `x`; an implicit *numeric* conversion is not
+    considered. With `UniqueId(this int)`, `UniqueId(this short)`, ..., `UniqueId(this object?)` in scope,
+    `((byte)5).UniqueId()` binds to the **`object`** overload, while the static form `Query.UniqueId((byte)5)`
+    binds to `short` (signed beats unsigned). The same value therefore takes two different code paths
+    depending on call syntax, and a numeric type without its own overload silently falls to `object` in
+    every extension-syntax call — which is how `dynamic` dispatch and `ToString()` fallbacks get reached.
+    Give every primitive the family accepts its own overload (nullable form included).
+    **Verify overload-binding and compile-error claims with a probe project, not by reasoning.** In
+    `DiGi.Core#5` the issue said these calls "fall to `object`", the implementation summary said they were
+    "CS0121-ambiguous", and the review's first draft said "only the nullable forms are CS0121"; a 40-line
+    scratch console app printing which overload each call hits settled it in a minute — the issue was
+    right, the other two were wrong, and nothing was ambiguous.
+
 ---
 
 ## 2. Architecture — `DiGi.Core` Pattern
@@ -468,6 +482,21 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
 5. **Timestamp & Date Fields (`DateTimeOffset` Standard):**
    - Always use `DateTimeOffset` (or `DateTimeOffset?`) for timestamps and date-time properties and backing fields instead of `DateTime`.
    - `DateTime` values with `DateTimeKind.Unspecified` cause timezone offset ambiguity, local time drift, and round-trip equality assertion failures in `SerializationCheck` / JSON deserialization across environments with different UTC offsets. `DateTimeOffset` guarantees standard `ISO 8601` serialization with explicit UTC offset persistence.
+6. **A `JsonValue` Has Two Implementations — Hash and Compare by JSON Kind, Not CLR Type.**
+   `Create.JsonNode` builds values through `JsonValue.Create(object)` (a CLR-backed `JsonValueCustomized<object>`),
+   while `JsonNode.Parse` yields element-backed values. They answer differently:
+   - `TryGetValue<T>` on a CLR-backed value is `Value is T` — a boxed `short`, `float`, `decimal`, `char`,
+     `DateTimeOffset` or `Guid` fails `TryGetValue<int/long/double/string>`; the parsed form of the same
+     value succeeds as `int`/`double`/`string`.
+   - `GetValue<object>()` on a parsed value returns the **`JsonElement`**, not a CLR primitive; an
+     `object`-typed dispatch then falls through to `JsonElement.ToString()` (raw text) with no error.
+   - A whole-number `double` serializes as `5` and parses back as `int`.
+   Any identity, hash or equality derived from a `JsonNode` must therefore switch on
+   `jsonValue.GetValueKind()` and read the JSON-level value (`ToJsonString()` for numbers, the decoded
+   string for strings) so that a node built from an object and the same node read back from a file agree.
+   Reference: `DiGi.Core.Query.UniqueHash(JsonNode)`; the round-trip fact is `UniqueId_JsonObjectRoundTrip`.
+   Numbers hash over their JSON text, which is shortest-round-trip on .NET Core 3.0+ and `G15` on .NET
+   Framework — the one cross-runtime split that cannot be closed from user code.
 
 ---
 

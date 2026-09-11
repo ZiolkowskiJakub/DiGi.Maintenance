@@ -126,6 +126,11 @@ wrong about the fix.
 - **Is the quoted latency reproducible?** Run the repository's own benchmark `[Fact]` (isolated — see
   `Coding - Automatic Tests.md` §4) rather than trusting a figure in the description.
 - **Does the described failure reproduce at all?** Write the reproducing `[Fact]` first.
+- **Is the compile-time claim true?** "Does not compile", "CS0121-ambiguous", "binds to the `object`
+  overload" are measurable: build a scratch console app that reproduces the overload set and prints which
+  overload each call hits (`Coding - General.md` §1 rule 17). Overload resolution is where reasoning fails
+  most quietly — in `DiGi.Core#5` the implementation summary and the review draft each corrected the issue's
+  premise wrongly before a probe showed the issue had been right.
 
 When a claim turns out to be wrong, **correct the record in a comment with the evidence**. The issue text
 is what the next reader trusts, and a closed issue keeps teaching whatever it last said.
