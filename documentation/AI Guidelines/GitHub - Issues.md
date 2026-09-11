@@ -135,6 +135,19 @@ wrong about the fix.
 When a claim turns out to be wrong, **correct the record in a comment with the evidence**. The issue text
 is what the next reader trusts, and a closed issue keeps teaching whatever it last said.
 
+**The sweep runs the other way too — after a design change, revisit the open issues that were written
+against the old design.** Issues carry "Verified premises" sections pinned to a commit; a redesign
+invalidates them silently, and the next agent implements the stale premise faithfully. When a change
+removes or re-parents a public type, renames a `_type`, or moves a member (`TypologyAppearanceCollection.Key`
+→ `Query.Key`), search open issues in every consuming repository for the affected names
+(`gh issue list --search "<TypeName>"` per repo, or `FilterIssues.ps1` §4) and post **one comment per
+affected issue**: a shared before/after table of what changed, then the issue-specific effect on its
+premises, approach and acceptance criteria. Do not edit the issue body — the comment keeps the original
+reasoning readable beneath the correction. Worked example: the `DiGi.Typology.Visual` redesign of
+2026-09-11 removed `VisualRange<T>` and the level fallback appearance; five open issues across
+`DiGi.Typology` (#20, #21) and `DiGi.GIS.WebAPI.UI` (#16, #17, #19) had built on both, and one (#17) had a
+whole wire-format table and a `template` endpoint motivated by a generic `_type` that no longer existed.
+
 **Worked example.** [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2) asked for
 spatial partitioning to cut a reported 15-60 s latency. `Difference.cs` already held an `STRtree`, and the
 `< 3.0 s` acceptance criterion was already met at ~1.3 s measured. The real defect was a crash on dense

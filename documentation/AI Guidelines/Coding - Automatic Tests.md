@@ -109,6 +109,27 @@ System.IO.File.WriteAllLines(reportFilePath, reportLines);
     reads their paths from a git-ignored conf and **returns without asserting** when it is absent, so
     the suite still runs everywhere. Sample size belongs in that conf too: a percentile over a handful
     of items is just the maximum again, so assert it only above a stated minimum count.
+- **Culture Scope For Keys And Identities:** a fact for anything rendered to a string that must match
+  across machines (dictionary keys, references, hashes — `Coding - General.md` §1.19) runs its assertions
+  twice, the second time under a culture that changes the decimal separator, and asserts the raw
+  `ToString()` **differs** while the key does not. `CultureInfo.CurrentCulture` is per thread, so the
+  scope is safe under xUnit's parallel collections; restore it in `finally`:
+  ```csharp
+  CultureInfo cultureInfo = CultureInfo.CurrentCulture;
+  try
+  {
+      CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
+
+      Assert.NotEqual("[0.5, 12.25]", range_Double.ToString());
+      Assert.Equal("[0.5, 12.25]", Query.Key(range_Double));
+  }
+  finally
+  {
+      CultureInfo.CurrentCulture = cultureInfo;
+  }
+  ```
+  Reference: `DiGi.Test/DiGi.Typology.Visual.xUnit/Facts/Query_Key.cs`. A key fact that passes only on
+  an invariant-culture machine has not tested the property it exists for.
 - **Reproduce Before Fixing:** a defect fix opens with a `[Fact]` that fails **on the unmodified code with the reported symptom** — matching the reported stack trace when there is one — and that `[Fact]` is committed in the same change. If a synthetic fixture will not reproduce the defect, build one from real data already in `DiGi.Test/files/`. `Mesh3D_Difference_DenseCluster` and `Mesh3D_Difference_FaultIsolation` reproduced [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2)'s `ConstraintEnforcementException` with its exact stack before a line of the fix was written.
 - **Proving a Kept Fallback Is Dead:** when a change keeps the previous implementation as a safety net, establish whether it is reachable instead of guessing — replace the fallback call with `throw`, run the whole suite. If nothing fails, the fallback is unreached and should be deleted rather than carried. That is how `DiGi.Geometry`'s conforming-Delaunay triangulation path was retired (326 to 126 lines) with evidence.
 - **A Guard Must Be Shown To Fail:** *Reproduce Before Fixing* covers a `[Fact]` written against a known defect. A guard written **proactively** — asserting a property nobody has yet violated — gets no such proof for free, and an assertion that cannot fail for the reason it exists is worse than no test, because a comment claiming it guards something stops anyone looking again.
