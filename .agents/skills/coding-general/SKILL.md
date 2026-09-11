@@ -116,6 +116,11 @@ description: Use whenever writing or editing C# code in this workspace - naming/
    - **Worked example.** `UpdateReadmes.ps1` forced every `README.md` to CRLF *and* committed with `-c core.autocrlf=false`, so CRLF bytes landed verbatim in a blob every repo stored as LF — a full-file rewrite across all 66 repos on a run whose real change was five lines ([DiGi.Maintenance#11](https://github.com/ZiolkowskiJakub/DiGi.Maintenance/issues/11)). The fix detects the stored ending from the blob, emits in that convention, and guards against a mismatch.
    - This is the source-file half of the `\r\r\n` trap in [GitHub - Issues.md](GitHub%20-%20Issues.md) §1,
      which governs the markdown bodies sent to GitHub rather than the files in the tree.
+   - **A diff that is only `\ No newline at end of file` is editor noise — revert it.** An IDE that trims
+     the trailing newline marks a file modified with nothing else changed; sixteen such files sat in a
+     `DiGi.Typology` working tree beside a real redesign. Check each modified file with
+     `git diff --ignore-cr-at-eol -- <file>`: an empty result means only the line-ending bytes moved, so
+     `git checkout -- <file>` before review rather than carrying it into the commit.
 
 15. **A Check That Skips Absent Input Fails Open.** A guard written as "if a value was given, validate it"
     *passes* when nothing was given — usually the case it most needed to refuse. `DiGi.YOLO`'s
@@ -138,6 +143,47 @@ description: Use whenever writing or editing C# code in this workspace - naming/
     deliberately omits a control, the default behind it is that surface's answer**, so give it a working
     value and say so in the `<summary>`. Re-check the defaults whenever a new caller *constructs* the class
     rather than deserializing one.
+
+17. **An Extension-Syntax Receiver Only Boxes — It Never Converts Numerically.** `x.Method()` admits only
+    identity, implicit reference and boxing conversions on `x`; an implicit *numeric* conversion is not
+    considered. With `UniqueId(this int)`, `UniqueId(this short)`, ..., `UniqueId(this object?)` in scope,
+    `((byte)5).UniqueId()` binds to the **`object`** overload, while the static form `Query.UniqueId((byte)5)`
+    binds to `short` (signed beats unsigned). The same value therefore takes two different code paths
+    depending on call syntax, and a numeric type without its own overload silently falls to `object` in
+    every extension-syntax call — which is how `dynamic` dispatch and `ToString()` fallbacks get reached.
+    Give every primitive the family accepts its own overload (nullable form included).
+    **Verify overload-binding and compile-error claims with a probe project, not by reasoning.** In
+    `DiGi.Core#5` the issue said these calls "fall to `object`", the implementation summary said they were
+    "CS0121-ambiguous", and the review's first draft said "only the nullable forms are CS0121"; a 40-line
+    scratch console app printing which overload each call hits settled it in a minute — the issue was
+    right, the other two were wrong, and nothing was ambiguous.
+
+18. **A Member Resolved By Name Through Reflection Is A Contract On The Whole Hierarchy.**
+    `DiGi.Typology.Query.RuleData(ITypologyFilterRule, object)` reaches the generic `RuleData` through
+    `type.GetMethod(nameof(RuleData))` because the non-generic interface does not expose it. That one
+    line silently forbids every derived rule from hiding `RuleData` with a `new` overload — the lookup
+    would become ambiguous or bind to whichever method reflection prefers — so `DiGi.Typology.Visual`'s
+    range and unique-value rules had to be re-parented onto `TypologyFilterRule` instead of deriving from
+    the rules they mirror, at the cost of duplicating the base implementation.
+    - **Document the constraint at both ends:** at the reflection site (why by name, what it assumes)
+      and on the base type's `<summary>` (do not hide this member), because the person deriving a class
+      never reads the `Query` that will later dispatch on it.
+    - **Prefer a non-generic interface member over `GetMethod`** when the design is still open — an
+      `ITypologyFilterRule.RuleData(object?)` returning the base rule data would have made the by-name
+      lookup unnecessary.
+    - **Probe, do not reason,** before relying on `GetMethod(string)` picking a most-derived overload
+      (§1.17): reflection's hide-by-signature rules are not overload resolution.
+
+19. **`ToString()` Is Not A Key.** `Range<T>.ToString()` and an interpolated `$"[{min}, {max}]"` follow
+    `CultureInfo.CurrentCulture`, so a dictionary keyed on them files `[0,5, 12,25]` under `pl-PL` and
+    `[0.5, 12.25]` elsewhere — a key written on one machine is not found on another, and nothing throws.
+    Any string used as an identity — a dictionary key, a `_type`-like discriminator, a stored
+    reference, a hash input — renders through `CultureInfo.InvariantCulture`: `"R"` for `double`/`float`
+    (with `-0.0` folded to `0`), `"G29"` for `decimal` (scale stripped, since `1.10m == 1.1m`), ticks for
+    `DateTime`, the UTC instant for `DateTimeOffset`. `DiGi.Typology.Visual.Query.Key(object)` is the
+    reference renderer and its `Query_Key` fact the reference test (`Coding - Automatic Tests.md` §4).
+    An `object`-typed value adds a second reason: after a JSON round trip a boxed `2010` comes back as
+    `2010.0`, so `Equals` no longer groups it with the value it was — the key must be width-agnostic.
 
 ---
 
@@ -473,6 +519,31 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
 5. **Timestamp & Date Fields (`DateTimeOffset` Standard):**
    - Always use `DateTimeOffset` (or `DateTimeOffset?`) for timestamps and date-time properties and backing fields instead of `DateTime`.
    - `DateTime` values with `DateTimeKind.Unspecified` cause timezone offset ambiguity, local time drift, and round-trip equality assertion failures in `SerializationCheck` / JSON deserialization across environments with different UTC offsets. `DateTimeOffset` guarantees standard `ISO 8601` serialization with explicit UTC offset persistence.
+6. **A `JsonValue` Has Two Implementations — Hash and Compare by JSON Kind, Not CLR Type.**
+   `Create.JsonNode` builds values through `JsonValue.Create(object)` (a CLR-backed `JsonValueCustomized<object>`),
+   while `JsonNode.Parse` yields element-backed values. They answer differently:
+   - `TryGetValue<T>` on a CLR-backed value is `Value is T` — a boxed `short`, `float`, `decimal`, `char`,
+     `DateTimeOffset` or `Guid` fails `TryGetValue<int/long/double/string>`; the parsed form of the same
+     value succeeds as `int`/`double`/`string`.
+   - `GetValue<object>()` on a parsed value returns the **`JsonElement`**, not a CLR primitive; an
+     `object`-typed dispatch then falls through to `JsonElement.ToString()` (raw text) with no error.
+   - A whole-number `double` serializes as `5` and parses back as `int`.
+   Any identity, hash or equality derived from a `JsonNode` must therefore switch on
+   `jsonValue.GetValueKind()` and read the JSON-level value (`ToJsonString()` for numbers, the decoded
+   string for strings) so that a node built from an object and the same node read back from a file agree.
+   Reference: `DiGi.Core.Query.UniqueHash(JsonNode)`; the round-trip fact is `UniqueId_JsonObjectRoundTrip`.
+   Numbers hash over their JSON text, which is shortest-round-trip on .NET Core 3.0+ and `G15` on .NET
+   Framework — the one cross-runtime split that cannot be closed from user code.
+   - **Member-level consequence — an `object` member holding a number.** The text round trip
+     (`Convert.ToSystem_String` → `Convert.ToDiGi<T>`) hands a boxed `int` back as `double`, so
+     `UniqueValueRuleData(2010)` is no longer `Equals`-equal to itself after a reload; and `Clone()`
+     (`ToJsonObject` → `new T(JsonObject)`, no text parse) throws
+     `InvalidOperationException: A value of type 'System.Object' cannot be converted to a 'System.Double'`
+     because `Query.Value` asks the CLR-backed node for a `double` it does not hold
+     ([DiGi.Core#6](https://github.com/ZiolkowskiJakub/DiGi.Core/issues/6)). Until #6 ships: never key or
+     compare an `object` member with `Equals` (render it through an invariant, width-agnostic key — §1.19),
+     and `SerializationCheck` such a type with a string value, marking the deferred numeric check
+     `TODO [ObjectMemberClone]` so the sweep finds it when #6 closes.
 
 ---
 
