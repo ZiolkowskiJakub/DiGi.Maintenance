@@ -512,6 +512,15 @@ Input fixtures are read from `files/`; everything a test **writes** goes to `DiG
    ```
    References: `DiGi.CityGML.xUnit/Facts/InspectDuplicates.cs`, `DiGi.GIS.Analytical.xUnit/Facts/BuildingModel_Enclosed.cs`.
 
+#### Browser Testing (Interactive DoD)
+Verify *interactive* front-end behaviour (panel toggles, drag-resize with clamps, keyboard operability, `localStorage` persistence, responsive stacking, shared header/footer collapse) in a **real browser** instead of only reading the code. Full recipe in `Coding - Browser Testing.md`.
+
+1. **Confirm the toolchain on THIS machine first — availability is per-machine.** Probe Python + pip, Playwright (`pip show playwright`), and an installed Chromium-based browser (Microsoft Edge, Chrome, or Playwright's own Chromium); install whatever is missing. Do not treat any observed versions as a fixed requirement.
+2. **Run with the host shell, not the isolated sandbox** — the sandbox has no host filesystem, no network, and cannot reach `localhost`. Keep test scripts and screenshots in the scratchpad so the repo stays clean.
+3. **Recipe:** start the app from the build output with a fixed `ASPNETCORE_URLS`, poll a cheap endpoint until it returns 200, then drive it with `page.click` / `keyboard.press` / a `page.mouse` step-drag; assert computed styles, `aria-expanded`, `localStorage`, and no horizontal overflow; `set_viewport_size` for responsive breakpoints; **terminate the server in a `finally`**.
+4. **Gotchas:** a collapsed panel measures 0 — open it before measuring (the `localStorage` value is the source of truth); drag with `page.mouse` steps, not a one-shot `.drag_to()`; settle before asserting; **rebuild before re-verifying a `.cshtml` change** (Razor views compile at build time, while CSS/JS serve live from source).
+5. **Not for:** pure server-side/C# logic (use xUnit, see §7) or a one-off "does it render" check (a `curl` of the endpoint is enough).
+
 ---
 
 ### 8. Branch Synchronization & Versioning Protocol
@@ -545,6 +554,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `Coding - WebAPI Contracts.md` | Changing a WebAPI route/parameter, or writing an HTTP client of one. |
 | `Coding - WebAPI Simple Authorization.md` | Simple API-key-based tiered authorization for WebAPI controllers (deny-by-default, `key` request header, `.conf` assets, `SyncDirectories.ps1` alignment). |
 | `Coding - Deployed WebAPI.md` | Verifying a change against the live API at `api.digiproject.uk` (read-only GET; never in `DiGi.Test`). |
+| `Coding - Browser Testing.md` | Verifying interactive front-end behaviour in a real browser (Playwright driving an installed Chromium-based browser) — panel toggles, drag-resize with clamps, keyboard operability, `localStorage` persistence, responsive stacking, shared header/footer collapse; confirm the toolchain on THIS machine first. |
 | `Coding - GIS Administrative Data.md` | Touching `administrative_areal_2d`, `building_2d`, or anything keyed by a county code or id. |
 | `Coding - PostgreSQL.md` | Designing schemas, composite unique constraints, batching, timeouts, or converters in PostgreSQL/Npgsql. |
 | `Coding - PostgreSQL Distributed Queue Processing.md` | Distributed bulk update queues — table schema (`claimed_at`, `created_at`, natural uniqueness), atomic lease claims (`FOR UPDATE SKIP LOCKED`), native interval arithmetic, explicit batch acknowledgment, and non-destructive observation. |
