@@ -137,6 +137,16 @@ wrong about the fix.
   most quietly — in `DiGi.Core#5` the implementation summary and the review draft each corrected the issue's
   premise wrongly before a probe showed the issue had been right.
 
+- **Does one rule fit every consumer the issue names?** Before adopting the fix an issue proposes for
+  "the three places that do X", open each consumer and look at the **shape of what it writes**. A
+  report that counts can take "count it for every container"; a table with **one row per building**
+  cannot — processing a building under three containers is last-writer-wins, i.e. the arbitrary
+  assignment the issue set out to remove. `DiGi.GIS.PostgreSQL#77` named three consumers of a nested
+  subdivision layer and one rule; the coverage report took it, the occupancy and building-data tables
+  needed the opposite (exactly one subdivision per building, decided on the write side), and the
+  municipality aggregation of the report needed a third answer (its own polygon, not a sum). One rule
+  applied to all three would have fixed the report and re-broken the tables.
+
 When a claim turns out to be wrong, **correct the record in a comment with the evidence**. The issue text
 is what the next reader trusts, and a closed issue keeps teaching whatever it last said.
 
@@ -200,5 +210,5 @@ PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.
 
 ### Key Advantages for AI Agents:
 - **Token Efficiency:** Formats issue summaries into 1–2 lines per issue, saving >90% of tokens compared to raw GitHub CLI JSON.
-- **Label Shorthands:** Automatically normalizes common terms (`high` $\rightarrow$ `priority: high`, `standard` $\rightarrow$ `ai: standard`, `bug` $\rightarrow$ `type: bug`, `in-progress` $\rightarrow$ `status: in-progress`).
+- **Label Shorthands:** Automatically normalizes common terms (`high` $\rightarrow$ `priority: high`, `standard` $\rightarrow$ `ai: standard`, `bug` $\rightarrow$ `type: bug`, `in-progress` $\rightarrow$ `status: in-progress`, `parked` $\rightarrow$ `status: parked`).
 - **Flexible Scope:** Omit `-Repo` to search across all DiGi repositories under the owner in one command.

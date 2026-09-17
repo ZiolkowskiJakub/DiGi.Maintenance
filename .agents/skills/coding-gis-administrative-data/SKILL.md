@@ -1,6 +1,6 @@
 ---
 name: coding-gis-administrative-data
-description: Use when touching administrative_areal_2d, building_2d, or anything keyed by a county code or id - why a county code is not a key (BDOT10k stores one row per polygon part, so 406 county rows cover 380 codes), why those rows must never be deduplicated, the key-resolution matrix and the mandatory ORDER BY on any LIMIT/FirstOrDefault, plus the AdministrativeArealType wire gotchas.
+description: Use when touching administrative_areal_2d, building_2d, or anything keyed by a county code or id - why a county code is not a key (BDOT10k stores one row per polygon part, so 406 county rows cover 380 codes), why those rows must never be deduplicated, the key-resolution matrix and the mandatory ORDER BY on any LIMIT/FirstOrDefault, plus the AdministrativeArealType wire gotchas. Also the nested Subdivision layer (404 of 406 county parts): subdivision_id is the smallest containing subdivision and a per-building key, the buildings of a subdivision are read by its polygon, a municipality is never a sum over nested subdivisions, and a building occupancy share comes from the smallest figured container.
 ---
 
 # AI Guidelines: GIS Administrative Data (`administrative_areal_2d` & county keying)
@@ -270,6 +270,64 @@ never extract them to disk.
   the fix, in [Coding - WebAPI Contracts.md](Coding%20-%20WebAPI%20Contracts.md) §2.
 - `AdministrativeAreal2DReference.CountyId` is the **parent** county, so it is `null` on a county row.
   A county row's own identity is `Id`. `GetIds()` returns the chain plus `Id`.
-- `GetBuilding2DReferencesByAdministrativeAreal2DIdsAsync` resolves through **Subdivision children**,
-  not geometry. It returns an empty list for a county row that has no subdivisions — which is not the
-  same thing as "no buildings there".
+- `GetBuilding2DReferencesByAdministrativeAreal2DIdsAsync` resolves an area **above** the subdivision
+  level through its Subdivision children (`subdivision_id` membership), and a **Subdivision** through
+  its **polygon** — the buildings whose bounding-box centre it contains (`DiGi.GIS.PostgreSQL#75`). It
+  returns an empty list for a county row that has no subdivisions — which is not the same thing as
+  "no buildings there". §7 says why the two paths differ.
+
+---
+
+## 7. The Subdivision layer nests — one building, one `subdivision_id`, never a sum
+
+**Nesting is the norm, not a Warsaw peculiarity.** A village and its named parts (`part_of_village`),
+a town and its same-named unit, a city and its districts and their neighbourhoods are all type-4 rows
+of one municipality: `GetCountyIdsWithNestedSubdivisionsAsync` names **404 of the 406 county parts**.
+Warsaw's layer is 217 rows deep to five levels (Marcelin ⊂ Sielce ⊂ Dolny Mokotów ⊂ Mokotów ⊂
+Warszawa). `Query.ContainerIds` gives the nesting of a polygon layer, containers smallest first;
+`GetInternalPoint` + `IsInside` decides a pair in O(1), never an intersection — 199² of those on a
+city outline is a minute.
+
+**Districts arrive as type 4 too.** `district_or_delegation` and `town_in_urban_rural_municipality`
+are `AdministrativeDivision` objects stored under `AdministrativeArealType.Subdivision`
+(`Query.AdministrativeArealType`). Warsaw has 18, coincident with its 18 `part_of_city` district
+polygons, carrying no figure. They are never picked for a building (divisions are the pick's last
+resort, used only when no subdivision candidate exists), they are not part of the occupancy layer,
+and they nest under the city so no top-level sum counts them. A "subdivisions of the county" read
+returns them; do not dedupe them away and do not sum them.
+
+**The column is a per-building attribution key.** `building_2d.subdivision_id` is the **smallest
+subdivision containing the building** — the most specific unit — decided in `GetSubdivisionIdAsync`
+and, for a refresh, in memory by `SubdivisionIdSolver` (`DiGi.GIS.PostgreSQL#77`, `#79`). Before that
+the tie between nested containers went to the lowest identifier, which filed all 155 307 Warsaw
+buildings under the 49 lowest ids and 57 551 under the city row. A fresh `building_2d` row carries
+**NULL**; nothing on the load path derives the column and *Refresh Building2Ds* is its only writer —
+the order of a rebuild is on the `DiGi.GIS.PostgreSQL.UI` wiki page *Loading from scratch*.
+
+**Two questions, two paths — never cross them:**
+
+| Question | Answer through |
+|---|---|
+| "which subdivision is building *b* filed under" (occupancy row, `building_data` columns) | the column — exactly one, the smallest container |
+| "the buildings of subdivision *X*" (a district's coverage, its building list, a count) | *X*'s **polygon** — the column names a district only for the buildings none of its neighbourhoods hold (Bemowo: 2 466 of 6 435 by column) |
+| "the buildings of a municipality / county" | its **own polygon**, or the county partition — **never Σ over its subdivisions**, which counts a nested city once per level |
+
+**Figures under a nested layer.** The administrative roll-up sums **top-level** subdivisions only
+(`ContainerIds` empty); summing every row wrote Warsaw's municipality as 4 605 603 against a city of
+1 622 594. A missing `liczbaMieszkancow` is stored as `null`, never `0` — the building side has to
+tell the two apart. A building's share comes from the **smallest figured subdivision containing it**
+(`Query.OccupancySubdivisionId`), with that subdivision's figure spread over *every* building inside
+it (`DiGi.GIS.PostgreSQL#80`): distributing a district's own figure over the few buildings filed
+directly under it put Białołęka's 123 668 on 76 buildings, and a naive "borrow the ancestor's
+figure" double-counts. Figures do not reconcile across levels (Mokotów 194 777, its neighbourhoods
+355 214), so no residual scheme survives contact with the data; per-building density does.
+
+**Code traps met on the way.** `GetAdministrativeAreal2DsByAdministrativeArealType(Subdivision,
+countyId)` already widens a county part to every sibling part sharing its code — no sibling loop
+around it. `BoundingBox2D.Inside(box)` is strict, so a district sharing the city's outer edge fails
+it; test box containment on coordinates with the tolerance outside the container. Testing many
+points against one polygon goes through `PolygonalFace2DPointRelationSolver`, built once per polygon
+(`DiGi.Geometry#5`): `PolygonalFace2D.Inside` walks every vertex per point, and a city outline
+against a county's centroids took 52 s on the host that way, 0.4 s the other. `orto_datas.subdivision_id`
+is a copy of the building's column taken at download or *Refresh OrtoDatas* time and is NULL for
+everything downloaded before the refresh; nothing measures through it.
