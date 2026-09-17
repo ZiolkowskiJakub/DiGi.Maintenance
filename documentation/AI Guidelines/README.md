@@ -46,6 +46,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 | [GitHub - Branch Synchronization.md](GitHub%20-%20Branch%20Synchronization.md) | Version branch sync with `main`, patch version bump workflow. |
 | [GitHub - Issues.md](GitHub%20-%20Issues.md) | Managing, commenting on, and closing GitHub issues/PRs — verifying an issue's premises before implementing it, mandatory Type, Priority and AI Complexity labels plus default assignee (`ZiolkowskiJakub`) on new issues, and `--body-file` usage to avoid PowerShell escape mangling. |
 | [GitHub - Labels.md](GitHub%20-%20Labels.md) | Standardized GitHub label taxonomy (type, priority, status, ai), color standard, mandatory Type + Priority + AI Complexity on new issues, and multi-repo sync. |
+| [GitHub - Sub-Issues.md](GitHub%20-%20Sub-Issues.md) | Creating sub-issues / sub-tasks for a feature — the tracking-issue pattern: a parent tracking issue with a mandatory Sub-issues table, one self-contained sub-issue per repository (own Context/Scope/Tests/Acceptance), cross-referencing, creation workflow, lifecycle, anti-patterns (canonical example: DiGi.GIS.PostgreSQL #83). |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing GitHub wiki pages — repo structure, local clones, CI sync. |
 | [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Structuring/updating wiki `Home.md` landing page. |
 | [GitHub Wiki - Benchmark.md](GitHub%20Wiki%20-%20Benchmark.md) | Authoring/updating wiki `Benchmark.md` performance pages. |

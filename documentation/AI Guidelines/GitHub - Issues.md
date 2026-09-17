@@ -22,6 +22,8 @@ Always write the formatted markdown body to a temporary/scratch `.md` file encod
    If an issue is ever created without `--assignee` (e.g. via `gh api` or an existing script that doesn't pass it), assign it immediately after with `gh issue edit <number> --repo <owner>/<repo> --add-assignee ZiolkowskiJakub`.
    *(Note: During label synchronization or audits, update labels **ONLY on open issues** by default. Modify closed issues **ONLY if explicitly instructed by the user**).*
 
+   **Sub-issues / sub-tasks:** when asked to create *sub-issues or sub-tasks* for a feature, do not create a flat pile of independent issues — use the tracking-issue pattern (parent tracking issue + one sub-issue per repository) described in `GitHub - Sub-Issues.md`.
+
 2. **Adding a Comment:**
    ```bash
    gh issue comment <issue_number> --repo <owner>/<repo> --body-file <path_to_markdown_file>
