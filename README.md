@@ -611,6 +611,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `XML Documentation - Create.md` / `- Audit.md` | Adding missing `<summary>` docs, or auditing docs against current signatures. |
 | `GitHub Wiki - General.md` / `- Home.md` / `- Benchmark.md` | Editing a wiki page, a `Home` landing page, or a `Benchmark` performance page. |
 | `GitHub - Branch Pull.md` / `- Branch Synchronization.md` | Pulling repos to their highest SemVer branch, or running the release/patch-bump workflow. |
+| `GitHub - Sub-Issues.md` | Creating sub-issues / sub-tasks for a feature — the tracking-issue pattern: a parent tracking issue with a Sub-issues table + one self-contained sub-issue per repository, each referencing the parent. |
 
 > **One data rule worth knowing before it bites you:** a GIS county `code` does **not** identify one row.
 > BDOT10k stores one `administrative_areal_2d` feature per polygon part, so 406 county rows cover 380
