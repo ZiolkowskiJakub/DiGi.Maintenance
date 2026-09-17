@@ -166,7 +166,7 @@ PowerShell -ExecutionPolicy Bypass -File ".\FilterIssues.ps1" -Labels "critical"
 ```
 
 ### Sync GitHub Labels Across All Repositories
-Synchronizes the standardized 20-label taxonomy across all DiGi repositories on GitHub.
+Synchronizes the standardized 21-label taxonomy across all DiGi repositories on GitHub.
 ```powershell
 # Preview label sync changes across all repositories
 PowerShell -ExecutionPolicy Bypass -File ".\SyncLabelsAllRepos.ps1" -DryRun

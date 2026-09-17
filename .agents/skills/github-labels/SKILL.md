@@ -43,6 +43,7 @@ Every DiGi repository adheres to a uniform label taxonomy categorized into **Typ
 | `status: in-progress` | `#0e8a16` | Active work is underway |
 | `status: blocked` | `#b60205` | Blocked by upstream dependency or external issue |
 | `status: needs-review` | `#fb8c00` | Implementation ready for verification or code review |
+| `status: parked` | `#cfd3d7` | Intentionally deferred or shelved; not actively worked on and not blocked |
 
 ### D. AI Complexity Labels (`ai: *`) — *How much AI capability does it need?*
 
@@ -61,8 +62,8 @@ The tier criteria and the decision procedure live in `GitHub - AI Issue Classifi
 
 1. **Mandatory Type, Priority & AI Complexity on Creation:** Every new issue created in any repository **must** have at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` label assigned at creation time (e.g. `type: bug`, `priority: high`, `ai: standard`). See `GitHub - AI Issue Classification.md` for the tier criteria.
 2. **Pull Requests:** Every pull request must have at least one `type: *` label matching the nature of the change.
-3. **Workflow State:** Use `status: *` labels when an issue is blocked by an external component or actively pending code review. Remove status labels once resolved.
-4. **No Legacy or Ad-hoc Labels:** Avoid creating custom un-prefixed labels (e.g. bare `bug`, `enhancement`, `help wanted`, `wontfix`). All repositories maintain this exact 20-label standard.
+3. **Workflow State:** Use `status: *` labels when an issue is blocked by an external component (`status: blocked`), actively pending code review (`status: needs-review`), actively being worked on (`status: in-progress`), or intentionally set aside without an external blocker (`status: parked`). Remove status labels once resolved.
+4. **No Legacy or Ad-hoc Labels:** Avoid creating custom un-prefixed labels (e.g. bare `bug`, `enhancement`, `help wanted`, `wontfix`). All repositories maintain this exact 21-label standard.
 5. **GitHub Label Synchronization Scope:**
    - **Default Behavior:** Update labels **ONLY on open issues**.
    - **Exception:** Modify labels on closed issues **ONLY if explicitly instructed by the user**.

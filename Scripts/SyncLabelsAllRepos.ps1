@@ -3,7 +3,7 @@
     Synchronizes the standardized label taxonomy across all DiGi repositories on GitHub.
 
 .DESCRIPTION
-    Ensures every DiGi repository has the standard 20 labels across Type, Priority, Status, and AI Complexity.
+    Ensures every DiGi repository has the standard 21 labels across Type, Priority, Status, and AI Complexity.
     Renames legacy labels ('bug', 'enhancement', 'documentation') to preserve issue history,
     creates missing standard labels, updates colors/descriptions, and removes obsolete default labels.
 
@@ -34,7 +34,7 @@ if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
     $owner = $Matches[1]
 }
 
-# Standard 20 labels definition
+# Standard 21 labels definition
 $standardLabels = @(
     @{ Name = "type: bug";             Color = "d73a4a"; Description = "Confirmed defect or regression in logic, data handling, or output" },
     @{ Name = "type: feature";         Color = "0e8a16"; Description = "Substantial new functionality or public API capability" },
@@ -52,6 +52,7 @@ $standardLabels = @(
     @{ Name = "status: in-progress";   Color = "0e8a16"; Description = "Active work is underway" },
     @{ Name = "status: blocked";       Color = "b60205"; Description = "Blocked by upstream dependency or external issue" },
     @{ Name = "status: needs-review";  Color = "fb8c00"; Description = "Implementation ready for verification or code review" },
+    @{ Name = "status: parked";        Color = "cfd3d7"; Description = "Intentionally deferred or shelved; not actively worked on and not blocked" },
     @{ Name = "ai: light";             Color = "ffd3eb"; Description = "Trivial task: typos, docs, comments, boilerplate, or an obvious localized fix" },
     @{ Name = "ai: standard";          Color = "f692ce"; Description = "Narrow-scope task: a single method or feature in 1-2 files, unit tests, contained refactoring" },
     @{ Name = "ai: heavy";             Color = "d03592"; Description = "Complex task: multi-file refactoring, concurrency debugging, or cross-cutting concerns" },

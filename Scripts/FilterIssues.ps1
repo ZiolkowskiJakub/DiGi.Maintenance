@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Provides a token-optimized interface to query GitHub issues across a single repository or the entire DiGi
-    ecosystem. Automatically normalizes shorthand label names to the standard 20-label taxonomy, formats results
+    ecosystem. Automatically normalizes shorthand label names to the standard 21-label taxonomy, formats results
     compactly to save tokens, and supports JSON output and detailed inspection when needed.
 
 .PARAMETER Repo
@@ -103,7 +103,7 @@ if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
     $owner = $Matches[1]
 }
 
-# Standard DiGi 20-label taxonomy mapping for shorthands
+# Standard DiGi 21-label taxonomy mapping for shorthands
 $taxonomyMap = @{
     # AI Complexity
     "light"           = "ai: light"
@@ -136,6 +136,7 @@ $taxonomyMap = @{
     "in-progress"     = "status: in-progress"
     "blocked"         = "status: blocked"
     "needs-review"    = "status: needs-review"
+    "parked"          = "status: parked"
 }
 
 # Collect all label inputs from $Labels and $ExtraArgs
