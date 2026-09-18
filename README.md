@@ -569,7 +569,8 @@ Verify *interactive* front-end behaviour (panel toggles, drag-resize with clamps
 2. **Run with the host shell, not the isolated sandbox** — the sandbox has no host filesystem, no network, and cannot reach `localhost`. Keep test scripts and screenshots in the scratchpad so the repo stays clean.
 3. **Recipe:** start the app from the build output with a fixed `ASPNETCORE_URLS`, poll a cheap endpoint until it returns 200, then drive it with `page.click` / `keyboard.press` / a `page.mouse` step-drag; assert computed styles, `aria-expanded`, `localStorage`, and no horizontal overflow; `set_viewport_size` for responsive breakpoints; **terminate the server in a `finally`**.
 4. **Gotchas:** a collapsed panel measures 0 — open it before measuring (the `localStorage` value is the source of truth); drag with `page.mouse` steps, not a one-shot `.drag_to()`; settle before asserting; **rebuild before re-verifying a `.cshtml` change** (Razor views compile at build time, while CSS/JS serve live from source).
-5. **Not for:** pure server-side/C# logic (use xUnit, see §7) or a one-off "does it render" check (a `curl` of the endpoint is enough).
+5. **Verify rendered output, not state:** a toggle whose flags flip is not a toggle whose effect is visible — assert a screenshot-region luminance that moves with the toggle and restores after toggling back; a pixel-minimum across several parameter values isolates parameter-independent artefacts; GPU cost comes from `EXT_disjoint_timer_query_webgl2` in a headed browser with vsync off (rAF cadence is CPU submit time; headless SwiftShader numbers are unusable).
+6. **Not for:** pure server-side/C# logic (use xUnit, see §7) or a one-off "does it render" check (a `curl` of the endpoint is enough).
 
 ---
 
