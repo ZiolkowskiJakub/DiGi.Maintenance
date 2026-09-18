@@ -44,12 +44,36 @@ If that launch fails, fall back to the next channel in turn; if none exist, inst
 - **Static assets vs compiled views.** CSS/JS are served from the source `wwwroot` (always current), but Razor views are compiled at build time — **rebuild before re-verifying a `.cshtml` change**, or you will test a stale view.
 - **Version string gotcha.** `import playwright; playwright.__version__` raises `AttributeError`; use `pip show playwright` for the version.
 
-## 5. When NOT to use it
+## 5. Verifying rendered output, not state
+
+A toggle whose flags flip is not a toggle whose effect is visible. On DiGi.GIS.WebAPI.UI#43 every state
+assertion (`renderer.shadowMap.enabled`, `light.castShadow`, `getEnvironmentState()`) passed while no shade
+had ever reached the screen; the screenshot statistic was the only check that could have failed.
+
+- **Assert a pixel statistic.** Crop a region of `page.screenshot()` (PIL + numpy), compare the mean
+  luminance across the toggle: off must differ from on by more than the noise floor, and on → off → on must
+  restore the original within ~1 unit. A WebGL canvas cannot be read back through `toDataURL` unless
+  `preserveDrawingBuffer` is set, but the compositor screenshot always works.
+- **Pixel-minimum across parameter values isolates parameter-independent artefacts.** To find shading that
+  ignores the sun, take the same pose under three sun positions and the effect-off frame, then
+  `min(off - shot_i)` per pixel: anything left is darkening present under *every* parameter value. One
+  image showed the winding bug that a dozen single screenshots had not.
+- **GPU cost is not rAF cadence.** The interval between `requestAnimationFrame` callbacks is CPU submit
+  time; wrap `renderer.render` in `EXT_disjoint_timer_query_webgl2` (`beginQuery`/`endQuery`, drain when
+  `QUERY_RESULT_AVAILABLE`, discard on `GPU_DISJOINT_EXT`) for the GPU time. Launch **headed** so the real
+  GPU is used, with `--disable-frame-rate-limit --disable-gpu-vsync` so nothing is vsync-capped. Headless
+  `--use-angle=swiftshader` does not keep a rAF cadence and produced unusable numbers — do not report it.
+  On a fast GPU everything is sub-millisecond: report the *ranking* between variants, not the absolutes.
+- **Folded cards measure nothing and cannot be clicked.** Side-panel cards start collapsed
+  (`.gltf-card-collapsed`); `Locator.click` on a checkbox inside one times out and looks like a missing
+  control. Click the card's `.gltf-card-title` first (same rule as the collapsed panel in §4).
+
+## 6. When NOT to use it
 
 - Pure server-side / C# logic — use xUnit (see [Coding - Automatic Tests](Coding%20-%20Automatic%20Tests.md)).
 - A one-off "does it render" check — a `curl` of the endpoint is enough. Spin up the browser for *interactive* DoD items (toggle / drag / keyboard / persistence / responsive).
 
-## 6. DoD → Playwright assertion map
+## 7. DoD → Playwright assertion map
 
 | Interactive DoD item | Playwright assertion |
 |---|---|
@@ -60,3 +84,4 @@ If that launch fails, fall back to the next channel in turn; if none exist, inst
 | Keyboard operable | `focus()` + `keyboard.press("Enter")` / `("Space")` → state toggles |
 | Responsive stacking | `set_viewport_size(<1100px)` → `flex-direction: column`, resizers `display:none`, no horizontal overflow |
 | Shared header/footer collapse | click the layout toggle → `body` class toggles, viewport height grows |
+| Visual effect on/off (shade, fog, highlight) | screenshot region mean luminance differs across the toggle and restores after toggling back (§5) |

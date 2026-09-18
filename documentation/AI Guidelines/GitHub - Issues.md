@@ -125,6 +125,11 @@ against the code before building to it, because an issue that is wrong about the
 wrong about the fix.
 
 - **Does the optimization it says is missing already exist?** Open the file it names.
+- **Does the feature it says "already works" actually produce output?** Wired-up flags are not a rendered
+  result. DiGi.GIS.WebAPI.UI#43 stated "shade is already emitted and received" — every flag was set, and no
+  shadow had ever reached the screen in any scene (a NaN in the receiver shader). Verify the observable
+  effect (screenshot statistic, buffer readback, response body) before building on the premise
+  (`Coding - Browser Testing.md` §5).
 - **Is the quoted latency reproducible?** Run the repository's own benchmark `[Fact]` (isolated — see
   `Coding - Automatic Tests.md` §4) rather than trusting a figure in the description.
 - **Does the described failure reproduce at all?** Write the reproducing `[Fact]` first.
