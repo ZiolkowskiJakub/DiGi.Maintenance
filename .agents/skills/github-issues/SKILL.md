@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, avoiding PowerShell pipeline decoding mangling on existing issue bodies via dedicated Python scripts, verifying an issue's stated premises against the code before implementing it, mandatory Type, Priority and AI Complexity labels plus default assignee (ZiolkowskiJakub) on all new issues, mandatory --body-file usage, and GraphQL revision recovery.
+description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, avoiding PowerShell pipeline decoding mangling on existing issue bodies via dedicated Python scripts, verifying an issue's stated premises against the code before implementing it (including that a feature said to 'already work' produces observable output), mandatory Type, Priority and AI Complexity labels plus default assignee (ZiolkowskiJakub) on all new issues, mandatory --body-file usage, and GraphQL revision recovery.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -130,6 +130,11 @@ against the code before building to it, because an issue that is wrong about the
 wrong about the fix.
 
 - **Does the optimization it says is missing already exist?** Open the file it names.
+- **Does the feature it says "already works" actually produce output?** Wired-up flags are not a rendered
+  result. DiGi.GIS.WebAPI.UI#43 stated "shade is already emitted and received" — every flag was set, and no
+  shadow had ever reached the screen in any scene (a NaN in the receiver shader). Verify the observable
+  effect (screenshot statistic, buffer readback, response body) before building on the premise
+  (`Coding - Browser Testing.md` §5).
 - **Is the quoted latency reproducible?** Run the repository's own benchmark `[Fact]` (isolated — see
   `Coding - Automatic Tests.md` §4) rather than trusting a figure in the description.
 - **Does the described failure reproduce at all?** Write the reproducing `[Fact]` first.
