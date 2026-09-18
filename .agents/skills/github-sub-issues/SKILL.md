@@ -1,6 +1,6 @@
 ---
 name: github-sub-issues
-description: Use when creating sub-issues or sub-tasks, or breaking a feature into per-repository work items - the tracking-issue pattern (a parent tracking issue with a Sub-issues table plus one self-contained sub-issue per repository, each referencing the parent; canonical example DiGi.GIS.PostgreSQL #83).
+description: Use when creating sub-issues or sub-tasks, or breaking a feature into per-repository work items - the tracking-issue pattern (a parent tracking issue with a Sub-issues table plus one self-contained sub-issue per repository, each referencing the parent, sibling ordering recorded as GitHub issue dependencies; canonical example DiGi.GIS.PostgreSQL #83).
 ---
 
 # AI Guidelines: GitHub Sub-Issues (Tracking-Issues Pattern)
@@ -77,8 +77,11 @@ Sections, in this order (as in #11 / #82 / #12):
 | Parent → every child | The `## Sub-issues` table lists all of them with real issue numbers |
 | Child → parent | The `## Context` first sentence names the *feature* + parent repository |
 | Child → siblings | `## Context` states which sibling repository owns which part |
+| Child → sibling it waits on | A GitHub **issue dependency** (`blocked_by`, `GitHub - Issues.md` §5) — the dependency order of the table is made machine-readable |
+| Any issue → an external blocker | The same dependency, cross-repository (a shared capability filed in the lowest repository) |
 
-No issue comments are needed for the wiring — the structure lives in the bodies.
+No issue comments are needed for the parent/child wiring — the structure lives in the bodies; only the
+sibling/external dependencies are set through the API.
 
 ## 6. Creation workflow
 
@@ -87,6 +90,7 @@ No issue comments are needed for the wiring — the structure lives in the bodie
 3. **Create the parent** in the owning repository with the mandatory `type:` / `priority:` / `ai:` labels and default assignee `ZiolkowskiJakub` (`GitHub - Issues.md` §1), leaving the Sub-issues table with placeholder rows.
 4. **Create each sub-issue** in its own repository — each with its **own** mandatory labels and assignee. Re-tier the `ai:` complexity per sub-issue from its own scope (`GitHub - AI Issue Classification.md` §3); do not copy the parent's tier.
 5. **Fill in the parent's table** with the real issue numbers and one-line scopes (`gh issue edit … --body-file …`).
+   Then set a `blocked_by` dependency for every sub-issue that must wait for a sibling (`GitHub - Issues.md` §5) and verify with the `blocking` GET.
 6. **Verification pass** before reporting done:
    - every sub-issue's `## Context` first sentence names the feature + parent repository;
    - the parent's table has exactly one row per sub-issue, in dependency order;

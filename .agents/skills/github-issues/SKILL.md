@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, avoiding PowerShell pipeline decoding mangling on existing issue bodies via dedicated Python scripts, verifying an issue's stated premises against the code before implementing it (including that a feature said to 'already work' produces observable output), mandatory Type, Priority and AI Complexity labels plus default assignee (ZiolkowskiJakub) on all new issues, mandatory --body-file usage, and GraphQL revision recovery.
+description: Use when querying, filtering, creating, managing, commenting on, or closing GitHub issues/PRs - filtering issues by labels via FilterIssues.ps1 to reduce token usage, avoiding PowerShell pipeline decoding mangling on existing issue bodies via dedicated Python scripts, verifying an issue's stated premises against the code before implementing it (including that a feature said to 'already work' produces observable output), mandatory Type, Priority and AI Complexity labels plus default assignee (ZiolkowskiJakub) on all new issues, mandatory --body-file usage, blocking relationships as GitHub issue dependencies (gh api .../dependencies/blocked_by, cross-repository, set when the blocker is filed and verified with the blocking GET), and GraphQL revision recovery.
 ---
 
 # AI Guidelines: GitHub Issues & Comments
@@ -219,3 +219,66 @@ PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/FilterIssues.
 - **Token Efficiency:** Formats issue summaries into 1–2 lines per issue, saving >90% of tokens compared to raw GitHub CLI JSON.
 - **Label Shorthands:** Automatically normalizes common terms (`high` $\rightarrow$ `priority: high`, `standard` $\rightarrow$ `ai: standard`, `bug` $\rightarrow$ `type: bug`, `in-progress` $\rightarrow$ `status: in-progress`, `parked` $\rightarrow$ `status: parked`).
 - **Flexible Scope:** Omit `-Repo` to search across all DiGi repositories under the owner in one command.
+
+---
+
+## 5. Blocking Relationships — GitHub Issue Dependencies (Mandatory)
+
+When one issue cannot be completed until another lands, record it as a **GitHub issue dependency**
+("blocked by" / "blocking"), not only as prose. The dependency is structured metadata: GitHub renders it on
+both issues, projects and the issue list can filter on it, and it survives body edits. It works **across
+repositories** — the normal case in DiGi, where a `DiGi.Analytical` method blocks a `DiGi.GLTF` and a
+`DiGi.GIS.PostgreSQL` issue at once. Prose cross-references (`owner/repo#N` in the body, §5 of
+`GitHub - Sub-Issues.md`) stay for the *why*; the dependency carries the *what*.
+
+### When to set it
+
+- A **blocker** issue is created because two or more issues turned out to share one root cause or one
+  missing capability — file the blocker where the capability belongs (the lowest repository in the
+  dependency chain), then mark every dependent issue as blocked by it. Canonical example:
+  `DiGi.Analytical#3` (shared outward-envelope-faces `Query`) blocks `DiGi.GLTF#1` and
+  `DiGi.GIS.PostgreSQL#84`.
+- A sub-issue of a tracking issue depends on a sibling landing first (`GitHub - Sub-Issues.md` §6 orders
+  them "in dependency order" — make that order explicit with dependencies between the siblings).
+- A code issue is followed by a production-run issue (`#77` → `#78` pattern): the run is blocked by the code.
+- An issue waits on an upstream fix in another DiGi repository (the `TODO [Marker]` removal condition names
+  an issue — set the dependency on it too).
+
+### Commands (REST, via `gh api`; `issue_id` is the target's **node id**, not its number)
+
+```bash
+# the blocker's id (once)
+gh api repos/<owner>/<repo>/issues/<blocker_number> --jq .id
+
+# mark <dependent> as blocked by the blocker (works cross-repository); 201 on success
+gh api -X POST repos/<owner>/<dependent_repo>/issues/<dependent_number>/dependencies/blocked_by -F issue_id=<blocker_id>
+
+# read both directions
+gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by --jq '.[] | "\(.repository.full_name)#\(.number) \(.state)"'
+gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocking  --jq '.[] | "\(.repository.full_name)#\(.number) \(.state)"'
+
+# remove a dependency that no longer holds
+gh api -X DELETE repos/<owner>/<dependent_repo>/issues/<dependent_number>/dependencies/blocked_by/<blocker_id>
+```
+
+`-F issue_id=…` sends the id as a number; `-f` would send a string and the API rejects it. The endpoints
+are GET-safe: an empty `[]` from `blocked_by` proves the API is available before the first POST.
+
+### Rules
+
+1. **Set the dependency at creation time** of the blocker — in the same `gh` session that files it, right
+   after `gh issue create` returns the number — and **post one linking comment on each dependent issue**
+   saying what the shared root is and how the dependent issue's own scope narrows (what it keeps, what
+   moves to the blocker). Do not edit the dependent bodies; the comment keeps the original reasoning
+   readable beneath the change (same rule as §2's premise corrections).
+2. **Verify with the GET** after setting: read `blocking` on the blocker and confirm every dependent is
+   listed. Do not report the link as done from the POST alone.
+3. **A blocked issue is not started** until its blockers are closed — when picking up an issue, read
+   `dependencies/blocked_by` first (`FilterIssues.ps1` does not show dependencies yet). If work must
+   proceed anyway (a workaround shipped in the consumer, as `gltf-viewer-core.js` did for `DiGi.GLTF#1`),
+   the workaround is `TODO [Marker]` temporary code whose removal condition is the blocker's closure.
+4. **Closing a blocker** does not close the dependents — go through each `blocking` entry and either
+   resume it or comment what it now needs. Closing a dependent while a blocker is open needs a comment
+   explaining why the dependency no longer applies, and the dependency removed (`DELETE`).
+5. Dependencies complement, never replace, the tracking-issue pattern: parent ↔ child is the Sub-issues
+   table (`GitHub - Sub-Issues.md`), blocked-by is for ordering between issues that are not parent and child.
