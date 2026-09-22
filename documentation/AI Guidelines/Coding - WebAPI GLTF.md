@@ -170,18 +170,23 @@ every flag said it did.
   gets the all-zero default attribute: three.js's shadow receiver normalises it for the `normalBias`
   offset, `normalize(vec3(0))` is NaN, and every fragment fails the shadow-frustum test — lit
   everywhere, whatever the bias. A populated depth map proves nothing about the receivers.
-- **Inconsistent triangle winding.** Measured on the reference scene: terrain 630 triangles wound up /
-  1 772 down, buildings ~53 % outward / 47 % inward by the centroid test. Both faces render only
-  because the material is `DoubleSide`. Never derive anything from the winding — `computeVertexNormals`
-  pushed the shadow lookup *under* half of the terrain and shaded it in sun-independent patches;
-  `FrontSide`, back-face culling and `shadowSide = BackSide` are equally unsafe until DiGi.GLTF#1
-  (winding normalisation) ships.
+- **Consistent triangle winding** (since DiGi.GLTF#1). Terrain is up-facing (+Z): `Mesh3D.Difference`
+  normalises the cut remainder, and the height field was already up-facing. Building envelopes come
+  from `BuildingModel.GetExternalShell(Side.External, ...)` and are outward-consistent: on the
+  reference scene 18 077 shared edges are traversed in opposite directions by their two faces and 6
+  in the same direction, all 6 on the two open envelopes (storey-split T-junctions, see
+  DiGi.Analytical#3). The winding is safe to use: `FrontSide` and `DoubleSide` render the reference
+  scene identically (79 of 469 260 pixels differ, antialiasing on the open-envelope silhouettes) and
+  winding-derived normals are correctly oriented. Mind that three.js renders the depth map from the
+  *opposite* side when `material.shadowSide` is null, so switching `side` also moves every shade
+  edge by the bias unless `shadowSide` is pinned. Slivers survive: a few dozen terrain triangles of
+  area below 0.001 m² carry a numerically random sign — filter by area before counting.
 - **Engine shade contract** (`gltf-viewer-core.js`): `renderer.shadowMap.autoUpdate = false`; the
-  shadow camera is anchored to the scene centre and does not follow the view camera, so the depth map
-  is rendered on change only. Any new mutation that changes what casts shade (a new caster type,
-  a visibility filter, a clipping change) must call `requestShadowUpdate()`. The shadow-bias normals
-  are rebuilt per sun change (`updateShadowNormals`: unsigned face normals flipped towards the sun,
-  averaged per vertex) — do not replace them with winding-derived normals.
+  shadow camera is anchored to the scene centre and does not follow the view camera, so the depth
+  map is rendered on change only. Any new mutation that changes what casts shade (a new caster
+  type, a visibility filter, a clipping change) must call `requestShadowUpdate()`. The shadow-bias
+  normals are computed once from the winding and averaged per vertex (`prepareShadowNormals`) — no
+  per-sun re-orientation is needed.
 
 ---
 
@@ -195,5 +200,5 @@ every flag said it did.
 - [ ] Endpoint calls `ToSystem_Bytes(scene, batched: true)`.
 - [ ] Response compression enabled for `model/gltf-binary`.
 - [ ] `gltf-viewer-core.js` synced to `wwwroot/js/` — and committed in both repositories when changed.
-- [ ] Nothing in the consumer reads the payload's vertex normals or relies on its winding (§5).
+- [ ] Nothing in the consumer reads the payload's vertex normals; the winding may be relied on, `shadowSide` pinned when `side` changes (§5).
 - [ ] Explicit typing declared; no `var`; English only.
