@@ -199,7 +199,14 @@ foreach ($dir in $targetDirectories) {
         $skillFolder = Join-Path $skillsDir $skillName
         New-Item -ItemType Directory -Path $skillFolder -Force | Out-Null
 
-        $skillText = "---`nname: $skillName`ndescription: $description`n---`n`n" + [System.IO.File]::ReadAllText($guidelineFile.FullName)
+        # YAML frontmatter: emit the description as a double-quoted scalar with proper escaping,
+        # because the plain-scalar form is invalid when the text contains ': ' (e.g. "'ai: *'")
+        # or lossy when it contains ' #' (parsed as a comment) or starts with a special character.
+        $yamlBackslash = [string][char]92
+        $yamlQuote = [string][char]34
+        # Escape for a double-quoted YAML scalar: double every backslash, then prefix every quote with one backslash.
+        $yamlDescription = $description.Replace($yamlBackslash, $yamlBackslash + $yamlBackslash).Replace($yamlQuote, $yamlBackslash + $yamlQuote)
+        $skillText = "---`nname: $skillName`ndescription: `"$yamlDescription`"`n---`n`n" + [System.IO.File]::ReadAllText($guidelineFile.FullName)
         Write-TextFile -Path (Join-Path $skillFolder "SKILL.md") -Text $skillText
     }
 
