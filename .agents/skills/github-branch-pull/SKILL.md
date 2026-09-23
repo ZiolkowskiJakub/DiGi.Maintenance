@@ -1,6 +1,6 @@
 ---
 name: github-branch-pull
-description: Use when scanning local DiGi repositories, identifying SemVer branches, selecting the highest version, and pulling/syncing the local machine with the latest remote state.
+description: "Use when scanning local DiGi repositories, identifying SemVer branches, selecting the highest version, and pulling/syncing the local machine with the latest remote state."
 ---
 
 # AI Guidelines: Local Repository Pull & Synchronization

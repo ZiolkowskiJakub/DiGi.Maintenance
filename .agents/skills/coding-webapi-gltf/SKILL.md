@@ -1,6 +1,6 @@
 ---
 name: coding-webapi-gltf
-description: Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D framework - the decoupled pipeline, onboarding a new consuming project, adding a 3D object type via IGLTFNodeConverter, batching/streaming performance rules, the git-tracked gltf-viewer-core.js copy (commit both repositories), and what the batched payload does not carry (no NORMAL attribute, inconsistent winding, on-change shadow map contract).
+description: "Use when building or extending an ASP.NET Core Web API on the DiGi.GLTF 3D framework - the decoupled pipeline, onboarding a new consuming project, adding a 3D object type via IGLTFNodeConverter, batching/streaming performance rules, the git-tracked gltf-viewer-core.js copy (commit both repositories), and what the batched payload does not carry (no NORMAL attribute, inconsistent winding, on-change shadow map contract)."
 ---
 
 # Coding — WebAPI glTF

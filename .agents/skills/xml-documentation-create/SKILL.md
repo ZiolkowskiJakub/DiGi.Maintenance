@@ -1,6 +1,6 @@
 ---
 name: xml-documentation-create
-description: Use when adding missing XML <summary> docs to public members without touching existing docs or code logic.
+description: "Use when adding missing XML <summary> docs to public members without touching existing docs or code logic."
 ---
 
 # AI Guidelines: XML Documentation Generation

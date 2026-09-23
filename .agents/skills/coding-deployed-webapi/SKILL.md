@@ -1,6 +1,6 @@
 ---
 name: coding-deployed-webapi
-description: Use when verifying a client or server change against the live WebAPI at api.digiproject.uk - swagger as the source of truth, the county to reference to building GET test recipe, access rules and gotchas. Manual curl checks only, never added to DiGi.Test.
+description: "Use when verifying a client or server change against the live WebAPI at api.digiproject.uk - swagger as the source of truth, the county to reference to building GET test recipe, access rules and gotchas. Manual curl checks only, never added to DiGi.Test."
 ---
 
 # Coding — Deployed WebAPI (Live Endpoint Testing)

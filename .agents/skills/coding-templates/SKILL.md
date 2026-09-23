@@ -1,6 +1,6 @@
 ---
 name: coding-templates
-description: Use when creating a new project/solution from a template, or adding/modifying templates in the workspace's default templates/ folder.
+description: "Use when creating a new project/solution from a template, or adding/modifying templates in the workspace's default templates/ folder."
 ---
 
 # Coding — Templates

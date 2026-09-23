@@ -1,6 +1,6 @@
 ---
 name: coding-browser-testing
-description: Use when verifying interactive front-end behaviour in a real browser instead of only static code inspection - Playwright (Python) driving an installed Chromium-based browser headless (e.g. Microsoft Edge) to test panel toggles, drag-resize with min/max clamps, keyboard operability, localStorage persistence, responsive stacking and shared header/footer collapse, and verifying rendered output by screenshot statistics and GPU timer queries rather than by state flags. Confirm the toolchain on THIS machine first (availability is per-machine), and run with the host shell, never the isolated sandbox.
+description: "Use when verifying interactive front-end behaviour in a real browser instead of only static code inspection - Playwright (Python) driving an installed Chromium-based browser headless (e.g. Microsoft Edge) to test panel toggles, drag-resize with min/max clamps, keyboard operability, localStorage persistence, responsive stacking and shared header/footer collapse, and verifying rendered output by screenshot statistics and GPU timer queries rather than by state flags. Confirm the toolchain on THIS machine first (availability is per-machine), and run with the host shell, never the isolated sandbox."
 ---
 
 # AI Guidelines: Browser Testing (Interactive DoD)

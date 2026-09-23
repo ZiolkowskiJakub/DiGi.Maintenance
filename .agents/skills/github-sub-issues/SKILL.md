@@ -1,6 +1,6 @@
 ---
 name: github-sub-issues
-description: Use when creating sub-issues or sub-tasks, or breaking a feature into per-repository work items - the tracking-issue pattern (a parent tracking issue with a Sub-issues table plus one self-contained sub-issue per repository, each referencing the parent, sibling ordering recorded as GitHub issue dependencies; canonical example DiGi.GIS.PostgreSQL #83).
+description: "Use when creating sub-issues or sub-tasks, or breaking a feature into per-repository work items - the tracking-issue pattern (a parent tracking issue with a Sub-issues table plus one self-contained sub-issue per repository, each referencing the parent, sibling ordering recorded as GitHub issue dependencies; canonical example DiGi.GIS.PostgreSQL #83)."
 ---
 
 # AI Guidelines: GitHub Sub-Issues (Tracking-Issues Pattern)

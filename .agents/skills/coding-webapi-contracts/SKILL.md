@@ -1,6 +1,6 @@
 ---
 name: coding-webapi-contracts
-description: Use when changing a WebAPI controller's route, parameter names or validation, or when writing or maintaining an HTTP client of one - why a renamed query parameter breaks clients with no compile error and no runtime error (ASP.NET silently ignores an unknown parameter and returns the unfiltered result), the binding traps where an omitted parameter keeps default(T) and an enum sentinel that is not 0 makes the obvious guard dead code, sending enum values as integers, the client base-URI constant and /Query plumbing pattern, and gating an endpoint that is not deployed yet.
+description: "Use when changing a WebAPI controller's route, parameter names or validation, or when writing or maintaining an HTTP client of one - why a renamed query parameter breaks clients with no compile error and no runtime error (ASP.NET silently ignores an unknown parameter and returns the unfiltered result), the binding traps where an omitted parameter keeps default(T) and an enum sentinel that is not 0 makes the obvious guard dead code, sending enum values as integers, the client base-URI constant and /Query plumbing pattern, and gating an endpoint that is not deployed yet."
 ---
 
 # Coding — WebAPI Contracts (Controllers and Their HTTP Clients)

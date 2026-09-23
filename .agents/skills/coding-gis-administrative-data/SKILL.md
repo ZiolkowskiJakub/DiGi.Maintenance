@@ -1,6 +1,6 @@
 ---
 name: coding-gis-administrative-data
-description: Use when touching administrative_areal_2d, building_2d, or anything keyed by a county code or id - why a county code is not a key (BDOT10k stores one row per polygon part, so 406 county rows cover 380 codes), why those rows must never be deduplicated, the key-resolution matrix and the mandatory ORDER BY on any LIMIT/FirstOrDefault, plus the AdministrativeArealType wire gotchas. Also the nested Subdivision layer (404 of 406 county parts): subdivision_id is the smallest containing subdivision and a per-building key, the buildings of a subdivision are read by its polygon, a municipality is never a sum over nested subdivisions, and a building occupancy share comes from the smallest figured container.
+description: "Use when touching administrative_areal_2d, building_2d, or anything keyed by a county code or id - why a county code is not a key (BDOT10k stores one row per polygon part, so 406 county rows cover 380 codes), why those rows must never be deduplicated, the key-resolution matrix and the mandatory ORDER BY on any LIMIT/FirstOrDefault, plus the AdministrativeArealType wire gotchas. Also the nested Subdivision layer (404 of 406 county parts): subdivision_id is the smallest containing subdivision and a per-building key, the buildings of a subdivision are read by its polygon, a municipality is never a sum over nested subdivisions, and a building occupancy share comes from the smallest figured container."
 ---
 
 # AI Guidelines: GIS Administrative Data (`administrative_areal_2d` & county keying)

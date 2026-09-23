@@ -1,6 +1,6 @@
 ---
 name: coding-automatic-tests
-description: Use when writing or adding xUnit tests for C# classes, structs, or extension methods - Facts partial class structure, naming, shared test-data fixtures in DiGi.Test/files/, test reports and diagnostic dumps written to DiGi.Test/user files/reports/, and serialization, tolerance-boundary, and performance test patterns. Also covers measuring a benchmark Fact in isolation (a figure read off a full-suite run is contaminated by xUnit parallel collections and is not comparable to an isolated one), opening a defect fix with a Fact that reproduces the reported symptom on the unmodified code, and proving a kept fallback unreachable before deleting it.
+description: "Use when writing or adding xUnit tests for C# classes, structs, or extension methods - Facts partial class structure, naming, shared test-data fixtures in DiGi.Test/files/, test reports and diagnostic dumps written to DiGi.Test/user files/reports/, and serialization, tolerance-boundary, and performance test patterns. Also covers measuring a benchmark Fact in isolation (a figure read off a full-suite run is contaminated by xUnit parallel collections and is not comparable to an isolated one), opening a defect fix with a Fact that reproduces the reported symptom on the unmodified code, and proving a kept fallback unreachable before deleting it."
 ---
 
 # AI Guidelines: Automatic Tests

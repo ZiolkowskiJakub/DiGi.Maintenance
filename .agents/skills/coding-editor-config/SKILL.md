@@ -1,6 +1,6 @@
 ---
 name: coding-editor-config
-description: Use when configuring, auditing, or enforcing .editorconfig code styles, explicit typing (no var), block-scoped namespaces, collection expressions, target-typed new(), and Visual Studio 2026 / C# 13/14 formatting rules across DiGi repositories.
+description: "Use when configuring, auditing, or enforcing .editorconfig code styles, explicit typing (no var), block-scoped namespaces, collection expressions, target-typed new(), and Visual Studio 2026 / C# 13/14 formatting rules across DiGi repositories."
 ---
 
 # AI Guidelines: C# EditorConfig & Code Formatting Standards

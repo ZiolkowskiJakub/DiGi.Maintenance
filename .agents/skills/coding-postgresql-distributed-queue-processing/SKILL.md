@@ -1,6 +1,6 @@
 ---
 name: coding-postgresql-distributed-queue-processing
-description: Use when designing or maintaining distributed bulk update queues in PostgreSQL - table schema (claimed_at, created_at, natural uniqueness), running the queue DDL from every path that touches the table (TableExistsAsync is column-blind), atomic lease claims with FOR UPDATE SKIP LOCKED ordered to match the composite claim index, native interval arithmetic (@minutes * interval '1 minute'), explicit batch acknowledgment (DELETE ... WHERE id = ANY(@ids)), poison-row retirement with an attempt counter and retirement ceiling, crash recovery, and non-destructive queue observation.
+description: "Use when designing or maintaining distributed bulk update queues in PostgreSQL - table schema (claimed_at, created_at, natural uniqueness), running the queue DDL from every path that touches the table (TableExistsAsync is column-blind), atomic lease claims with FOR UPDATE SKIP LOCKED ordered to match the composite claim index, native interval arithmetic (@minutes * interval '1 minute'), explicit batch acknowledgment (DELETE ... WHERE id = ANY(@ids)), poison-row retirement with an attempt counter and retirement ceiling, crash recovery, and non-destructive queue observation."
 ---
 
 # AI Guidelines: PostgreSQL Distributed Queue Processing
