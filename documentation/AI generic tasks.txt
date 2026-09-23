@@ -2,7 +2,9 @@
 
 Investigate issue XXX. Create implementation plan if still valid. Make sure plan is aligned with guidelines "GitHub\DigiProject\DiGi.Maintenance\documentation\AI Guidelines"
 
-Review the implementation plan proposed in issue XXX to ensure it strictly aligns with the project guidelines in "GitHub\DigiProject\DiGi.Maintenance\documentation\AI Guidelines. Write a thorough, step-by-step implementation plan formatted as a Markdown comment to be posted directly on the GitHub issue.
+Investigate issue XXX. Write a thorough, step-by-step implementation plan formatted as a Markdown comment to be posted directly on the GitHub issue.
+
+Review the implementation plan proposed in issue XXX to ensure it strictly aligns with the project guidelines in "GitHub\DigiProject\DiGi.Maintenance\documentation\AI Guidelines. 
 
 ##CHECK
 
