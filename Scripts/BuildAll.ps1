@@ -86,9 +86,14 @@ $solutionOrder = @(
 	"DiGi.GIS.Analytical\DiGi.GIS.Analytical.slnx",
 	"DiGi.GIS.PostgreSQL\DiGi.GIS.PostgreSQL.slnx",
 	"DiGi.GIS.SQLite\DiGi.GIS.SQLite.slnx",
-	"DiGi.GIS.ML\DiGi.GIS.ML.slnx",
 	"DiGi.GIS.WebAPI\DiGi.GIS.WebAPI.slnx",
+	"DiGi.GIS.ML\DiGi.GIS.ML.slnx",
 	"DiGi.GIS.YOLO\DiGi.GIS.YOLO.slnx",
+	# DiGi.GIS.PostgreSQL.UI reaches DiGi.GIS.YOLO.UI by HintPath - for its Year Built prediction options class,
+	# its exit codes and its progress reader - so the extension must be built before the UI hosts that reference
+	# it. It cannot be a ProjectReference: DiGi.GIS.PostgreSQL.UI publishes self-contained and single-file and
+	# must not pull in the DiGi.GIS.ML closure. See DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.csproj.
+	"DiGi.GIS.YOLO.UI\DiGi.GIS.YOLO.UI.slnx",
 	"DiGi.GIS.Rhino\DiGi.GIS.Rhino.slnx",
 	"DiGi.Communication\DiGi.Communication.slnx",
 	"DiGi.Communication.Rhino\DiGi.Communication.Rhino.slnx",
@@ -98,7 +103,6 @@ $solutionOrder = @(
 	"DiGi.GIS.UI\DiGi.GIS.UI.slnx",
 	"DiGi.GIS.PostgreSQL.UI\DiGi.GIS.PostgreSQL.UI.slnx",
 	"DiGi.GIS.WebAPI.UI\DiGi.GIS.WebAPI.UI.slnx",
-	"DiGi.GIS.YOLO.UI\DiGi.GIS.YOLO.UI.slnx",
 	"DiGi.Maintenance\DiGi.Maintenance.slnx",
 	"DiGi.WebAPI.WindowsService\DiGi.WebAPI.WindowsService.slnx"
 	# add more in the order you need
