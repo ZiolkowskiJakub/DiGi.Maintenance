@@ -550,6 +550,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `Coding - API Documentation.md` | Looking up a public signature — read `documentation/API/` before `.cs` source. |
 | `Coding - References.md` | Comparing, keying or de-duplicating an `IReference` / `IUniqueReference`. |
 | `Coding - Automatic Tests.md` | Writing xUnit tests, shared fixtures, or test report output. |
+| `Coding - ComputeSharp.md` | Writing or changing a ComputeSharp `IComputeShader` — never combine an odd root constant count (`ConstantBufferSize / 4`) with an odd resource count (silently wrong results on NVIDIA RTX 5090); reorder or pad fields, then update the layout guard fact. |
 | `Coding - Templates.md` | Scaffolding a solution/project from `templates/`. |
 | `Coding - WebAPI GLTF.md` | Building or extending a Web API on the `DiGi.GLTF` 3D framework. |
 | `Coding - WebAPI Contracts.md` | Changing a WebAPI route/parameter, or writing an HTTP client of one. |
