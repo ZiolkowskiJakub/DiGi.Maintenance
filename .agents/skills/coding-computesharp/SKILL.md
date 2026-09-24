@@ -52,9 +52,12 @@ normalize → dot product), the extra field **never read**:
 
 | Root constants | Resources (SRV + UAV) | RTX 5090 | WARP |
 |---|---|---|---|
-| even (10, 12, 14, 16, 18) | any (1–6) | correct | correct (14, 16 with 2–3 resources) |
-| odd (11, 13, 15, 17, 33) | even (2, 4, 6) | correct | correct (15 with 2 resources) |
-| odd (11, 13, 15, 17) | odd (1, 3, 5) | **wrong** | correct (15 with 3 resources) |
+| 14, 16 | 1, 2, 3, 4, 5, 6 | correct | correct (14 and 16 with 3) |
+| 10, 12, 18 | 3 | correct | not tested |
+| 15, 17 | 2, 4, 6 | correct | correct (15 with 2) |
+| 33 | 2 | correct | not tested |
+| 15, 17 | 1, 3, 5 | **wrong, every thread** | correct (15 with 3) |
+| 11, 13 | 3 | **wrong, every thread** | not tested |
 
 - **The DXIL of a failing and a working shader is identical** apart from the cbuffer size metadata (56 → 60 B), and
   WARP computes both correctly — the fault is in the driver's DXIL-to-native compilation, not in DXC or ComputeSharp.
