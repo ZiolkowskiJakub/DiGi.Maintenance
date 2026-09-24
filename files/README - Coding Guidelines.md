@@ -564,6 +564,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `GitHub Wiki - General.md` / `- Home.md` / `- Benchmark.md` | Editing a wiki page, a `Home` landing page, or a `Benchmark` performance page. |
 | `GitHub - Branch Pull.md` / `- Branch Synchronization.md` | Pulling repos to their highest SemVer branch, or running the release/patch-bump workflow. |
 | `GitHub - Issues.md` | Creating, commenting on and closing issues — mandatory labels + default assignee, `--body-file`, verifying premises first, and **blocking relationships as GitHub issue dependencies** (`gh api … /dependencies/blocked_by`, cross-repository, set at blocker creation, verified with the `blocking` GET; a blocked issue is not started). |
+| `GitHub - Plan Files.md` | Keeping the repository free of plan files — plans live outside the working tree, no plan/scratch `*.md` is ever committed or pushed, and the default is deleting the temporary implementation plan when the issue closes (no archiving into the repo; explicit user instruction wins). |
 | `GitHub - Sub-Issues.md` | Creating sub-issues / sub-tasks for a feature — the tracking-issue pattern: a parent tracking issue with a Sub-issues table + one self-contained sub-issue per repository, each referencing the parent. |
 
 > **One data rule worth knowing before it bites you:** a GIS county `code` does **not** identify one row.
