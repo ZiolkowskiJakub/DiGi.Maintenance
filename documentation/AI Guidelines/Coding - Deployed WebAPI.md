@@ -1,6 +1,6 @@
 # Coding — Deployed WebAPI (Live Endpoint Testing)
 
-Directives for manual, on-demand testing against live production endpoints (`https://api.digiproject.uk`). **Do NOT add these tests to `DiGi.Test` or automated test suites.**
+Directives for manual, on-demand testing against live production endpoints (`https://api.digiproject.uk`). **Do NOT add these tests to `DiGi.Test` or automated test suites.** Which machine runs which part of the estate — and why that decides where to measure and where to look for a log — is §5.
 
 ---
 
@@ -117,3 +117,48 @@ Execute this safe, read-only sequence to verify client/server integration:
 - **An omitted parameter is not rejected.** `[ApiController]` answers 400 for a value it cannot parse (`administrativearealtype=` and `administrativearealtype=Nonsense` both 400), but an **absent** parameter keeps `default(T)` and the request succeeds. Omitting `administrativearealtype` on `administrativeareal2Dreferencesbyadministrativearealtype` returns a payload byte-identical to `administrativearealtype=0` — countries. Always pass the filter explicitly when testing.
 - **A `gis/terrain/mesh3d*` 404 can just mean the radius is too small.** Counties are sampled onto a 10–100 m lattice, so a circle narrower than the lattice step encloses no stored point. At `x=638000&y=486000`: radius 50 → 404, radius 100/200/500 → 200 with elevations of 111–112 m. Widen the radius before concluding the elevation table is missing in that environment.
 - **Enum Rename (`Subdivison` → `Subdivision`):** `AdministrativeArealType` member 4 was misspelled `Subdivison` and has been **renamed to `Subdivision`** — a deliberate breaking wire change, not an alias. From that build onward `Subdivison` returns **HTTP 400**; against an older deployment `Subdivision` returns **HTTP 400**. **Integer `4` is the only token that binds on every build**, so use it whenever the deployed version is unknown. Responses always carry the integer `4`.
+
+
+---
+
+## 5. Deployment Topology — Which Machine Runs What
+
+The estate is split across machines with different roles. Know which one runs the code before measuring,
+reading a log or blaming a component.
+
+| Role | Runs | Reached through |
+|---|---|---|
+| **Database server** (the stronger machine) | the production PostgreSQL databases; `DiGi.WebAPI.WindowsService` hosting the GIS Web API and its `extensions\*` | `https://api.digiproject.uk` |
+| **Web server** | `DiGi.GIS.WebAPI.UI` under IIS | `https://gis.digiproject.uk` |
+| **Development / test machines** | editing, builds, `DiGi.Test`, development databases behind `*.conf` | — (never production; [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) §6) |
+
+`DiGi.GIS.PostgreSQL.UI` (the tray application) is installed on **both** servers, and each background task
+runs on whichever server it was started on.
+
+Hardware details — CPU, cores, memory, OS build — are deliberately not recorded here: they change with the
+estate. Read them on the machine at the time you measure, and cite the measurement (issue comment, date)
+rather than the machine's specification.
+
+### Rules that follow
+
+- **Measure a limit on the machine that will run the code, and say which role you measured.** The two
+  servers differ in capacity, so a figure taken on one does not transfer to the other. A synchronous limit
+  of a `DiGi.GIS.WebAPI.UI` endpoint is measured on the **web server**; an API's on the **database
+  server**; a development machine's figure is a relative comparison only. Worked example: the CPU
+  shading-solver probe of `DiGi.Solar#7` ran on the database server while believed to be on the web
+  server, and its limits (100 receivers, "about 16 s for a mid-rise block") were four to ten times too
+  generous for the web server that actually runs the solve — the same request took 51–159 s there, and
+  `DiGi.GIS.WebAPI.UI#59` cut the limit to 30. Relative findings (a tolerance halving the solve time, one
+  solve at a time beating two) did transfer; absolute times did not.
+- **A log lives on the machine that ran the code.** The GIS Web API writes its Serilog file on the
+  database server. `DiGi.GIS.WebAPI.UI` writes `logs\log-yyyyMMdd.txt` beside its own application on the
+  web server — IIS discards console output, so without that file its `ILogger` lines go nowhere. A tray
+  task's log is on the server that ran the task. None of them is on a development machine: searching an
+  editing machine for a production run's log finds nothing and proves nothing.
+- **A slow page is not necessarily a slow API.** A request to the web server usually fans out to the
+  database server. Compare the two logs before choosing a culprit: in `DiGi.GIS.WebAPI.UI#59` the API log
+  showed every upstream call answering in milliseconds, which placed the minutes of latency in the web
+  server's own computation.
+- **Heavy computation competes with serving pages.** Work that runs inside `DiGi.GIS.WebAPI.UI` shares
+  the web server with every page it serves; gate it (one solve at a time, a size ceiling that answers
+  413) and size those gates from web-server measurements.

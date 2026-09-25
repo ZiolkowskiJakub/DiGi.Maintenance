@@ -203,9 +203,10 @@ A `*.conf` resolves to a **development** database: partial, not current, and spe
 machine it sits on. It is the right place to exercise a code path, prove a statement parses, or
 create and drop a scratch table. It is **not** the estate.
 
-Production is reached only through the API at `api.digiproject.uk`, and it runs on its own machine —
-which also hosts `DiGi.GIS.PostgreSQL.UI`, so a background task's Serilog file is there, not on the
-machine the code was edited on.
+Production is reached only through the API at `api.digiproject.uk`, which runs on the database server
+next to the production databases. `DiGi.GIS.PostgreSQL.UI` is installed on both servers, so a background
+task's Serilog file is on the server that ran the task — never on the machine the code was edited on
+(deployment roles: [Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md) §5).
 
 > **Never answer a question about production by measuring through a `.conf`.** Row counts, coverage,
 > "how many rows look like X" — those are production questions and they go through the API. When a
