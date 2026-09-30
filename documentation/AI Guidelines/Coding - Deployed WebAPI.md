@@ -7,7 +7,7 @@ Directives for manual, on-demand testing against live production endpoints (`htt
 ## 1. Endpoints & Swagger Caveats
 
 - **Base URL:** `https://api.digiproject.uk` (root `/` returns HTTP 404).
-- **Swagger JSON:** `https://api.digiproject.uk/swagger/v1/swagger.json`.
+- **Swagger JSON:** one document per route prefix, plus the full document — see *Swagger Documents* below.
 - **Diagnostic Suite (`InformationController`):**
   - `GET /information/health` — liveness/readiness probe (`Status`, `ServerTimeUtc`, `Uptime`, `ProcessId`).
   - `GET /information/version` — multi-tier version audit (Host & `DiGi.WebAPI` versions, git commits, CLR runtime).
@@ -16,8 +16,53 @@ Directives for manual, on-demand testing against live production endpoints (`htt
   - `GET /information/assemblies` — inventory of loaded assemblies in `AssemblyLoadContext` (verifying dynamic `extensions/` plugins).
   - `GET /information/system` — safe process telemetry (working set memory, GC heap, thread pool threads, OS version).
 
+### Swagger Documents — Fetch the Smallest One That Answers the Question
+
+`DiGi.WebAPI.WindowsService` publishes one OpenAPI document per **first route segment**, discovered at
+start-up from the loaded controllers, plus one document holding everything:
+
+| URL | Contents | Size (2026-09-30) |
+|---|---|---|
+| `/swagger/gis/swagger.json` | `DiGi.GIS.WebAPI` — 95 paths, 65 schemas | ~326 KB |
+| `/swagger/information/swagger.json` | `DiGi.WebAPI` diagnostics — 6 paths | ~12 KB |
+| `/swagger/user/swagger.json` | `DiGi.User.WebAPI` — 5 paths | ~9 KB |
+| `/swagger/gltf/swagger.json` | `DiGi.GLTF.WebAPI` — 2 paths | ~6 KB |
+| `/swagger/swagger.json` (same as `/swagger/full/swagger.json`) | every endpoint of every prefix — 108 paths, 74 schemas | ~350 KB |
+
+**To keep the context small, never load the full document when you work on one prefix, and never load
+`gis` whole when you need one endpoint:**
+
+1. **Route or parameter names only?** Skip Swagger: `InvestigateServer.ps1 -Endpoints -Controller "<Name>"` (§2)
+   returns just that controller's routes and parameters.
+2. **Prefix `user`, `gltf` or `information`?** Read that prefix document whole; it is a few KB and
+   self-contained (every `$ref` resolves inside it).
+3. **Prefix `gis`?** Pull out the operation and the schemas it references, not the file:
+   ```powershell
+   $doc = Invoke-RestMethod "https://api.digiproject.uk/swagger/gis/swagger.json"
+   $doc.paths.PSObject.Properties.Name -like "*/terrain/*"                  # list the routes (keys are lower case)
+   $doc.paths."/gis/terrain/mesh3dbycircle" | ConvertTo-Json -Depth 20     # one operation
+   $doc.components.schemas.Mesh3D | ConvertTo-Json -Depth 20               # the schema its 200 response references
+   ```
+   `Invoke-RestMethod` decodes the body as UTF-8 JSON; piping `curl.exe` into `ConvertFrom-Json` goes
+   through PowerShell's code-page decoding (the trap in `GitHub - Issues.md` §1).
+4. **Use `/swagger/swagger.json` only when you need several prefixes at once.**
+
+Rules the host applies:
+
+- The document name is the first route segment, lower case (`gis/[controller]` → `gis`,
+  `[controller]` on `UserController` → `user`). A new extension with a new prefix gets its own document
+  with no host change. A prefix may not be named `full` or `swagger`.
+- **A 404 on a prefix document means the prefix has no Swagger-visible endpoint, not that the extension is
+  missing.** An extension whose controllers are all `IgnoreApi` (see Limitations 1 below) produces no document — `communication`
+  today. Use `GET /information/endpoints?includeignored=true` for those.
+- `info.version` of a prefix document is the version of the extension assembly that serves it
+  (`gis` 0.8.9 while the host is 0.8.8). The full document carries the host version.
+- `/swagger/v1/swagger.json` was removed by `DiGi.WebAPI.WindowsService#2`. If `/swagger/swagger.json`
+  answers 404, the deployed host predates that change: use `/swagger/v1/swagger.json`, which then holds
+  everything (see *The Deployed Build Lags the Repository* below).
+
 ### Swagger Contract Limitations
-1. **Incomplete Endpoint List:** Base `WebAPIController` sets `[ApiExplorerSettings(IgnoreApi = true)]`. Write endpoints (`updateitem(s)`), `user/*`, and several `item*` reads are omitted from Swagger. Query `GET /information/endpoints?includeignored=true` or `GET /information/controllers` to discover all active endpoints.
+1. **Incomplete Endpoint List:** Base `WebAPIController` sets `[ApiExplorerSettings(IgnoreApi = true)]`, so an action appears in Swagger only when it or its controller opts back in with `IgnoreApi = false`. All of `user/*` and `information/*` do; write endpoints (`updateitem(s)`) and several `item*` reads do not. Query `GET /information/endpoints?includeignored=true` or `GET /information/controllers` to discover all active endpoints.
 2. **Schema Inaccuracies:** Wire format uses **PascalCase property names**, a mandatory `_type` discriminator (`"Namespace.Type,ShortAssembly"`), and **integer enums**. Ignore Swagger schema camelCase/string-enum definitions.
 
 ### The Deployed Build Lags the Repository

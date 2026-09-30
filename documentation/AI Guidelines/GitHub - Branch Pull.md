@@ -37,19 +37,21 @@ git pull origin <highest_semver_branch>
 
 ## 4. Bulk Git Pull Timeout Guideline
 
-When performing a bulk `git pull` across all DiGi repositories, use a timeout of at least 180 seconds (3 minutes) to ensure the command completes for all repositories, including those listed later alphabetically (e.g., DiGi.SAM).
+A pull across every DiGi repository takes minutes, not seconds. Give the command a timeout of **at least
+180 seconds** (e.g. `timeout: 180000` ms on an agent shell tool): a shorter one aborts partway through and
+silently leaves the repositories later in alphabetical order (e.g. `DiGi.SAM`) un-pulled.
 
-Example command:
+Prefer the script, which applies the §2 branch selection and needs no working directory — it resolves the
+workspace root from its own location:
 
-```bash
-find . -name ".git" -type d -exec sh -c 'cd "{}"/.. && pwd && git pull' \;
+```powershell
+PowerShell -ExecutionPolicy Bypass -File "DiGi.Maintenance/Scripts/PullBranchesAllRepos.ps1"
 ```
 
-Run with a 180‑second timeout:
+For a plain `git pull` of each repository's current branch, run from the workspace root (the folder that
+holds the `DiGi.*` repositories). Limit the search depth so it does not descend into nested `.git` folders
+inside a repository (vendored packages, virtual environments):
 
 ```bash
-shell_command \
-  --command "find . -name \".git\" -type d -exec sh -c 'cd \"{}\"/.. && pwd && git pull' \;" \
-  --workdir "C:/Users/jakub/GitHub/DigiProject" \
-  --timeout_ms 180000
+find . -mindepth 2 -maxdepth 2 -name ".git" -type d -exec sh -c 'cd "{}"/.. && pwd && git pull' \;
 ```
