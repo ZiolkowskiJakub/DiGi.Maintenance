@@ -32,3 +32,24 @@ git checkout <highest_semver_branch>
 # 3. Pull latest remote changes
 git pull origin <highest_semver_branch>
 ```
+
+---
+
+## 4. Bulk Git Pull Timeout Guideline
+
+When performing a bulk `git pull` across all DiGi repositories, use a timeout of at least 180 seconds (3 minutes) to ensure the command completes for all repositories, including those listed later alphabetically (e.g., DiGi.SAM).
+
+Example command:
+
+```bash
+find . -name ".git" -type d -exec sh -c 'cd "{}"/.. && pwd && git pull' \;
+```
+
+Run with a 180‑second timeout:
+
+```bash
+shell_command \
+  --command "find . -name \".git\" -type d -exec sh -c 'cd \"{}\"/.. && pwd && git pull' \;" \
+  --workdir "C:/Users/jakub/GitHub/DigiProject" \
+  --timeout_ms 180000
+```
