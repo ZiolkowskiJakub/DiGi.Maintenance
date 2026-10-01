@@ -21,13 +21,13 @@ Directives for manual, on-demand testing against live production endpoints (`htt
 `DiGi.WebAPI.WindowsService` publishes one OpenAPI document per **first route segment**, discovered at
 start-up from the loaded controllers, plus one document holding everything:
 
-| URL | Contents | Size (2026-09-30) |
+| URL | Contents | Size (2026-10-01) |
 |---|---|---|
-| `/swagger/gis/swagger.json` | `DiGi.GIS.WebAPI` — 95 paths, 65 schemas | ~326 KB |
-| `/swagger/information/swagger.json` | `DiGi.WebAPI` diagnostics — 6 paths | ~12 KB |
-| `/swagger/user/swagger.json` | `DiGi.User.WebAPI` — 5 paths | ~9 KB |
-| `/swagger/gltf/swagger.json` | `DiGi.GLTF.WebAPI` — 2 paths | ~6 KB |
-| `/swagger/swagger.json` (same as `/swagger/full/swagger.json`) | every endpoint of every prefix — 108 paths, 74 schemas | ~350 KB |
+| `/swagger/gis/swagger.json` | `DiGi.GIS.WebAPI` — 95 paths, 83 schemas | ~407 KB |
+| `/swagger/information/swagger.json` | `DiGi.WebAPI` diagnostics — 6 paths, 9 schemas | ~27 KB |
+| `/swagger/user/swagger.json` | `DiGi.User.WebAPI` — 5 paths, 3 schemas | ~10 KB |
+| `/swagger/gltf/swagger.json` | `DiGi.GLTF.WebAPI` — 2 paths, 12 schemas | ~18 KB |
+| `/swagger/swagger.json` (same as `/swagger/full/swagger.json`) | every endpoint of every prefix — 108 paths, 99 schemas | ~454 KB |
 
 **To keep the context small, never load the full document when you work on one prefix, and never load
 `gis` whole when you need one endpoint:**
@@ -63,7 +63,11 @@ Rules the host applies:
 
 ### Swagger Contract Limitations
 1. **Incomplete Endpoint List:** Base `WebAPIController` sets `[ApiExplorerSettings(IgnoreApi = true)]`, so an action appears in Swagger only when it or its controller opts back in with `IgnoreApi = false`. All of `user/*` and `information/*` do; write endpoints (`updateitem(s)`) and several `item*` reads do not. Query `GET /information/endpoints?includeignored=true` or `GET /information/controllers` to discover all active endpoints.
-2. **Schema Inaccuracies:** Wire format uses **PascalCase property names**, a mandatory `_type` discriminator (`"Namespace.Type,ShortAssembly"`), and **integer enums**. Ignore Swagger schema camelCase/string-enum definitions.
+2. **Payload Schemas Follow the Writer — Except Enums:** since `DiGi.WebAPI.WindowsService#3` (deployed 2026-10-01) the host's `WireFormatSchemaFilter` documents each payload in the format actually written, and production GET payloads of every sampled prefix validate strictly against the served documents.
+   - **DiGi `ISerializableObject` payloads** (written by the DiGi serializer): exact member names (**PascalCase** by convention — a member without `[JsonPropertyName]` keeps its field name, e.g. `Building.roofTypeId`), a mandatory `_type` discriminator (`"Namespace.Type,ShortAssembly"`, required, with the type's own name as `example`), and every member `required` because the serializer writes all of them, `null` explicitly. Always a JSON object, also for a DiGi type that is an `IEnumerable` (`EPWFile`).
+   - **Open DiGi schemas** — an interface, an abstract type, a type writing its own JSON (`ToJsonObject` override) — declare only `_type` and allow additional properties: the payload carries the members of the concrete type `_type` names. A concrete type that other loaded types derive from (`WeatherRecord`, holding `DataRecord`s) lists its members but allows additional ones too.
+   - **MVC payloads** (`Ok(...)` POCOs such as `UpdateItemsResult`, `ProblemDetails`) are camelCase with **string** enums — that is what the MVC formatter writes.
+   - **Enums inside DiGi payloads are still documented as strings but travel as integers** (`"AdministrativeArealType": 2`) until `DiGi.WebAPI.WindowsService#6` lands. The integer is the member's underlying value in the C# enum declaration, and the documented member names are not listed in value order (`AdministrativeArealType.Undefined` is `-1`), so map by the declaration, not by position. Query parameters are camelCase and accept enum names or integers.
 
 ### The Deployed Build Lags the Repository
 
