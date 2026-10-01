@@ -96,6 +96,17 @@ $DeploymentUnits = @(
 		Path    = "DiGi.GML\bin"
 		Recurse = $false
 		Ignore  = @()
+	},
+	@{
+		# The standalone nutrition workbook importer of bodyplan - a self-contained console application in the
+		# pattern of DiGi.GIS.YOLO.UI.ConsoleApp: its own dependency closure, its own *.conf beside the
+		# executable, deployed to the database server through the Nextcloud Software folder rather than
+		# SyncDirectories.ps1 (which does not carry bodyplan). The audited folder is the framework-dependent
+		# build output - the publish output carries the whole runtime and would make the audit vacuous.
+		Name    = "bodyplan.Importer"
+		Path    = "bodyplan\Tools\bin"
+		Recurse = $false
+		Ignore  = @()
 	}
 )
 
