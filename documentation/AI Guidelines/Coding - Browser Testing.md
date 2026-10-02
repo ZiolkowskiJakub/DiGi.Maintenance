@@ -43,6 +43,7 @@ If that launch fails, fall back to the next channel in turn; if none exist, inst
 - **Settle before asserting.** Some layouts re-fit on the `window resize` event or a CSS transition; a short `page.wait_for_timeout(...)` after a toggle keeps height assertions from racing the animation.
 - **Static assets vs compiled views.** CSS/JS are served from the source `wwwroot` (always current), but Razor views are compiled at build time — **rebuild before re-verifying a `.cshtml` change**, or you will test a stale view.
 - **Version string gotcha.** `import playwright; playwright.__version__` raises `AttributeError`; use `pip show playwright` for the version.
+- **The `hidden` attribute loses to any `display` rule.** `hidden` is only the user-agent's `display:none`, so an author rule such as `.typology-viewport-empty { display:flex }` keeps a "hidden" overlay on screen — transparent, but still swallowing every pointer event on the map beneath it. Any component CSS that sets `display` on an element toggled with `hidden` needs an explicit `[hidden] { display:none; }` rule. Symptom in a test: clicks that land on nothing, with no console error; check `document.elementFromPoint(x, y)` at the click position.
 
 ## 5. Verifying rendered output, not state
 

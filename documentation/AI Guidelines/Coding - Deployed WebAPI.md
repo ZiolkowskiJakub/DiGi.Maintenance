@@ -168,6 +168,8 @@ Execute this safe, read-only sequence to verify client/server integration:
 - **An omitted parameter is not rejected.** `[ApiController]` answers 400 for a value it cannot parse (`administrativearealtype=` and `administrativearealtype=Nonsense` both 400), but an **absent** parameter keeps `default(T)` and the request succeeds. Omitting `administrativearealtype` on `administrativeareal2Dreferencesbyadministrativearealtype` returns a payload byte-identical to `administrativearealtype=0` — countries. Always pass the filter explicitly when testing.
 - **A `gis/terrain/mesh3d*` 404 can just mean the radius is too small.** Counties are sampled onto a 10–100 m lattice, so a circle narrower than the lattice step encloses no stored point. At `x=638000&y=486000`: radius 50 → 404, radius 100/200/500 → 200 with elevations of 111–112 m. Widen the radius before concluding the elevation table is missing in that environment.
 - **Enum Rename (`Subdivison` → `Subdivision`):** `AdministrativeArealType` member 4 was misspelled `Subdivison` and has been **renamed to `Subdivision`** — a deliberate breaking wire change, not an alias. From that build onward `Subdivison` returns **HTTP 400**; against an older deployment `Subdivision` returns **HTTP 400**. **Integer `4` is the only token that binds on every build**, so use it whenever the deployed version is unknown. Responses always carry the integer `4`.
+- **`000` on every call of a sweep is a client bug until proven otherwise.** An id list written from Python on Windows (`open(path, 'w')`) is CRLF; read by `while read -r id` in Git Bash it leaves a `\r` inside `$id`, so `…?countyid=$id` is a malformed URL and curl fails **before connecting** — `%{http_code}` reports `000` with an empty body, which is exactly what a connect timeout or a hung server also reports. That cost a full false diagnosis of a host answering in 21 ms. Normalise first (`tr -d '\r'`, or `open(path, 'w', newline='\n')`) and print `%{time_total}` beside `%{http_code}` in every sweep: a malformed URL returns instantly with every timing 0, a real hang shows `time_appconnect` set and the full timeout elapsed. A failure uniform from request #1 is the client; a saturated server degrades partway through.
+- **Tell a hung API from a UI regression before reading UI code.** When the API backend hangs, IIS still completes TLS in milliseconds but `/information/health` never answers, while the UI's own pages keep loading and every relay through them fails — `503` ("upstream answered nothing") or `204` where the relay collapses failures to null. One call settles it: `curl.exe -s -o NUL -w "%{time_appconnect} %{time_starttransfer} %{http_code}\n" https://api.digiproject.uk/information/health`. A long-running server task starving host memory caused exactly this (DiGi.GIS.PostgreSQL#97).
 
 
 ---
@@ -213,3 +215,12 @@ rather than the machine's specification.
 - **Heavy computation competes with serving pages.** Work that runs inside `DiGi.GIS.WebAPI.UI` shares
   the web server with every page it serves; gate it (one solve at a time, a size ceiling that answers
   413) and size those gates from web-server measurements.
+- **A development machine often runs the tray application twice.** The deployed copy under
+  `SOFTWARE_DIRECTORY` (from `DiGi.Maintenance/user files/Directories.conf`, synced by
+  `SyncDirectories.ps1`) and the repository `bin` show the same tray icon and tooltip, carry the same
+  `extensions\` folder, and write identical log lines apart from their paths — a run started from `bin`
+  cost two pipeline runs before it was noticed. Check which one is open before concluding anything from
+  what a task did: `Get-Process -Name "DiGi.GIS.PostgreSQL.UI.Application" | Select-Object Id, StartTime, Path`.
+  The `bin` instance also locks its dlls, so the next build of that project fails until it is exited.
+  A missing **Server** tab is a start-up database probe that failed once (it swallows the exception and
+  logs nothing); exit and relaunch rather than redeploying.

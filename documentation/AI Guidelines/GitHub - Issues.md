@@ -186,6 +186,18 @@ When resolving and closing an issue, provide a structured comment covering:
    - Test facts added to `DiGi.Test` and verification commands run.
 4. **Live Deployed Verification (if applicable):**
    - Results of manual verification against deployed WebAPI endpoints or services.
+   - When that verification belongs to a follow-up issue (below), say so: "Live verification: not run — see #N".
+
+### Production runs go in a follow-up issue, not in the code issue's plan
+A code issue's plan ends where the code is reviewable and committable. Everything that has to happen
+**on a server, later** — deploying, running tray-application tasks, re-deriving or re-running data,
+before/after evidence and tallies, guideline/README propagation — is filed as **its own issue** (mandatory
+labels and assignee, §1) and linked with a `blocked_by` dependency on the code issue (§5).
+- **Why:** the code change can be reviewed and closed on its own; the runs happen elsewhere and later, and
+  their counters belong with the issue that tracks them. Mixing the two keeps the code issue open
+  indefinitely. (Asked for explicitly on `DiGi.GIS.PostgreSQL#77` → `#78`.)
+- **How:** end the plan with "Out of scope — tracked in #N" listing every run, evidence and docs step;
+  close the code issue with the resolution comment above, stating the live verification is deferred to #N.
 
 ---
 

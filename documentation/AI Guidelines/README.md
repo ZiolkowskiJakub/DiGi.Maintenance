@@ -17,11 +17,12 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 ### Coding
 | File | Trigger Task |
 |------|--------------|
-| [Coding - General.md](Coding%20-%20General.md) | C# coding, naming/typing rules, `Query`/`Modify`/`Create`/`Convert` architecture, `SerializableObject` pattern, checking an already-referenced package before adding a NuGet one, host `PackageReference` rules for `HintPath`-dropped NuGet dependencies, stale host `deps.json` after a library reference change, scripted edits that rewrite CRLF line endings, `TODO [Marker]` temporary-code tags. |
+| [Coding - General.md](Coding%20-%20General.md) | C# coding, naming/typing rules, `Query`/`Modify`/`Create`/`Convert` architecture, `SerializableObject` pattern, checking an already-referenced package before adding a NuGet one, host `PackageReference` rules for `HintPath`-dropped NuGet dependencies, stale host `deps.json` after a library reference change, scripted edits that rewrite CRLF line endings, `TODO [Marker]` temporary-code tags, no caching in optimizations unless allowed, build-time `HintPath` symptoms (`CS0012` from overload resolution, `-m:1` race, stale `bin` probing), shadowing traps (CS1955, CS0119, Razor), DiGi serializer traps (document-order setters, base `private set`, dictionaries, `byte[]`). |
 | [Coding - Editor Config.md](Coding%20-%20Editor%20Config.md) | `.editorconfig` rules, explicit typing (`no var`), block namespaces, collection expressions (`[]`), `new()`. |
 | [Coding - API Documentation.md](Coding%20-%20API%20Documentation.md) | Public API lookup — consult `documentation/API/` before `.cs` source. |
 | [Coding - References.md](Coding%20-%20References.md) | `IReference`/`IUniqueReference` comparison — prohibit `==`/`!=` on interface references, use `Core.Query.Equals`. |
 | [Coding - Automatic Tests.md](Coding%20-%20Automatic%20Tests.md) | xUnit testing — `Facts` structure, shared fixtures (`DiGi.Test/files/`), serialization/tolerance/performance tests, benchmark isolation, reproduce-before-fixing. |
+| [Coding - Geometry.md](Coding%20-%20Geometry.md) | `DiGi.Geometry` / `DiGi.Solar` conventions that fail silently — `SunDirection` is a propagation vector (negate before dotting), `Vector3D.Unit` never null, cosine not via `Angle`, asymmetric orientation fixtures, `IsClosed` not monotonic in tolerance, sub-tolerance corners before `Triangulate`, spatial hash keys (round, mix sequentially), `PolygonalFace2DPointRelationSolver` for point sweeps. |
 | [Coding - ComputeSharp.md](Coding%20-%20ComputeSharp.md) | Writing or changing a ComputeSharp `IComputeShader` — constant buffer layout (dispatch header, offset-12 slot, field order), the NVIDIA odd root constant + odd resource count defect, the layout guard fact and parity facts, GPU fact conventions, probing a suspected GPU defect (WARP, DXIL diff). |
 | [Coding - Templates.md](Coding%20-%20Templates.md) | Solution/project scaffolding via `templates/` folder (`DiGi.Template`, `DiGi.WebAPI.GLTF.Template`). |
 | [Coding - WebAPI GLTF.md](Coding%20-%20WebAPI%20GLTF.md) | `DiGi.GLTF` 3D Web API — 4-step pipeline, `IGLTFNodeConverter` registry, batching (`batched: true`), streaming. |
@@ -83,3 +84,7 @@ PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1" -NoCommit
 ```
 Both scripts walk **every** `DiGi.*` repository and **commit in each one** — drop `-NoCommit` only when
 a commit per repository is actually wanted.
+**A `-NoCommit` dry run followed by a committing run commits nothing:** the second run finds every file
+already up to date, reports `Updated repositories: 0`, and leaves the dirty trees behind. Either run once
+with commits, or commit the generated files yourself per repository after the dry run. Neither script
+pushes, and both stage narrowly (`git add .agents` / `git add README.md`), so unrelated work is untouched.

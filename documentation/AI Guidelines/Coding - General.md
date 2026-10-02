@@ -56,6 +56,21 @@
        qualified** (`Core.IO.Query.UniqueId(column)`). An import is not a decision anyone reviews, and
        tidying a `using` block must not be able to change which method runs. Prefer this over relying on
        overload resolution even when the current imports happen to be right.
+   - **An Extension Cannot Reuse The Name Of A Property On Its Receiver (CS1955).** Member lookup finds the
+     property first, sees a non-invocable member, and stops — extension methods are never consulted, so
+     `typology.References(true)` fails with *"Non-invocable member cannot be used like a method"* while a
+     `References` list property exists. When migrating `GetX()` to the property-like `X()` (§2 *`Query`
+     Naming*), check the receiver has no `X` property first; `Typology.GetReferences(bool)` had to become
+     `Query.ReferenceSet` for this reason. Unlike the `using` trap above, this one refuses to compile.
+   - **A Method Shadows A Namespace Of The Same Name In Expression Position (CS0119).** Inside a `Facts`
+     class that declares `[Fact] public void Typology()`, `Typology.Create.Typology(...)` binds `Typology` to
+     the method — write `DiGi.Typology.Create.Typology(...)`. Inside `/Create/Typology.cs` the factory itself
+     shadows the namespace the same way, so qualify types as `Classes.Typology`. Type positions are unaffected.
+   - **Razor Views Have No Enclosing `DiGi.*` Namespace — Do Not Simplify There.** A `.cshtml` compiles into
+     the generated `AspNetCoreGeneratedDocument` namespace, so the innermost-outward lookup this rule relies on
+     has no `DiGi.*` chain to walk. `@using DiGi.GIS.WebAPI.UI` in `_ViewImports.cshtml` makes that
+     namespace's types visible but not its sub-namespaces: `Constants.Default.UserTokenCookieName` is
+     `CS0103`. Fully qualify sub-namespace members (`Constants.*`, `Enums.*`, `Classes.*`) in views.
 10. **Project Structure:** Treat codebase as multiple SEPARATE projects, not a monolithic solution.
 11. **Output Efficiency:** Direct, technical responses. Omit conversational filler.
 12. **Temporary Code Markers (`TODO [MarkerName]`):** Code that exists only until a migration completes must say so at every site, in a form one `grep` can collect.
@@ -180,6 +195,20 @@
     An `object`-typed value adds a second reason: after a JSON round trip a boxed `2010` comes back as
     `2010.0`, so `Equals` no longer groups it with the value it was — the key must be width-agnostic.
 
+20. **No Caching In An Optimization Unless It Was Explicitly Allowed.** When asked to make code faster, do
+    not introduce a caching scheme — a static `Dictionary`/`ConcurrentDictionary`, memoized reflection
+    results, cached `MethodInfo`/`ConstructorInfo`/`Type` lookups — unless the request says caching is
+    allowed for that change. It applies to every repository in the workspace.
+    - **Why:** an optimization pass over `DiGi.Core` added caches to `Description`, `Serialize`, `Value` and
+      `Clone`, and all of it was rolled back. A cache brings static mutable state, thread-safety obligations
+      and unbounded memory growth into a library that every host loads, and none of that is visible at the
+      call site.
+    - **Reach for these first:** drop throwaway allocations (`ToList().ConvertAll(...)`), avoid repeated
+      enumeration, replace an `O(n²)` scan with a `HashSet`/`Dictionary` built for **one** pass and discarded
+      afterwards, copy hot data out of object graphs into flat arrays (`Coding - Geometry.md`).
+    - **When a cache really is the best fix** — typically a hot reflection path — propose it with the
+      measurement and ask before implementing it.
+
 ---
 
 ## 2. Architecture — `DiGi.Core` Pattern
@@ -292,6 +321,13 @@ public static Polygon2D? Polygon2D(this IEnumerable<Point2D?>? point2Ds, double 
 - File layout: `/Convert/To[TargetArea]/[TargetType].cs`.
 - Method shape: `public static` extension method on source type. Return `null` for null/invalid input (do not throw).
 - Method naming: `To[TargetArea](this SourceType?)` for single target; `To[TargetArea]_[TargetType](this SourceType?)` when multiple targets exist for a single source.
+- **`Convert` is the first choice — never an instance method on the model**, including a performance variant
+  that skips defensive cloning (`ToNTS_Coordinates` was moved out of `Segmentable2D` into
+  `/Convert/ToNTS/Coordinates.cs`).
+- **When a conversion needs the model's state without a clone, add a public opt-out overload of the existing
+  getter — not an `internal` accessor.** `Segmentable2D.GetPoints(bool clone)` returns the internal list
+  when `clone` is `false`, and its `<summary>` states the caller must not mutate it; `Convert.ToNTS_Coordinates`
+  consumes that. A narrow `internal` property for same-assembly speed was rejected and is not a pattern here.
 
 ### `Query` Naming Conventions
 - Use property-like names without verb prefixes (e.g., `BoundingBox()`, NOT `GetBoundingBox()`).
@@ -320,6 +356,14 @@ Never introduce arbitrary magic numbers (e.g. `0.001`, `1e-5`, `0.00001`) when i
   - Solution `.gitignore` MUST contain `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/file.conf"`.
   - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
   - Automated test reports, diagnostic dumps, and text logs produced during test execution MUST be saved to `user files/reports/` (resolved via `assembly.ReportsDirectory()`).
+  - **Do not print a `user files/` conf to inspect it — not even "redacted" — until the redaction is proven.**
+    A pattern that does not match fails silently and prints the secret in clear text. A
+    `sed -E 's/(Password|pwd)=[^;]*/…/'` written for a `Key=value;` connection string matched nothing in a
+    conf whose shape was `PASSWORD="value"` on its own line, and the password reached the transcript. Learn
+    the shape from the key names alone (`grep -o '^[A-Z_]*='`), build the pattern for that shape, and assert
+    the secret substring is absent before showing anything. Usually the safer answer is to report only the
+    non-sensitive fact you needed (host, database name). If a secret is printed anyway, say so immediately
+    — it has to be rotated.
 - **Solution Items (`.sln` / `.slnx`):** In Visual Studio 2026 solutions, root-level configuration and build assets must be organized under the `Solution Items` virtual folder:
   - `Directory.Build.props`
   - `Directory.Build.targets`
@@ -475,6 +519,34 @@ older than the `.exe` itself; the one that shipped this was four days stale.
 - **Only launching the host proves it.** Unit tests cannot: an `.xUnit` project re-declares its own
   references and therefore gets its own, correct manifest. Neither can the script below.
 
+### Build-Time Symptoms Of The Same Opacity
+The sections above are about what a deployed host fails to load. The same `HintPath` opacity produces three
+compile-time failures in the workspace, each of which looks like a defect in the change you just made.
+
+- **`CS0012` from overload resolution — fix the `.csproj`, never the call site.** To resolve an overloaded
+  call the compiler loads the parameter types of **every** same-named candidate, including overloads your
+  arguments could never bind to. If one candidate's type lives in an assembly the caller does not reference
+  directly, the error is *"type '…' is defined in an assembly that is not referenced"*, not "no matching
+  overload". Known offenders: `GIS.Query.Reference()` (candidates typed from `DiGi.BDOT10k` and `DiGi.GML`),
+  `Convert.ToDiGi` (`DiGi.BDOT10k`), `Analytical.Create.BuildingModel` (`DiGi.Geometry`), and
+  `Geometry.Planar.Query.Union` (`NetTopologySuite` — a NuGet package, fixed with a `PackageReference` at the
+  version `DiGi.Geometry` uses). The error names the assembly; grep the overload set
+  (`grep -rhnE "public static .* <Method>\(this "`) to find the candidate, then add the direct reference. It
+  is **latent**: it can appear only after an unrelated library is rebuilt, so confirm with `git stash` and a
+  rebuild before treating it as your own breakage.
+- **A wall of `CS0246`/`CS0234` that vanishes under `-m:1` is a parallel-build race.** A host that reaches the
+  same library both by `ProjectReference` and (through another project) by `HintPath` — most
+  `*.UI`/`*.Application` projects — compiles the reader while the library's dll is being rewritten.
+  `DiGi.GIS.UI.Application` produced 47 such errors, none related to the edit. Rebuild with `-m:1`, or build
+  the dependency first; do not chase the messages.
+- **A `HintPath` also probes the folder it points into.** MSBuild resolves unlisted dependencies from that
+  directory, and the `bin` of a library built with `CopyLocalLockFileAssemblies=true` holds a whole,
+  possibly stale, closure. Adding `DiGi.GIS.IO` to `DiGi.GIS.PostgreSQL.xUnit` took it from 0 to 66 `CS1574`,
+  because `DiGi.GIS.IO/bin` carried 26 dlls including a `DiGi.GIS.dll` seven hours older than the canonical
+  one. **Count first:** `ls <lib>/bin/*.dll | wc -l` — one or two is a plain library, twenty is a deployment
+  closure, and taking what you need inline (a column needs only its name) beats taking the reference. This
+  one is stable across rebuilds, unlike the race above.
+
 ### The Check
 Run after building; it inspects compiled output, not project files.
 ```powershell
@@ -539,6 +611,36 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
      compare an `object` member with `Equals` (render it through an invariant, width-agnostic key — §1.19),
      and `SerializationCheck` such a type with a string value, marking the deferred numeric check
      `TODO [ObjectMemberClone]` so the sweep finds it when #6 closes.
+7. **How The DiGi Serializer Collects And Applies Members — Traps That Raise No Error.**
+   `Query.SerializableMemberInfos` walks `BaseType` and reflects every level with
+   `NonPublic | Public | Instance`; `SerializationMethodCollection` keys the result by member name. Each trap
+   below leaves an object that deserializes "successfully" with a member missing or changed:
+   - **Setters run in JSON document order, not declaration order.** `Update` iterates the `JsonObject`, so a
+     re-ordered or hand-edited document applies members in whatever order it lists them. Never let one
+     member's setter depend on another having run; make a payload self-describing instead (the point-cloud
+     reference blob repeats the count the coordinate blob already carries).
+   - **Members de-duplicate by name across the hierarchy, and the derived one wins.** A derived member that
+     reuses a base member's name silently replaces it, and a `[JsonIgnore]` at any level removes same-named
+     base members too. Choose names on a derived serializable type that collide with nothing above it.
+   - **A `[JsonInclude]` property with a `private set` on a base class never deserializes on a derived type.**
+     Reflected through the derived type, the base's private accessor is invisible, that entry wins the
+     name-keyed dictionary, its `SetMethod` is `null`, and the member is skipped. `Typology.SubTypologies` came
+     back empty from every `Clone` once `Typology` became generic. Use `protected set`, or a `[JsonInclude]`
+     private **field** (fields are collected only from their declaring type); `private set` is safe only on a
+     sealed class.
+   - **A property with no setter is written but skipped on read.** Array-backed payloads therefore travel
+     through a settable single-string property, not a get-only one.
+   - **A dictionary is rebuilt with `Activator.CreateInstance(type, dictionary)`.** Keys go on the wire as
+     JSON object names, so a `Dictionary<object, T>` filed under `int 2010` comes back under `"2010"`; and the
+     rebuilt instance uses the type's **default** comparer, so a `SortedDictionary<string, T>` constructed with
+     an ordinal comparer is culture-sensitive after every read or `Clone`. Key serialized maps by string and
+     prefer `Dictionary<string, T>` (ordinal, insertion-ordered on both legs).
+   - **`byte[]` is a JSON number array, never base64.** `Create.JsonNode` treats it as an `IEnumerable`
+     (`"Bytes":[255,216,…]`). A SQL projection of such a member (`v->'Bytes'`) decodes with
+     `DiGi.GIS.PostgreSQL.Convert.ToSystem_Bytes(JsonNode)`; `Convert.FromBase64String` throws on every row.
+     Seed fixtures from a real `ToJsonObject()`, not from a hand-written guess of the shape.
+   - **`Clone()` is a JSON round trip through the `JsonObject` constructor**, never the copy constructor —
+     see `Coding - Automatic Tests.md` §4 for what that means for `SerializationCheck`.
 
 ---
 

@@ -157,6 +157,12 @@ public override List<GLTFNode>? Convert(Building2D serializableObject, double to
   *and* in every consumer whose build refreshed the copy. The target runs `BeforeTargets="Build"`,
   after `CoreBuild` — a build that fails on a locked `bin\*.exe` (an instance still running) never
   reaches it, so confirm the two files hash-identical before committing the consumer.
+  **Edit the engine only in its owner, `DiGi.GLTF.WebAPI/DiGi.GLTF.WebAPI/wwwroot/js/gltf-viewer-core.js`.**
+  The consumer's copy is a build artifact: the next build overwrites an edit made there, and it looks
+  exactly like a mysterious revert (`DiGi.GIS.WebAPI.UI#58` was lost that way until `#57` re-synced it).
+  After building the consumer, diff the two copies with CR stripped. The UI serves the file through an
+  import map with a `FileVersionProvider` fingerprint (`?v=…`); a fingerprint that does not change after an
+  edit means the served file is stale — usually the owner sync did not run.
 
 ---
 
@@ -187,6 +193,14 @@ every flag said it did.
   type, a visibility filter, a clipping change) must call `requestShadowUpdate()`. The shadow-bias
   normals are computed once from the winding and averaged per vertex (`prepareShadowNormals`) — no
   per-sun re-orientation is needed.
+- **Box selection highlights live, in every 3D view, in both directions.** Users work CAD-style
+  (Revit/Rhino), where window (left-to-right) and crossing (right-to-left) selection show the would-be
+  selection while the drag is still in progress; feedback only on mouse-up reads as broken. The engine does
+  this in `updateMarqueePreview`: per-object screen bounds are computed once per drag (`computeScreenBounds`
+  — the camera cannot orbit mid-drag), each `pointermove` is a rectangle test, the preview re-tints only the
+  difference via `applyHighlight(id, SELECTED_TINT)`, and it never dispatches `gltf-selectionchanged` until
+  the drag ends. A new view inherits it by using the engine; a view with its own selection code must match
+  it.
 
 ---
 
@@ -199,6 +213,7 @@ every flag said it did.
 - [ ] Converters emit WORLD coordinates (no manual origin shift).
 - [ ] Endpoint calls `ToSystem_Bytes(scene, batched: true)`.
 - [ ] Response compression enabled for `model/gltf-binary`.
-- [ ] `gltf-viewer-core.js` synced to `wwwroot/js/` — and committed in both repositories when changed.
+- [ ] `gltf-viewer-core.js` edited in `DiGi.GLTF.WebAPI` only, synced to `wwwroot/js/` — and committed in both repositories when changed.
+- [ ] Marquee selection live-highlights in both directions (§5).
 - [ ] Nothing in the consumer reads the payload's vertex normals; the winding may be relied on, `shadowSide` pinned when `side` changes (§5).
 - [ ] Explicit typing declared; no `var`; English only.
