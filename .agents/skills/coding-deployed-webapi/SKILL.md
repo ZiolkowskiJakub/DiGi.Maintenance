@@ -26,13 +26,13 @@ Directives for manual, on-demand testing against live production endpoints (`htt
 `DiGi.WebAPI.WindowsService` publishes one OpenAPI document per **first route segment**, discovered at
 start-up from the loaded controllers, plus one document holding everything:
 
-| URL | Contents | Size (2026-09-30) |
+| URL | Contents | Size (2026-10-01) |
 |---|---|---|
-| `/swagger/gis/swagger.json` | `DiGi.GIS.WebAPI` — 95 paths, 65 schemas | ~326 KB |
-| `/swagger/information/swagger.json` | `DiGi.WebAPI` diagnostics — 6 paths | ~12 KB |
-| `/swagger/user/swagger.json` | `DiGi.User.WebAPI` — 5 paths | ~9 KB |
-| `/swagger/gltf/swagger.json` | `DiGi.GLTF.WebAPI` — 2 paths | ~6 KB |
-| `/swagger/swagger.json` (same as `/swagger/full/swagger.json`) | every endpoint of every prefix — 108 paths, 74 schemas | ~350 KB |
+| `/swagger/gis/swagger.json` | `DiGi.GIS.WebAPI` — 95 paths, 83 schemas | ~407 KB |
+| `/swagger/information/swagger.json` | `DiGi.WebAPI` diagnostics — 6 paths, 9 schemas | ~27 KB |
+| `/swagger/user/swagger.json` | `DiGi.User.WebAPI` — 5 paths, 3 schemas | ~10 KB |
+| `/swagger/gltf/swagger.json` | `DiGi.GLTF.WebAPI` — 2 paths, 12 schemas | ~18 KB |
+| `/swagger/swagger.json` (same as `/swagger/full/swagger.json`) | every endpoint of every prefix — 108 paths, 99 schemas | ~454 KB |
 
 **To keep the context small, never load the full document when you work on one prefix, and never load
 `gis` whole when you need one endpoint:**
@@ -68,7 +68,13 @@ Rules the host applies:
 
 ### Swagger Contract Limitations
 1. **Incomplete Endpoint List:** Base `WebAPIController` sets `[ApiExplorerSettings(IgnoreApi = true)]`, so an action appears in Swagger only when it or its controller opts back in with `IgnoreApi = false`. All of `user/*` and `information/*` do; write endpoints (`updateitem(s)`) and several `item*` reads do not. Query `GET /information/endpoints?includeignored=true` or `GET /information/controllers` to discover all active endpoints.
-2. **Schema Inaccuracies:** Wire format uses **PascalCase property names**, a mandatory `_type` discriminator (`"Namespace.Type,ShortAssembly"`), and **integer enums**. Ignore Swagger schema camelCase/string-enum definitions.
+2. **Payload Schemas Follow the Writer:** since `DiGi.WebAPI.WindowsService#3` (deployed 2026-10-01) the host's `WireFormatSchemaFilter` documents each payload in the format actually written, and since `#6` that includes enums. Production GET payloads of every sampled prefix validate strictly against the served documents, enum properties included.
+   - **DiGi `ISerializableObject` payloads** (written by the DiGi serializer): exact member names (**PascalCase** by convention — a member without `[JsonPropertyName]` keeps its field name, e.g. `Building.roofTypeId`), a mandatory `_type` discriminator (`"Namespace.Type,ShortAssembly"`, required, with the type's own name as `example`), and every member `required` because the serializer writes all of them, `null` explicitly. Always a JSON object, also for a DiGi type that is an `IEnumerable` (`EPWFile`).
+   - **Open DiGi schemas** — an interface, an abstract type, a type writing its own JSON (`ToJsonObject` override) — declare only `_type` and allow additional properties: the payload carries the members of the concrete type `_type` names. A concrete type that other loaded types derive from (`WeatherRecord`, holding `DataRecord`s) lists its members but allows additional ones too.
+   - **MVC payloads** (`Ok(...)` POCOs such as `UpdateItemsResult`, `ProblemDetails`) are camelCase with **string** enums — that is what the MVC formatter writes.
+   - **Enums inside DiGi payloads travel as integers and are declared inline as integers** (`DiGi.WebAPI.WindowsService#6`): `"AdministrativeArealType": 2` is documented as `type: integer`, with the values in numeric order (`[-1, 0, 1, 2, 3, 4]`), the member names in the same order in `x-enum-varnames` / `x-enumNames`, and `Wire values (integer): Undefined = -1, ...` at the end of the description. A nullable enum lists `null` last among its values, because OpenAPI 3.0's `nullable` widens `type` only. A `[Flags]` enum lists no values and describes its bits instead.
+   - **Enum components are the member-name strings that query parameters and MVC payloads use.** A query parameter `$ref`s its string component, and its description carries the integer values and the advice to send the integer (`Coding - WebAPI Contracts.md`). Parameters are camelCase and bind the name or the integer alike. An enum component nothing references any more (one used only by DiGi payloads) is removed from the document.
+   - **DiGi request bodies are read by MVC, not by the DiGi serializer.** A `[FromBody]` DiGi parameter (`HistogramRequestParameter`, ...) is documented in the DiGi wire format, which MVC accepts (names case-insensitive, `_type` ignored, enums as integers or names). A plain object nested in one (`FilterGroup`, `FilterCondition`) keeps its camelCase schema with string enums.
 
 ### The Deployed Build Lags the Repository
 
@@ -167,6 +173,8 @@ Execute this safe, read-only sequence to verify client/server integration:
 - **An omitted parameter is not rejected.** `[ApiController]` answers 400 for a value it cannot parse (`administrativearealtype=` and `administrativearealtype=Nonsense` both 400), but an **absent** parameter keeps `default(T)` and the request succeeds. Omitting `administrativearealtype` on `administrativeareal2Dreferencesbyadministrativearealtype` returns a payload byte-identical to `administrativearealtype=0` — countries. Always pass the filter explicitly when testing.
 - **A `gis/terrain/mesh3d*` 404 can just mean the radius is too small.** Counties are sampled onto a 10–100 m lattice, so a circle narrower than the lattice step encloses no stored point. At `x=638000&y=486000`: radius 50 → 404, radius 100/200/500 → 200 with elevations of 111–112 m. Widen the radius before concluding the elevation table is missing in that environment.
 - **Enum Rename (`Subdivison` → `Subdivision`):** `AdministrativeArealType` member 4 was misspelled `Subdivison` and has been **renamed to `Subdivision`** — a deliberate breaking wire change, not an alias. From that build onward `Subdivison` returns **HTTP 400**; against an older deployment `Subdivision` returns **HTTP 400**. **Integer `4` is the only token that binds on every build**, so use it whenever the deployed version is unknown. Responses always carry the integer `4`.
+- **`000` on every call of a sweep is a client bug until proven otherwise.** An id list written from Python on Windows (`open(path, 'w')`) is CRLF; read by `while read -r id` in Git Bash it leaves a `\r` inside `$id`, so `…?countyid=$id` is a malformed URL and curl fails **before connecting** — `%{http_code}` reports `000` with an empty body, which is exactly what a connect timeout or a hung server also reports. That cost a full false diagnosis of a host answering in 21 ms. Normalise first (`tr -d '\r'`, or `open(path, 'w', newline='\n')`) and print `%{time_total}` beside `%{http_code}` in every sweep: a malformed URL returns instantly with every timing 0, a real hang shows `time_appconnect` set and the full timeout elapsed. A failure uniform from request #1 is the client; a saturated server degrades partway through.
+- **Tell a hung API from a UI regression before reading UI code.** When the API backend hangs, IIS still completes TLS in milliseconds but `/information/health` never answers, while the UI's own pages keep loading and every relay through them fails — `503` ("upstream answered nothing") or `204` where the relay collapses failures to null. One call settles it: `curl.exe -s -o NUL -w "%{time_appconnect} %{time_starttransfer} %{http_code}\n" https://api.digiproject.uk/information/health`. A long-running server task starving host memory caused exactly this (DiGi.GIS.PostgreSQL#97).
 
 
 ---
@@ -212,3 +220,12 @@ rather than the machine's specification.
 - **Heavy computation competes with serving pages.** Work that runs inside `DiGi.GIS.WebAPI.UI` shares
   the web server with every page it serves; gate it (one solve at a time, a size ceiling that answers
   413) and size those gates from web-server measurements.
+- **A development machine often runs the tray application twice.** The deployed copy under
+  `SOFTWARE_DIRECTORY` (from `DiGi.Maintenance/user files/Directories.conf`, synced by
+  `SyncDirectories.ps1`) and the repository `bin` show the same tray icon and tooltip, carry the same
+  `extensions\` folder, and write identical log lines apart from their paths — a run started from `bin`
+  cost two pipeline runs before it was noticed. Check which one is open before concluding anything from
+  what a task did: `Get-Process -Name "DiGi.GIS.PostgreSQL.UI.Application" | Select-Object Id, StartTime, Path`.
+  The `bin` instance also locks its dlls, so the next build of that project fails until it is exited.
+  A missing **Server** tab is a start-up database probe that failed once (it swallows the exception and
+  logs nothing); exit and relaunch rather than redeploying.

@@ -106,6 +106,39 @@ public static async Task<List<Building2D>> Building2DsByReferencesAsync(
 - Assign `npgsqlCommand.CommandTimeout = commandTimeout;` before execution.
 - Order parameters with `commandTimeout` placed before `CancellationToken` (per rule CA1068).
 
+### Reading A Whole Partition Of A Wide Table — Physical Order, Bounded `ctid` Windows
+Keyset paging on the primary key is the textbook way to walk a table, and on a wide table it is the slow
+one: rows come back in key order, which is **random heap I/O**.
+- **Measured on production** (DiGi.GIS.WebAPI.UI#29): paging `building_data` (~230 columns) by
+  `(county_id, reference)` took **368 s cold** for a 155 000-row part and **654 s on an immediate re-walk**
+  — the heap never stays cached, and a big walk evicts the small parts. The same part read `reference`-only
+  (index-only) took 7.5 s; page size and transfer were ≤ 0.1 s throughout. Everything else was heap I/O.
+- **Select only primary-key columns when you can** (index-only scan). When you need the row, **read in
+  physical order** and de-duplicate on the key.
+- **A `ctid` window needs an upper bound.** `ctid > '(n,0)' ORDER BY ctid LIMIT k` alone plans as a parallel
+  sequential scan plus a top-N sort of the rest of the partition (7 223 buffers per 1 000-row page —
+  quadratic over a walk). `ctid > lower AND ctid < upper` is a **Tid Range Scan** (143–155 buffers). A Tid
+  Range Scan carries no ordering, so `ORDER BY ctid LIMIT k` reads and sorts the whole window: size windows
+  to about one page of rows from `reltuples / relpages` (an unanalysed partition reports `reltuples = -1`;
+  `count(*)` it instead of guessing). Offsets start at 1, so `(n,0)` is an exclusive lower bound below every
+  row of block `n`. Requires PostgreSQL ≥ 14.
+- **Concurrent updates move rows across the walk** — read twice when the new version lands ahead, **missed**
+  when it lands behind (HOT reuses earlier slots). One `REPEATABLE READ` transaction on the walking
+  connection makes the walk exact.
+- **Reference implementation:** `TablePostgreSQLConverter.PullByPhysicalOrderAsync` (`DiGi.PostgreSQL.Table`),
+  gated by `Query.IsPhysicalOrderSupported`; the fact `Query_PhysicalOrderPullCommandText` asserts the plan
+  contains `Tid Range Scan`, and `PartitionPullByPhysicalOrderAsync_ConcurrentUpdate` proves the transaction.
+- **`EXPLAIN (ANALYZE, BUFFERS)` on the database that holds the table.** The development database may not
+  have it at all (it has no `building_data`), and a full walk of a large part loads production for minutes —
+  do not run one casually.
+
+### Copying A Column That Is Resolved Later — `NULL` Means Unknown
+When a column filled in by a later step (`subdivision_id`, a resolved county part) is copied from one table
+into another, a `NULL` in the source means *not resolved yet*, not *empty*. Filter such rows out of the
+write **and** guard the assignment (`SET col = COALESCE(EXCLUDED.col, target.col)`), or a re-run overwrites
+good values with nulls. Fixing one table's upsert does not fix its siblings: grep every `SET <column> =` and
+`ON CONFLICT … DO UPDATE` naming the column before closing the issue.
+
 ---
 
 ## 4. Resource Management & Async Lifecycle
@@ -227,6 +260,32 @@ the server.
 A diagnostic test that reads a database must say **in its own summary** which database its figures
 describe. `BuildingDataUnreachableBuildings` in `DiGi.GIS.PostgreSQL.xUnit` is the worked example.
 
+### Two databases per environment — Main and Storage
+`GISPostgreSQLConverterManager` builds each converter from one of two confs, and the tables are split
+between them:
+
+| Conf | Tables (converters) |
+|---|---|
+| `GIS_PostgreSQL_Main.conf` | `administrative_areal_2d`, `building_2d`, `year_built_data`, occupancy, EPW, unit, statistical data |
+| `GIS_PostgreSQL_Storage.conf` | `orto_datas`, `building_data`, `building_model`, `building`, `terrain_point` |
+
+- **There is no join across the two.** Work that needs both sides is a `Query` extension taking both
+  converters: read each side once as a cheap projection and match in memory (`Query.SubdivisionLinksAsync`,
+  `Query.CoveragesAsync`).
+- **Before writing SQL that names two tables, check which conf each one lives on.** A random draw joining
+  three tables on the Storage connection found `year_built_data` absent there, returned `null` in 10 ms, and
+  the page said "Nothing left to verify" (DiGi.GIS.PostgreSQL#88). A sub-50 ms "empty" answer from a query
+  that should scan is an early return, not an empty pool.
+- A development-database fact must seed the two sides on two databases, or it proves nothing.
+
+### Running a skipped integration fact
+`Create.GISPostgreSQLConverterManager()` looks for its confs beside the executing assembly — for a test host
+that is `DiGi.Test/bin/<ProjectName>/`, not `DiGi.Test/user files/`, and nothing copies them there. To run a
+`[Fact(Skip = …)]` integration fact: copy the confs from `DiGi.GIS.PostgreSQL/user files/` into that `bin`
+folder, drop the `Skip`, run, then restore the `Skip` and delete the copies. The confs still point at a
+development database (above). `psql` is usually not on `PATH`, so ad-hoc SQL (`EXPLAIN`, catalog reads) goes
+through a temporary fact over Npgsql.
+
 ---
 
 ## 7. Verification & Detection Checklist
@@ -240,3 +299,6 @@ describe. `BuildingDataUnreachableBuildings` in `DiGi.GIS.PostgreSQL.xUnit` is t
 - [ ] Queries use parameterization rather than string concatenation?
 - [ ] Dynamic identifiers resolved against the stored column list and quoted, never interpolated raw?
 - [ ] Any figure quoted about production measured through the API rather than through a `*.conf`?
+- [ ] Whole-partition reads of wide tables in physical order, with bounded `ctid` windows?
+- [ ] Every table a statement names lives on the same database (Main vs Storage)?
+- [ ] A copied resolved-later column filters `NULL` sources and guards the update with `COALESCE`?

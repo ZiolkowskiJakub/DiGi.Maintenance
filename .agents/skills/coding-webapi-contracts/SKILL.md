@@ -190,6 +190,25 @@ A UI that fronts a WebAPI is still a DiGi project: the
 - **`CancellationToken` on every action that issues an outbound request**, last parameter (CA1068),
   threaded all the way through. Without it a browser that navigates away leaves the outbound request
   running to completion.
+- **Three timeouts govern a request through `GISWebAPIManager`, and the smallest one wins.** Size a batch
+  against the client's effective budget, not against the server's:
+
+  | Layer | Default | Where |
+  |---|---|---|
+  | `PostOptions.Delay` — bounds **each attempt** | 20 s | `DiGi.WebAPI/Classes/Options/PostOptions.cs` |
+  | `HttpClient.Timeout` — hard ceiling on every request | 600 s | `DiGi.GIS.WebAPI/Create/ServiceProvider.cs` |
+  | `commandtimeout` — the server's database budget | 600 s | e.g. `BuildingDataController` |
+
+  A bulk write left on default `PostOptions` is cut off **by the client** at 20 s on an endpoint sized for
+  600 s. The cancellation surfaces as an `OperationCanceledException` that `UpdateItemsAsync` rethrows, so a
+  caller's `catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)` does
+  **not** match it and the failure reads as an unexplained item error. `RetryCount` is 3, so a slow request
+  burns four times the delay before failing; retrying is safe because the writes conflict on their key.
+  - **Keep the `HttpClient` ceiling at or above the server's `commandtimeout`.** It was 60 s until
+    DiGi.GIS.YOLO.UI#14 and silently cancelled slow global reads the server would have answered; raising
+    `Delay` past the ceiling does nothing. Any new named client follows the same rule.
+  - Measured read side: `tablebybuildingdatabyreferencesparameter` with 10 000 references and every column
+    answered in 5.6 s / 33 MB.
 
 ---
 
@@ -240,13 +259,49 @@ Two traps in the stub itself:
 
 ---
 
-## 5. Checklist
+## 5. Controller side — activation, response shape, error negotiation
+
+Three controller defects that build clean, pass every Fact that `new`s the controller, and break the
+deployed endpoint.
+
+- **A controller has exactly one public constructor.** The hosts call plain `AddControllers()`, so MVC
+  activates through `ActivatorUtilities.CreateFactory(type, Type.EmptyTypes)`; with no argument types every
+  public constructor matches, and a second one throws *"Multiple constructors accepting all given argument
+  types have been found"* — on every request, for **every** action of that controller, as HTTP 500. A
+  short "convenience" constructor added for tests took down all of `gis/building2d` for a day
+  (DiGi.GIS.WebAPI#6). Pass the extra dependencies explicitly in the test instead.
+  - **Diagnose in one call:** probe an action whose first statement is a parameter guard
+    (`?id=0` where the guard is `id <= 0`). **500 instead of 400** means the failure precedes the action
+    body — activation, not SQL.
+  - **Guard it:** `DiGi.Test/DiGi.GIS.WebAPI.xUnit/Facts/ControllerActivation.cs` reflects over every
+    `WebAPIController` and builds the real `ActivatorUtilities` factory, without a database. Copy it into
+    the test project of any other WebAPI that gains controllers.
+- **Return a DiGi object as `Content(Core.Convert.ToSystem_String(x), "application/json")`, never `Ok(x)`.**
+  `Ok` hands the object to the host's MVC formatter, which writes camelCase names and no `_type`
+  discriminator (`{"id":…,"countyId":…}` instead of `{"_type":"…","CountyId":…}`). A DiGi client's
+  `Core.Convert.ToDiGi<T>` then returns `null` — the UI reported "Nothing left to verify" while the API log
+  showed a successful draw (DiGi.GIS.WebAPI#39). A unit test cannot reproduce it, because plain STJ keeps the
+  `[JsonPropertyName]` names; only a live body shows the host's shape. `Ok(...)` is for MVC POCOs
+  (`ProblemDetails`, plain result records), which is what `Coding - Deployed WebAPI.md` §1 documents them as.
+- **Do not put `[Produces("image/jpeg")]` on an action that can also return a string error.** Content
+  negotiation then finds no formatter for the string-bodied 400/500/503 `ObjectResult` and answers **406**,
+  masking the real error, while `File()` and `NotFound()` bypass negotiation and look fine. Declare the
+  content type on the success response only:
+  `[ProducesResponseType(typeof(FileContentResult), 200, "image/jpeg")]`. When an action answers a uniform
+  406, suspect a masked error path first.
+
+---
+
+## 6. Checklist
 
 **Changing a controller**
 - [ ] Renamed or removed a `[FromQuery(Name = "…")]`? Grep every client and the front-end query strings.
 - [ ] Non-nullable parameter whose absence matters? Make it nullable and reject `null`.
 - [ ] Enum guard compared against a sentinel that is not `0`? It does not cover the omitted case.
 - [ ] `CancellationToken` last, and actually passed to the converter/query beneath.
+- [ ] Exactly one public constructor; `ControllerActivation` fact present in the test project.
+- [ ] DiGi objects returned via `Content(Core.Convert.ToSystem_String(x), "application/json")`, not `Ok(x)`.
+- [ ] No action-level `[Produces(...)]` on an action with string-bodied error paths.
 
 **Writing a client**
 - [ ] Base URI from a constant; no literal host anywhere else.
@@ -255,4 +310,5 @@ Two traps in the stub itself:
 - [ ] JSON body serialized with `JsonSerializerOptions.Default` when the contract names the properties.
 - [ ] Body property names confirmed on the wire, not inferred from a uniform failure status.
 - [ ] Absence degrades (`NoContent`), it does not fail the page.
+- [ ] `PostOptions.Delay` sized for the batch (default 20 s per attempt); `HttpClient.Timeout` ≥ server `commandtimeout`.
 - [ ] Every endpoint used is present on the deployed host, or gated behind a `TODO [MarkerName]`.
