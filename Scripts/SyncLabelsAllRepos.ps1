@@ -67,7 +67,9 @@ $legacyRenames = @{
 }
 
 # Standard obsolete labels to delete
-$obsoleteLabels = @("duplicate", "good first issue", "help wanted", "invalid", "question", "wontfix")
+# 'accessibility' is a newer GitHub default, absent from repositories created before it was introduced;
+# a repository that still carries it would otherwise keep a non-taxonomy label forever.
+$obsoleteLabels = @("accessibility", "duplicate", "good first issue", "help wanted", "invalid", "question", "wontfix")
 
 # Determine target repositories
 $targetDirectories = @()
