@@ -1,6 +1,6 @@
 ---
 name: coding-postgresql
-description: "Use when designing database schemas or executing queries with Npgsql / PostgreSQL in DiGi solutions - Classes/Converter/ architecture, NULLS NOT DISTINCT composite unique indexes for nullable columns, query batching (batchSize = 1000, ANY(@array)), commandTimeout parameter standard, and connection asset isolation in user files/."
+description: "Use when designing database schemas or executing queries with Npgsql / PostgreSQL in DiGi solutions - Classes/Converter/ architecture, NULLS NOT DISTINCT composite unique indexes for nullable columns, query batching (batchSize = 1000, ANY(@array)), commandTimeout parameter standard, and connection asset isolation in user files/. Also whole-partition reads of wide tables in physical order with bounded ctid windows (Tid Range Scan, REPEATABLE READ for an exact walk), the Main vs Storage database split (no join across them), running a skipped integration fact with the confs beside the executing assembly, and NULL in a resolved-later column meaning \"unknown\" (filter sources, COALESCE the update, grep every sibling upsert)."
 ---
 
 # AI Guidelines: PostgreSQL & Npgsql Development

@@ -1,6 +1,6 @@
 ---
 name: coding-deployed-webapi
-description: "Use when verifying a client or server change against the live WebAPI at api.digiproject.uk - swagger as the source of truth (fetch the per-prefix document /swagger/<prefix>/swagger.json, or one operation out of it, rather than the full one to keep context small), the county to reference to building GET test recipe, access rules and gotchas. Manual curl checks only, never added to DiGi.Test."
+description: "Use when verifying a client or server change against the live WebAPI at api.digiproject.uk - swagger as the source of truth (fetch the per-prefix document /swagger/<prefix>/swagger.json, or one operation out of it, rather than the full one to keep context small), the county to reference to building GET test recipe, access rules and gotchas. Adds triage: a uniform 000 from a sweep is a client bug until proven otherwise (CRLF id lists make malformed URLs - normalise and print %{time_total}), and a hung API is told from a UI regression with one /information/health timing call. Manual curl checks only, never added to DiGi.Test."
 ---
 
 # Coding — Deployed WebAPI (Live Endpoint Testing)
