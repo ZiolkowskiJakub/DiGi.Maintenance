@@ -22,7 +22,7 @@ param(
 
 $Root = (Resolve-Path $Root).Path
 
-# Deployment units, as synchronized by SyncDirectories.ps1.
+# Deployment units, as synchronized by Deploy.ps1.
 #
 # Recurse:
 #   DiGi.WebAPI.WindowsService hosts DiGi.GIS.WebAPI, DiGi.GLTF.WebAPI, DiGi.Communication.WebAPI and
@@ -101,7 +101,7 @@ $DeploymentUnits = @(
 		# The standalone nutrition and recipe importer of bodyplan - a framework-dependent console application
 		# in the pattern of DiGi.GIS.YOLO.UI.ConsoleApp: its own dependency closure, its own *.conf beside the
 		# executable, deployed to the database server through the Software folder by bodyplan\Scripts\Deploy.ps1
-		# rather than SyncDirectories.ps1 (which does not carry bodyplan). Every tool of bodyplan's Tools group
+		# rather than DiGi.Maintenance's own Deploy.ps1 (which does not carry bodyplan). Every tool of bodyplan's Tools group
 		# builds into its own bin, so this folder is the importer's alone.
 		Name    = "bodyplan.Importer"
 		Path    = "bodyplan\Tools\bodyplan.Importer\bin"

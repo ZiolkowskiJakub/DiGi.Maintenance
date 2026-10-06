@@ -8,7 +8,7 @@ Configuration settings for maintenance scripts are stored in relative configurat
 
 ### `user files/Directories.conf`
 Copy `files/Directories.conf` to `user files/Directories.conf` and configure the target path variables:
-- `SOFTWARE_DIRECTORY`: Target directory for software output binary synchronization (used by `SyncDirectories.ps1`).
+- `SOFTWARE_DIRECTORY`: Target directory for software output binary synchronization (used by `Deploy.ps1`).
 - `USER_FILES_BACKUP_DIRECTORY`: Target directory for copying and restoring repository `user files` folders (used by `CopyUserFiles.ps1`).
 - `GLOBAL_AGENTS_FILE`: Path to a machine-global `AGENTS.md` outside the workspace, refreshed from the AI Guidelines by `UpdateAgents.ps1`. Leave empty to skip that step.
 
@@ -49,10 +49,10 @@ PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1" -FailOnMi
 Synchronizes output binary directories across web services and the configured software output directory (`SOFTWARE_DIRECTORY` in `user files/Directories.conf`). By default, purges `logs` directories and log files from software output folders unless `-RemoveLogs:$false` is specified.
 ```powershell
 # Sync directories and clean logs in software destinations (default)
-PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1"
+PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1"
 
 # Sync directories preserving log files
-PowerShell -ExecutionPolicy Bypass -File ".\SyncDirectories.ps1" -RemoveLogs:$false
+PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1" -RemoveLogs:$false
 ```
 
 ### Copy User Files

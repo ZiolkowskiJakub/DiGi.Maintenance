@@ -475,7 +475,7 @@ loaded into the tray application. `DiGi.GIS.YOLO.UI.ConsoleApp` is the first of 
 - **It is its own deployment unit.** It carries its own dependency closure and its own `*.conf` — the Year
   Built runner authorizes with the `GIS_WebAPI_Client.conf` beside its own executable, not with the tray
   application's. `CheckHostDependencies.ps1` audits it as a unit of its own rather than with `Recurse`.
-- **Its absence is a supported state, not a gap.** `SyncDirectories.ps1` assembles it only when
+- **Its absence is a supported state, not a gap.** `Deploy.ps1` assembles it only when
   `INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION` is set in `user files/Directories.conf`, so a database host that
   will never score a building never receives it — the runner's models are most of its deploy payload. The
   tray application withholds the task rather than offering a row whose only outcome is a missing

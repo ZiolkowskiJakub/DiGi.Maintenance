@@ -226,7 +226,7 @@ Verify with `git check-ignore -v "user files/WebAPI_Diagnostics.conf"`.
 </Target>
 ```
 
-### D. Deployment Synchronization (`SyncDirectories.ps1`)
+### D. Deployment Synchronization (`Deploy.ps1`)
 1. **Phase 1** — microservice assemblies to `DiGi.WebAPI.WindowsService\bin\extensions\*`.
 2. **Phase 2** — `DiGi.WebAPI.WindowsService\bin` to `SOFTWARE_DIRECTORY\DiGi.WebAPI.WindowsService`.
 

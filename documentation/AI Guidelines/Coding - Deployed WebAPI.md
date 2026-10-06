@@ -93,8 +93,8 @@ Diagnostic endpoints follow a **Tiered Access** model configured via `user files
 - **Protected Tier (Guarded by the `key` request header)**: `GET /information/system`, `GET /information/assemblies`, `GET /information/controllers`, `GET /information/endpoints?includeignored=true`, and the commit hashes on `GET /information/version`. Access is **denied by default**: a missing or unreadable configuration, `Enabled=false`, a blank configured key or a missing header all return **HTTP 401 Unauthorized**.
 - The key travels in the `key` **request header**, never in the query string - a query string is written to server access logs, `Referer` headers and shell history.
 
-### Deployment & Sync (`SyncDirectories.ps1` & `CopyUserFiles`)
-`WebAPI_Diagnostics.conf` resides in `user files/` (git-ignored). `DiGi.WebAPI.WindowsService.csproj` defines a `CopyUserFiles` MSBuild target that copies `user files/**` to `bin/` upon compilation. When `SyncDirectories.ps1` runs, it automatically synchronizes `bin/` to the target `SOFTWARE_DIRECTORY\DiGi.WebAPI.WindowsService`.
+### Deployment & Sync (`Deploy.ps1` & `CopyUserFiles`)
+`WebAPI_Diagnostics.conf` resides in `user files/` (git-ignored). `DiGi.WebAPI.WindowsService.csproj` defines a `CopyUserFiles` MSBuild target that copies `user files/**` to `bin/` upon compilation. When `Deploy.ps1` runs, it automatically synchronizes `bin/` to the target `SOFTWARE_DIRECTORY\DiGi.WebAPI.WindowsService`.
 
 ### Automated Investigation Script (`InvestigateServer.ps1`)
 Run the script to inspect the server in a single token-efficient step:
@@ -217,7 +217,7 @@ rather than the machine's specification.
   413) and size those gates from web-server measurements.
 - **A development machine often runs the tray application twice.** The deployed copy under
   `SOFTWARE_DIRECTORY` (from `DiGi.Maintenance/user files/Directories.conf`, synced by
-  `SyncDirectories.ps1`) and the repository `bin` show the same tray icon and tooltip, carry the same
+  `Deploy.ps1`) and the repository `bin` show the same tray icon and tooltip, carry the same
   `extensions\` folder, and write identical log lines apart from their paths — a run started from `bin`
   cost two pipeline runs before it was noticed. Check which one is open before concluding anything from
   what a task did: `Get-Process -Name "DiGi.GIS.PostgreSQL.UI.Application" | Select-Object Id, StartTime, Path`.

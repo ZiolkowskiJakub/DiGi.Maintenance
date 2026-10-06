@@ -1,6 +1,6 @@
 ---
 name: coding-webapi-simple-authorization
-description: "Use when implementing or auditing lightweight API-key-based tiered authorization for WebAPI controllers - deny-by-default IsAuthorized, [Feature]Configuration model with an Open escape hatch, files/*.conf vs user files/ secrets, [FromHeader(Name = \"key\")] binding, constant-time key comparison, singleton registration on the host, MSBuild copy targets, SyncDirectories.ps1 deployment synchronization, and what a .NET 7+ WebApplication actually inserts into the pipeline (authentication/authorization middleware added automatically; [Authorize] without a registered scheme answers 500, not 401; GetService<...>() != null gates are vacuous)."
+description: "Use when implementing or auditing lightweight API-key-based tiered authorization for WebAPI controllers - deny-by-default IsAuthorized, [Feature]Configuration model with an Open escape hatch, files/*.conf vs user files/ secrets, [FromHeader(Name = \"key\")] binding, constant-time key comparison, singleton registration on the host, MSBuild copy targets, Deploy.ps1 deployment synchronization, and what a .NET 7+ WebApplication actually inserts into the pipeline (authentication/authorization middleware added automatically; [Authorize] without a registered scheme answers 500, not 401; GetService<...>() != null gates are vacuous)."
 ---
 
 # Coding — WebAPI Simple Authorization (Tiered Access & API Key Protection)
@@ -231,7 +231,7 @@ Verify with `git check-ignore -v "user files/WebAPI_Diagnostics.conf"`.
 </Target>
 ```
 
-### D. Deployment Synchronization (`SyncDirectories.ps1`)
+### D. Deployment Synchronization (`Deploy.ps1`)
 1. **Phase 1** — microservice assemblies to `DiGi.WebAPI.WindowsService\bin\extensions\*`.
 2. **Phase 2** — `DiGi.WebAPI.WindowsService\bin` to `SOFTWARE_DIRECTORY\DiGi.WebAPI.WindowsService`.
 
