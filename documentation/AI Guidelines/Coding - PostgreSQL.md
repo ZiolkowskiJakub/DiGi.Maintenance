@@ -255,6 +255,29 @@ the server.
 A diagnostic test that reads a database must say **in its own summary** which database its figures
 describe. `BuildingDataUnreachableBuildings` in `DiGi.GIS.PostgreSQL.xUnit` is the worked example.
 
+### A test project reads its own conf, never a deployed host's
+The rule above holds for a conf **on an editing machine**. A deployed host reads a conf of the same name
+on the server it runs on, and there that conf **is** the estate. A test project copies the whole
+`user files/` folder into its `bin`, so a suite that reads the host's conf name connects to whatever the
+host uses. bodyplan's facts read `Bodyplan_PostgreSQL_Main.conf`, the file its importer and Web API
+extension read. A run on the database server overwrote a curated production decision with a fact's note
+and left it there; only the next control run found it (bodyplan#47). Therefore:
+
+- **A database test project connects through its own `*_Test.conf`** (`Bodyplan_PostgreSQL_Test.conf`).
+  Create it only on a workstation and point it at a database that may be dropped. A server has no such
+  file, so every database fact skips there.
+- **Refuse a test conf that names the host conf's database, and fail one fact on it.** Both files sit in
+  the same `bin`, so compare host, port and database at the single connection entry point and refuse
+  there. A skip alone reads as green, so one plain `[Fact]` asserts that the two differ.
+- **A fact restores what it writes outside its own scratch rows.** A test-wide transaction cannot do it:
+  a converter built from connection data opens its own connection, so the fact's transaction never wraps
+  the converter's writes. Snapshot the rows (`to_jsonb`) before the first write, write them back in
+  `finally` keyed on the primary key, and assert that they equal the snapshot (bodyplan's
+  `Query.RowsJsonAsync` and `Modify.RestoreRowsAsync`). Remove scratch rows (`TST-*`, `ZZ-*`) before the
+  write and again in `finally`.
+- A fact that runs a whole import rewrites the base the same way the importer does, and no restore undoes
+  that. This is why the separate database is the guard and the restore is not.
+
 ### Two databases per environment — Main and Storage
 `GISPostgreSQLConverterManager` builds each converter from one of two confs, and the tables are split
 between them:
@@ -294,6 +317,7 @@ through a temporary fact over Npgsql.
 - [ ] Queries use parameterization rather than string concatenation?
 - [ ] Dynamic identifiers resolved against the stored column list and quoted, never interpolated raw?
 - [ ] Any figure quoted about production measured through the API rather than through a `*.conf`?
+- [ ] Do the database facts connect through their own `*_Test.conf`, refuse one that names the host conf's database, and restore every row they write outside their scratch rows?
 - [ ] Whole-partition reads of wide tables in physical order, with bounded `ctid` windows?
 - [ ] Every table a statement names lives on the same database (Main vs Storage)?
 - [ ] A copied resolved-later column filters `NULL` sources and guards the update with `COALESCE`?
