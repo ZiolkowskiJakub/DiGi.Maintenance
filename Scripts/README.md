@@ -46,10 +46,16 @@ PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1" -FailOnMi
 ```
 
 ### Sync Output Directories
-Synchronizes output binary directories across web services and the configured software output directory (`SOFTWARE_DIRECTORY` in `user files/Directories.conf`). By default, purges `logs` directories and log files from software output folders unless `-RemoveLogs:$false` is specified.
+Builds every solution with `BuildAll.ps1` (unless `-SkipBuild` is specified; a failed build stops before anything is copied), then synchronizes output binary directories across web services and the configured software output directory (`SOFTWARE_DIRECTORY` in `user files/Directories.conf`). By default, purges `logs` directories and log files from software output folders unless `-RemoveLogs:$false` is specified.
 ```powershell
-# Sync directories and clean logs in software destinations (default)
+# Build, sync directories and clean logs in software destinations (default)
 PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1"
+
+# Sync the bin folders as last built, without building
+PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1" -SkipBuild
+
+# Build in Debug, then sync
+PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1" -Configuration Debug
 
 # Sync directories preserving log files
 PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1" -RemoveLogs:$false

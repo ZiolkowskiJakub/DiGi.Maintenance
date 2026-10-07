@@ -1,8 +1,10 @@
 <#
 .SYNOPSIS
-    Batch synchronizes output binary directories across web services and the configured software directory.
+    Builds every solution, then batch synchronizes output binary directories across web services and the configured software directory.
 
 .DESCRIPTION
+    0. Builds every solution with BuildAll.ps1, unless -SkipBuild is set. A failed build stops the script before any
+       directory is synchronized.
     1. Synchronizes local WebAPI bin directories into DiGi.WebAPI.WindowsService extensions.
     2. Synchronizes UI and WindowsService bin directories to the target SOFTWARE_DIRECTORY configured in 'user files/Directories.conf'.
     3. Optionally removes 'logs' directories and log files from all directories copied to the software directory.
@@ -13,10 +15,22 @@
     software sync carries it there - the same way the WebAPI extensions reach DiGi.WebAPI.WindowsService.
     Left unset, that folder is removed and no host receives the models the runner needs.
 
+.PARAMETER Configuration
+    Build configuration passed to BuildAll.ps1.
+
+.PARAMETER VsMsbuildPath
+    MSBuild.exe passed to BuildAll.ps1. Detected with vswhere when empty.
+
+.PARAMETER SkipBuild
+    Deploys the bin folders as last built.
+
 .PARAMETER RemoveLogs
     If true (default), removes 'logs' directories and *.log files from directories copied to the software directory after synchronization.
 #>
 param (
+    [string]$Configuration = "Release",
+    [string]$VsMsbuildPath = "",
+    [switch]$SkipBuild,                      # Deploy the bin folders as last built
     $RemoveLogs = $true
 )
 
@@ -28,6 +42,24 @@ if ($RemoveLogs -is [string]) {
 
 # Get the dynamic base directory relative to this script
 $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
+
+# --- Build ---
+# CheckDependencies is not passed on purpose: BuildAll.ps1 would audit the host before the WebAPI extensions are
+# synchronized into its bin\extensions folders below, i.e. a stale probing set.
+if (-not $SkipBuild) {
+    $buildScript = Join-Path $PSScriptRoot "BuildAll.ps1"
+    if (-not (Test-Path $buildScript)) {
+        Write-Host "'$buildScript' not found." -ForegroundColor Red
+        exit 1
+    }
+
+    & $buildScript -Root $baseDir -Configuration $Configuration -VsMsbuildPath $VsMsbuildPath
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Build failed. Synchronization skipped." -ForegroundColor Red
+        exit $LASTEXITCODE
+    }
+}
 
 # Read and parse SOFTWARE_DIRECTORY from config file if available
 $confPath = Join-Path $PSScriptRoot "..\user files\Directories.conf"
