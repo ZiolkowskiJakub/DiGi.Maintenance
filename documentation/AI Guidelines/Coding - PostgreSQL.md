@@ -256,16 +256,21 @@ A diagnostic test that reads a database must say **in its own summary** which da
 describe. `BuildingDataUnreachableBuildings` in `DiGi.GIS.PostgreSQL.xUnit` is the worked example.
 
 ### A test project reads its own conf, never a deployed host's
-The rule above holds for a conf **on an editing machine**. A deployed host reads a conf of the same name
-on the server it runs on, and there that conf **is** the estate. A test project copies the whole
-`user files/` folder into its `bin`, so a suite that reads the host's conf name connects to whatever the
-host uses. bodyplan's facts read `Bodyplan_PostgreSQL_Main.conf`, the file its importer and Web API
-extension read. A run on the database server overwrote a curated production decision with a fact's note
-and left it there; only the next control run found it (bodyplan#47). Therefore:
+The rule above is a convention, and nothing enforces it. Tests run only on development machines; the
+servers have no development tooling ([Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md)
+§5). But a deployed host's conf and a development machine's conf share one **file name**, and on the
+server that file names the production database. Copy that conf to a workstation, or point a
+workstation's conf at the server, and every tool there that reads the name reaches production. That
+includes a test project, which copies the whole `user files/` folder into its `bin`.
 
-- **A database test project connects through its own `*_Test.conf`** (`Bodyplan_PostgreSQL_Test.conf`).
-  Create it only on a workstation and point it at a database that may be dropped. A server has no such
-  file, so every database fact skips there.
+bodyplan's facts read `Bodyplan_PostgreSQL_Main.conf`, the file its importer and Web API extension read.
+A fact's note, `"xUnit propagation over a direct row"`, written by a direct connection, replaced a curated
+decision on the production database. The server's own importer report found it, and it can only have come
+from a development machine whose Main conf named that database (bodyplan#47). Therefore:
+
+- **A database test project connects through its own `*_Test.conf`** (`Bodyplan_PostgreSQL_Test.conf`),
+  a name no deployed host reads. Create it only on a development machine and point it at a database that
+  may be dropped, never at a server's host. Without it every database fact skips.
 - **Refuse a test conf that names the host conf's database, and fail one fact on it.** Both files sit in
   the same `bin`, so compare host, port and database at the single connection entry point and refuse
   there. A skip alone reads as green, so one plain `[Fact]` asserts that the two differ.

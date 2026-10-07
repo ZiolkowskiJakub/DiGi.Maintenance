@@ -181,9 +181,9 @@ reading a log or blaming a component.
 
 | Role | Runs | Reached through |
 |---|---|---|
-| **Database server** (the stronger machine) | the production PostgreSQL databases; `DiGi.WebAPI.WindowsService` hosting the GIS Web API and its `extensions\*` | `https://api.digiproject.uk` |
-| **Web server** | `DiGi.GIS.WebAPI.UI` under IIS | `https://gis.digiproject.uk` |
-| **Development / test machines** | editing, builds, `DiGi.Test`, development databases behind `*.conf` | — (never production; [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) §6) |
+| **Database server** (a separate machine, the stronger one) | the production PostgreSQL databases; `DiGi.WebAPI.WindowsService` hosting the GIS Web API and its `extensions\*`; deployed tools such as `bodyplan.Importer` and the tray application. **No development tooling:** no Visual Studio, no source checkout, no builds, no xUnit | `https://api.digiproject.uk` |
+| **Web server** | `DiGi.GIS.WebAPI.UI` under IIS. No development tooling either | `https://gis.digiproject.uk` |
+| **Development / test machines** | editing, builds, `DiGi.Test` and every xUnit project, development databases behind `*.conf` | — (never production; [Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md) §6) |
 
 `DiGi.GIS.PostgreSQL.UI` (the tray application) is installed on **both** servers, and each background task
 runs on whichever server it was started on.
@@ -193,6 +193,13 @@ estate. Read them on the machine at the time you measure, and cite the measureme
 rather than the machine's specification.
 
 ### Rules that follow
+
+- **Tests never run on a server; a server only runs what was deployed to it.** The servers hold the build
+  output that `Scripts/Deploy.ps1` carries there. They have no Visual Studio, no source checkout and no test
+  projects. So "run the suite on the server" is never a step: verify on the server with the deployed
+  tools (`bodyplan.Importer` and its `reports/` dumps, the tray application) or through the API. A test
+  that wrote to a production database therefore ran on a **development machine whose `*.conf` named
+  the production database**. Look there, not on the server (bodyplan#47, bodyplan#48).
 
 - **Measure a limit on the machine that will run the code, and say which role you measured.** The two
   servers differ in capacity, so a figure taken on one does not transfer to the other. A synchronous limit
