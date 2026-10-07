@@ -264,9 +264,13 @@ workstation's conf at the server, and every tool there that reads the name reach
 includes a test project, which copies the whole `user files/` folder into its `bin`.
 
 bodyplan's facts read `Bodyplan_PostgreSQL_Main.conf`, the file its importer and Web API extension read.
-A fact's note, `"xUnit propagation over a direct row"`, written by a direct connection, replaced a curated
-decision on the production database. The server's own importer report found it, and it can only have come
-from a development machine whose Main conf named that database (bodyplan#47). Therefore:
+No fact has written production. The near miss was reading the wrong database: an importer "control run"
+reported a fact's note, `"xUnit propagation over a direct row"`, on what was taken for the production
+map. Its report sat in the shared deploy folder next to the server's runs, but it described a development
+database. All 295 rows carried timestamps that differed from the production run made 50 minutes earlier,
+and some predated it. bodyplan#47 hardened the suite on that misreading, and bodyplan#48 found the real
+cause (*A report says which database it describes*, below). The rules stand as prevention, because nothing
+but a conf's contents keeps a workstation off production:
 
 - **A database test project connects through its own `*_Test.conf`** (`Bodyplan_PostgreSQL_Test.conf`),
   a name no deployed host reads. Create it only on a development machine and point it at a database that
@@ -282,6 +286,21 @@ from a development machine whose Main conf named that database (bodyplan#47). Th
   write and again in `finally`.
 - A fact that runs a whole import rewrites the base the same way the importer does, and no restore undoes
   that. This is why the separate database is the guard and the restore is not.
+
+### A report says which database it describes
+Evidence written by a run (an importer's `reports/<timestamp>` dumps, a diagnostic fact's report) is
+evidence about **one database**. Before reading it as a statement about production, establish that
+production is the database it describes:
+
+- **Never deploy a build output's own run artifacts.** A development machine's importer `bin` holds the
+  reports of its runs against development databases. bodyplan's `Deploy.ps1` shipped that `reports/`
+  folder to the shared software directory. That mixed development runs into the server's evidence and
+  also stranded the destination's own reports in the deploy's temporary stash. Exclude such folders
+  from the sync (`SyncDirectory.ps1 -ExcludeDirectory`), as logs already are (bodyplan#48).
+- **Check a surprising report against its neighbours before acting on it.** Two runs on one database
+  share every row they did not change. A dump whose untouched rows all carry different `confirmed_at`
+  values, or whose timestamps run backwards against an earlier run's, describes another database. Five
+  minutes of comparing two dumps would have spared bodyplan#47 its "the estate was corrupted" premise.
 
 ### Two databases per environment — Main and Storage
 `GISPostgreSQLConverterManager` builds each converter from one of two confs, and the tables are split

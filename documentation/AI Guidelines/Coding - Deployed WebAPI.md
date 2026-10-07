@@ -197,9 +197,11 @@ rather than the machine's specification.
 - **Tests never run on a server; a server only runs what was deployed to it.** The servers hold the build
   output that `Scripts/Deploy.ps1` carries there. They have no Visual Studio, no source checkout and no test
   projects. So "run the suite on the server" is never a step: verify on the server with the deployed
-  tools (`bodyplan.Importer` and its `reports/` dumps, the tray application) or through the API. A test
-  that wrote to a production database therefore ran on a **development machine whose `*.conf` named
-  the production database**. Look there, not on the server (bodyplan#47, bodyplan#48).
+  tools (`bodyplan.Importer` and its `reports/` dumps, the tray application) or through the API. A
+  test's write found in a database therefore came from a development machine, and the first question is
+  whether that database is production at all. In bodyplan#47 it was not: a development run's report,
+  read from the shared software folder, was taken for the server's ([Coding - PostgreSQL.md](Coding%20-%20PostgreSQL.md)
+  §6 *A report says which database it describes*, bodyplan#48).
 
 - **Measure a limit on the machine that will run the code, and say which role you measured.** The two
   servers differ in capacity, so a figure taken on one does not transfer to the other. A synchronous limit
