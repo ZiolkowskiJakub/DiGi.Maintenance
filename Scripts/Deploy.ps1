@@ -17,6 +17,11 @@
     scratch, logs, reports and training inputs stay behind (training data belongs outside the workspace).
     Left unset, that folder is removed and no host receives the models the runner needs.
 
+    DiGi.GIS.PostgreSQL.UI's own bin is deployed from an allowlist of top-level directories too - 'extensions',
+    'runtimes', the satellite resource folders and any folder mirroring a subfolder of its 'files' / 'user files'
+    - because the tray's Year Built runs write their 'scratch' folder there. Every other directory is listed on
+    the "not deployed" line.
+
 .PARAMETER Configuration
     Build configuration passed to BuildAll.ps1.
 
@@ -194,10 +199,37 @@ if ($includeYearBuiltPredictionExtension -and (Test-Path $yearBuiltPredictionSou
     }
 }
 
+# The tray application's bin is also where its runs land: the Year Built prediction task resolves its relative
+# 'scratch' against the tray's current directory, which is this bin when the tray is started from it, and leaves
+# there the options file of every run and the exported imagery of every county that failed (a median county is
+# about 370 000 images / 6 GB). Its top-level directories are therefore deployed from an ALLOWLIST as well:
+# 'extensions' (assembled above), 'runtimes' and the satellite resource folders. 'logs' is not copied either,
+# rather than copied and deleted again afterwards. The CopyFiles / CopyUserFiles targets keep the subfolders of
+# 'files' and 'user files' (%(RecursiveDir)), so a top-level folder mirroring one of those is a runtime asset and
+# is deployed too.
+$trayApplicationSourceDir = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin"
+$trayApplicationDirectoryNames_Allowed = @("extensions")
+foreach ($assetDir in @("$baseDir\DiGi.GIS.PostgreSQL.UI\files", "$baseDir\DiGi.GIS.PostgreSQL.UI\user files")) {
+    if (Test-Path $assetDir) {
+        $trayApplicationDirectoryNames_Allowed += @(Get-ChildItem -Path $assetDir -Directory -Force | ForEach-Object { $_.Name })
+    }
+}
+
+$trayApplicationDirectories_Skipped = @()
+if (Test-Path $trayApplicationSourceDir) {
+    foreach ($directory in Get-ChildItem -Path $trayApplicationSourceDir -Directory -Force) {
+        if (-not ($trayApplicationDirectoryNames_Allowed -contains $directory.Name) -and -not (Test-DeployableDirectory $directory)) {
+            $trayApplicationDirectories_Skipped += $directory.Name
+        }
+    }
+}
+
 # Append Software synchronizations if Software directory was successfully parsed
 if (-not [string]::IsNullOrWhiteSpace($softwareDir)) {
+    Write-Host "DiGi.GIS.PostgreSQL.UI - not deployed: $(if ($trayApplicationDirectories_Skipped) { $trayApplicationDirectories_Skipped -join ', ' } else { '(none)' })" -ForegroundColor Cyan
+
     $SyncList += @(
-        @{ Source = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin";           Destination = "$softwareDir\DiGi.GIS.PostgreSQL.UI";   IsSoftware = $true },
+        @{ Source = $trayApplicationSourceDir;                       Destination = "$softwareDir\DiGi.GIS.PostgreSQL.UI";   IsSoftware = $true; ExcludeDirectory = @($trayApplicationDirectories_Skipped) },
         @{ Source = "$baseDir\DiGi.GIS.UI\bin";                      Destination = "$softwareDir\DiGi.GIS.UI";              IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.GIS.WebAPI.UI\bin";               Destination = "$softwareDir\DiGi.GIS.WebAPI.UI";       IsSoftware = $true },
         @{ Source = "$baseDir\DiGi.WebAPI.WindowsService\bin";       Destination = "$softwareDir\DiGi.WebAPI.WindowsService"; IsSoftware = $true }

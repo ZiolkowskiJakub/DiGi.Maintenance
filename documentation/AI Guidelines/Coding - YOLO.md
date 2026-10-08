@@ -91,7 +91,10 @@ paragraph when it does.
   earlier detector is scored as if it were the current one. Delete scratch from a replaced detector rather
   than keeping it "for resume".
 - **Production prediction runs** may use the relative default (`scratch`), because they clean up after
-  themselves. **Training and labelling runs** (`CleanScratchDirectory: false`, hundreds of thousands of files)
+  themselves. Started from the tray, a relative `scratch` resolves against the **tray application's** current
+  directory, normally `DiGi.GIS.PostgreSQL.UI\bin`: the options file of every run stays there, and so does the
+  imagery of every county that failed (a median county is about 370 000 images / 6 GB). `Deploy.ps1`
+  therefore deploys that bin's top-level directories from an allowlist too (§5). **Training and labelling runs** (`CleanScratchDirectory: false`, hundreds of thousands of files)
   set an absolute `ScratchDirectory` in the training directory: `scratch_train9` written into `bin` was
   235 042 files / 3.4 GB.
 
@@ -122,6 +125,10 @@ assembly loaded into the tray application (`Coding - General.md` §4, *The Other
     (`Test-DeployableDirectory`);
   - of `YOLO`, only `YOLO\models\model.pt` (the `IncludePath` entry). `model.onnx` is not read by the runner
     and is not deployed.
+- **The tray application's own bin is allowlisted as well.** Of `DiGi.GIS.PostgreSQL.UI\bin`'s top-level
+  directories only `extensions`, `runtimes` and the satellite resource folders reach the software directory.
+  Everything else (the tray runs' `scratch`, `logs`) is printed on the `DiGi.GIS.PostgreSQL.UI - not deployed:`
+  line. A new folder the tray needs at runtime has to be added there explicitly.
 - **Read the deploy's size line.** Every deploy prints
   `Year Built prediction extension: N file(s), X MB. Not deployed: …` — about 212 files / 268 MB — and warns
   above 1 000 files or 1 GB, or when `model.pt` is missing. The flip side of an allowlist: a new runtime
