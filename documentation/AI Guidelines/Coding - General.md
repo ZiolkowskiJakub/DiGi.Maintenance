@@ -357,13 +357,10 @@ Never introduce arbitrary magic numbers (e.g. `0.001`, `1e-5`, `0.00001`) when i
   - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
   - Automated test reports, diagnostic dumps, and text logs produced during test execution MUST be saved to `user files/reports/` (resolved via `assembly.ReportsDirectory()`).
   - **`user files/` ships.** `CopyUserFiles` flattens it into `bin`, and `Deploy.ps1` carries `bin` to the
-    hosts, so it holds only what the deployed tool reads at runtime — its `*.conf`, and for the Year Built
-    runner the production weights `YOLO/models/model.pt`. Training inputs live in a **training directory
-    outside the workspace** on the training machine: earlier or alternative weights, ONNX exports, pretrained
-    base weights, legacy reference tables, training and experiment options, training reports. The options
-    kept there name those inputs (and any `ScratchDirectory`) by absolute path and are passed to the runner
-    explicitly (`--dataset <path>`, `--train <path>`). DiGi.GIS.YOLO.UI's `user files/` once carried 1.17 GB
-    of model variants plus `Data_2025.05.27.tsv` to every deploy (§4, *The Other `extensions\` Folder*).
+    hosts, so it holds only what the deployed tool reads at runtime. Training data, alternative model weights
+    and experiment inputs live outside the workspace and are named by absolute path — for the YOLO detector
+    see [Coding - YOLO.md](Coding%20-%20YOLO.md) §3, where 1.17 GB of model variants once rode along on
+    every deploy.
   - **Do not print a `user files/` conf to inspect it — not even "redacted" — until the redaction is proven.**
     A pattern that does not match fails silently and prints the secret in clear text. A
     `sed -E 's/(Password|pwd)=[^;]*/…/'` written for a `Key=value;` connection string matched nothing in a
@@ -480,36 +477,10 @@ same folder name for something structurally different, and the two must not be r
 `bin\extensions\<tool>\` there holds a **standalone executable started with `Process.Start`**, never
 loaded into the tray application. `DiGi.GIS.YOLO.UI.ConsoleApp` is the first of them.
 
-- **It is its own deployment unit.** It carries its own dependency closure and its own `*.conf` — the Year
-  Built runner authorizes with the `GIS_WebAPI_Client.conf` beside its own executable, not with the tray
-  application's. `CheckHostDependencies.ps1` audits it as a unit of its own rather than with `Recurse`.
-- **Its absence is a supported state, not a gap.** `Deploy.ps1` assembles it only when
-  `INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION` is set in `user files/Directories.conf`, so a database host that
-  will never score a building never receives it — the runner's models are most of its deploy payload. The
-  tray application withholds the task rather than offering a row whose only outcome is a missing
-  executable, discovered after the counties have been chosen.
-- **Assemble it as a LOCAL sync into the host's own `bin`, never as a software destination of its own.**
-  `SyncDirectory.ps1` clears each destination's top level, so a destination nested *underneath* another one
-  is deleted by that one's sync, and the ordering of `$SyncList` silently becomes load-bearing. Assembled
-  into `bin` first, the extension travels to the host as part of the application, and a workspace checkout
-  and a deployed machine then resolve it by the same path.
-- **Assemble it from an allowlist, never a blocklist.** The runner's `bin` is also where its runs and its
-  training land. `Deploy.ps1` once excluded `scratch` by name; a labelling run then wrote
-  `scratch_train9` (235 042 files, 3.4 GB), which went to the host and the synced software directory, and
-  the deploy slowed to a crawl. `Deploy.ps1` now copies:
-  - the root files, minus `Data_*.tsv`, `YOLOTraining*Options*.json`, `*.hold` and `*.log`
-    (`SyncDirectory.ps1 -ExcludeFile`);
-  - `runtimes` and the satellite resource folders — no subfolders, nothing but `*.resources.dll`
-    (`Test-DeployableDirectory`);
-  - of `YOLO`, only `YOLO\models\model.pt` (the `IncludePath` entry). It is the one detector the runner
-    predicts with; `model.onnx` is not read by it and is not deployed.
-
-  Every deploy prints `Year Built prediction extension: N file(s), X MB. Not deployed: …` — about 212 files /
-  268 MB — and warns above 1 000 files or 1 GB, or when `model.pt` is missing. The flip side of an allowlist:
-  a new runtime folder the runner needs is left out **silently** until it is added to
-  `Test-DeployableDirectory` or `IncludePath`; the `Not deployed:` list is where it shows. Keep run
-  artifacts out of `bin` in the first place: a training or labelling run's `ScratchDirectory` points at the
-  training directory (§3).
+- **It is its own deployment unit.** It carries its own dependency closure and its own `*.conf`, and
+  `CheckHostDependencies.ps1` audits it as a unit of its own rather than with `Recurse`. How the Year Built
+  runner is assembled and deployed — the opt-in flag, the local sync into the host's `bin`, the allowlist —
+  is in [Coding - YOLO.md](Coding%20-%20YOLO.md) §5.
 - **Do not drop a plugin assembly in it expecting it to be loaded.** Nothing resolves assemblies from these
   folders.
 

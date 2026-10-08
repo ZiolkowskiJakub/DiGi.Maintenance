@@ -298,7 +298,7 @@ production is the database it describes:
   also stranded the destination's own reports in the deploy's temporary stash. Exclude such folders
   from the sync (`SyncDirectory.ps1 -ExcludeDirectory`), as logs already are (bodyplan#48). An output that
   writes run artifacts under names nobody fixed in advance needs an allowlist instead, because the next
-  folder escapes the list (`Coding - General.md` §4, the Year Built runner's `scratch_train9`);
+  folder escapes the list (`Coding - YOLO.md` §5, the Year Built runner's `scratch_train9`);
   `-ExcludeFile` covers top-level file patterns.
 - **Check a surprising report against its neighbours before acting on it.** Two runs on one database
   share every row they did not change. A dump whose untouched rows all carry different `confirmed_at`

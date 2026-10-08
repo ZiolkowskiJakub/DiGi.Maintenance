@@ -212,7 +212,7 @@ never in `files/`.** Both are copied to the build output by a `.csproj` target; 
     carries `bin` to the hosts, so it holds only what the deployed tool reads at runtime. Training inputs
     (alternative weights, base weights, reference tables, training options and reports) live in a training
     directory outside the workspace; the Year Built runner extension deploys from an allowlist, of `YOLO`
-    only `model.pt` (`Coding - General.md` §3–§4).
+    only `model.pt` (`Coding - YOLO.md` §3, §5).
 
 **Overriding Rule:** In case of duplicate relative file paths between `files/` and `user files/`, assets from `user files/` MUST ALWAYS take precedence and override assets from `files/`. Specifying `AfterTargets="CopyFiles"` ensures `CopyUserFiles` runs strictly after `CopyFiles` to overwrite any duplicates.
 
@@ -559,6 +559,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `Coding - Automatic Tests.md` | Writing xUnit tests, shared fixtures, or test report output. |
 | `Coding - Geometry.md` | Orienting, closing, triangulating, hashing or sweeping geometry — `SunDirection` points away from the sun, `Vector3D.Unit` is never null, `IsClosed` is not monotonic in tolerance, sub-tolerance corners hang `Triangulate`, symmetric fixtures cannot catch a mirror. |
 | `Coding - ComputeSharp.md` | Writing or changing a ComputeSharp `IComputeShader` — never combine an odd root constant count (`ConstantBufferSize / 4`) with an odd resource count (silently wrong results on NVIDIA RTX 5090); reorder or pad fields, then update the layout guard fact. |
+| `Coding - YOLO.md` | YOLO Year Built detector — runner modes, `model.pt` resolution, detector/regressor pairing, training data and training scratch outside the workspace (never in `user files/`), deploying the runner extension from an allowlist (only `model.pt`). |
 | `Coding - Templates.md` | Scaffolding a solution/project from `templates/`. |
 | `Coding - WebAPI GLTF.md` | Building or extending a Web API on the `DiGi.GLTF` 3D framework. |
 | `Coding - WebAPI Contracts.md` | Changing a WebAPI route/parameter, or writing an HTTP client of one; adding a controller constructor (exactly one public) or returning a DiGi object (`Content(Core.Convert.ToSystem_String(x), "application/json")`, never `Ok(x)`); client timeouts. |
