@@ -13,6 +13,8 @@
     'user files/Directories.conf' on a machine that deploys to an ML-capable host, and DiGi.GIS.YOLO.UI's
     output is assembled into DiGi.GIS.PostgreSQL.UI\bin\extensions\DiGi.GIS.YOLO.UI.ConsoleApp before the
     software sync carries it there - the same way the WebAPI extensions reach DiGi.WebAPI.WindowsService.
+    Only the runner, its runtimes and satellite folders, and the detector YOLO\models\model.pt are assembled;
+    scratch, logs, reports and training inputs stay behind (training data belongs outside the workspace).
     Left unset, that folder is removed and no host receives the models the runner needs.
 
 .PARAMETER Configuration
@@ -109,14 +111,78 @@ $SyncList = @(
 # application's own sync would delete the extensions folder, and the ordering of $SyncList would silently
 # become load-bearing.
 #
-# 'scratch' and 'logs' are excluded because they are run artifacts rather than deployment content - the
-# runner writes its exported imagery into its own bin, which had reached 14 GB.
+# The runner's bin is assembled from an ALLOWLIST, because it is also where run and training artifacts land:
+# the exported imagery in 'scratch' reached 14 GB, and once 'scratch' was excluded by name a labelling run's
+# 'scratch_train9' (235 042 files, 3.4 GB) went to the host instead. A top-level directory is copied only when
+# it is 'runtimes' or a satellite resource folder, so the next scratch folder is left behind whatever it is
+# called. Of 'YOLO' only the detector the runner predicts with is copied - earlier detectors, ONNX exports and
+# the pretrained base weights are training inputs, kept outside the workspace (D:\YOLO on the training
+# machine). Training inputs that CopyUserFiles flattens into the output root are excluded by name.
+$yearBuiltPredictionSourceDir = "$baseDir\DiGi.GIS.YOLO.UI\bin"
 $yearBuiltPredictionExtensionDir = "$baseDir\DiGi.GIS.PostgreSQL.UI\bin\extensions\DiGi.GIS.YOLO.UI.ConsoleApp"
+$yearBuiltPredictionModelPath = "YOLO\models\model.pt"
+$yearBuiltPredictionExcludeFile = @("Data_*.tsv", "YOLOTraining*Options*.json", "*.hold", "*.log")
 
-if ($includeYearBuiltPredictionExtension) {
+# The extension is about 250 MB in some 200 files. Anything well past that is a run or training artifact the
+# allowlist did not anticipate - for instance a runtime package that ships native libraries nobody loads.
+$yearBuiltPredictionMaxFileCount = 1000
+$yearBuiltPredictionMaxMB = 1024
+
+function Test-DeployableDirectory([System.IO.DirectoryInfo]$Directory) {
+    if ($Directory.Name -eq "runtimes") {
+        return $true
+    }
+
+    # A satellite resource folder (cs, de, pt-BR, zh-Hans, ...): no subfolders, nothing but *.resources.dll.
+    # Checked one level deep only, so a scratch folder of 200 000 files costs one listing, not a full walk.
+    if (Get-ChildItem -Path $Directory.FullName -Directory -Force | Select-Object -First 1) {
+        return $false
+    }
+
+    $files = @(Get-ChildItem -Path $Directory.FullName -File -Force)
+    return ($files.Count -gt 0) -and -not ($files | Where-Object { $_.Name -notlike "*.resources.dll" })
+}
+
+if ($includeYearBuiltPredictionExtension -and (Test-Path $yearBuiltPredictionSourceDir)) {
+    $directories_Deployable = @()
+    $directories_Skipped = @()
+    foreach ($directory in Get-ChildItem -Path $yearBuiltPredictionSourceDir -Directory -Force) {
+        if (Test-DeployableDirectory $directory) {
+            $directories_Deployable += $directory
+        } else {
+            $directories_Skipped += $directory.Name
+        }
+    }
+
+    $files_Deployable = @(Get-ChildItem -Path $yearBuiltPredictionSourceDir -File -Force | Where-Object { $name = $_.Name; -not ($yearBuiltPredictionExcludeFile | Where-Object { $name -like $_ }) })
+    foreach ($directory in $directories_Deployable) {
+        $files_Deployable += @(Get-ChildItem -Path $directory.FullName -File -Recurse -Force)
+    }
+
+    $path_Model = Join-Path $yearBuiltPredictionSourceDir $yearBuiltPredictionModelPath
+    if (Test-Path $path_Model) {
+        $files_Deployable += Get-Item $path_Model
+    } else {
+        Write-Warning "'$path_Model' not found - the host would receive a runner with no detector. Put the shipped weights in DiGi.GIS.YOLO.UI\user files\$yearBuiltPredictionModelPath and rebuild."
+    }
+
+    $fileCount = $files_Deployable.Count
+    $sizeMB = [math]::Round(($files_Deployable | Measure-Object -Property Length -Sum).Sum / 1MB)
+    Write-Host "Year Built prediction extension: $fileCount file(s), $sizeMB MB. Not deployed: $(if ($directories_Skipped) { $directories_Skipped -join ', ' } else { '(none)' })" -ForegroundColor Cyan
+
+    if ($fileCount -gt $yearBuiltPredictionMaxFileCount -or $sizeMB -gt $yearBuiltPredictionMaxMB) {
+        Write-Warning "The Year Built prediction extension is $fileCount file(s) / $sizeMB MB, above the expected $yearBuiltPredictionMaxFileCount file(s) / $yearBuiltPredictionMaxMB MB. Largest directories:"
+        $directories_Deployable | ForEach-Object {
+            $files = @(Get-ChildItem -Path $_.FullName -File -Recurse -Force)
+            [pscustomobject]@{ Directory = $_.Name; Files = $files.Count; MB = [math]::Round(($files | Measure-Object -Property Length -Sum).Sum / 1MB) }
+        } | Sort-Object MB -Descending | Select-Object -First 5 | Format-Table -AutoSize | Out-Host
+    }
+
     $SyncList += @(
-        @{ Source = "$baseDir\DiGi.GIS.YOLO.UI\bin";                 Destination = $yearBuiltPredictionExtensionDir; IsSoftware = $false; ExcludeDirectory = @("scratch", "logs") }
+        @{ Source = $yearBuiltPredictionSourceDir; Destination = $yearBuiltPredictionExtensionDir; IsSoftware = $false; ExcludeDirectory = @($directories_Skipped); ExcludeFile = $yearBuiltPredictionExcludeFile; IncludePath = @($yearBuiltPredictionModelPath) }
     )
+} elseif ($includeYearBuiltPredictionExtension) {
+    Write-Warning "INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION is set but '$yearBuiltPredictionSourceDir' does not exist - the extension is not assembled."
 } elseif (Test-Path $yearBuiltPredictionExtensionDir) {
     # Left behind by an earlier run with the flag on. Without this it keeps riding along inside the tray
     # application's bin, and turning the flag off would deploy exactly what it was turned off to avoid.
@@ -157,7 +223,24 @@ foreach ($Pair in $SyncList) {
     
     # Execute the sync script using the call operator (&) and the full path
     $excludeDirectory = if ($Pair.ContainsKey("ExcludeDirectory")) { $Pair.ExcludeDirectory } else { @() }
-    & $HelperScript -Source $Pair.Source -Destination $Pair.Destination -ExcludeDirectory $excludeDirectory
+    $excludeFile = if ($Pair.ContainsKey("ExcludeFile")) { $Pair.ExcludeFile } else { @() }
+    & $HelperScript -Source $Pair.Source -Destination $Pair.Destination -ExcludeDirectory $excludeDirectory -ExcludeFile $excludeFile
+
+    # Single files copied from inside a directory the sync excluded, at the same relative path.
+    if ($Pair.ContainsKey("IncludePath")) {
+        foreach ($includePath in $Pair.IncludePath) {
+            $path_Source = Join-Path $Pair.Source $includePath
+            if (-not (Test-Path $path_Source)) {
+                Write-Warning "'$path_Source' not found - not copied."
+                continue
+            }
+
+            $path_Destination = Join-Path $Pair.Destination $includePath
+            New-Item -ItemType Directory -Path (Split-Path $path_Destination -Parent) -Force | Out-Null
+            Copy-Item -Path $path_Source -Destination $path_Destination -Force
+            Write-Host "Copied $includePath." -ForegroundColor Green
+        }
+    }
 
     if ($RemoveLogs -and $Pair.IsSoftware) {
         if (Test-Path $Pair.Destination) {

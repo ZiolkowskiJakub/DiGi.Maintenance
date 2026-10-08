@@ -260,6 +260,56 @@ the server.
 A diagnostic test that reads a database must say **in its own summary** which database its figures
 describe. `BuildingDataUnreachableBuildings` in `DiGi.GIS.PostgreSQL.xUnit` is the worked example.
 
+### A test project reads its own conf, never a deployed host's
+The rule above is a convention, and nothing enforces it. Tests run only on development machines; the
+servers have no development tooling ([Coding - Deployed WebAPI.md](Coding%20-%20Deployed%20WebAPI.md)
+§5). But a deployed host's conf and a development machine's conf share one **file name**, and on the
+server that file names the production database. Copy that conf to a workstation, or point a
+workstation's conf at the server, and every tool there that reads the name reaches production. That
+includes a test project, which copies the whole `user files/` folder into its `bin`.
+
+bodyplan's facts read `Bodyplan_PostgreSQL_Main.conf`, the file its importer and Web API extension read.
+No fact has written production. The near miss was reading the wrong database: an importer "control run"
+reported a fact's note, `"xUnit propagation over a direct row"`, on what was taken for the production
+map. Its report sat in the shared deploy folder next to the server's runs, but it described a development
+database. All 295 rows carried timestamps that differed from the production run made 50 minutes earlier,
+and some predated it. bodyplan#47 hardened the suite on that misreading, and bodyplan#48 found the real
+cause (*A report says which database it describes*, below). The rules stand as prevention, because nothing
+but a conf's contents keeps a workstation off production:
+
+- **A database test project connects through its own `*_Test.conf`** (`Bodyplan_PostgreSQL_Test.conf`),
+  a name no deployed host reads. Create it only on a development machine and point it at a database that
+  may be dropped, never at a server's host. Without it every database fact skips.
+- **Refuse a test conf that names the host conf's database, and fail one fact on it.** Both files sit in
+  the same `bin`, so compare host, port and database at the single connection entry point and refuse
+  there. A skip alone reads as green, so one plain `[Fact]` asserts that the two differ.
+- **A fact restores what it writes outside its own scratch rows.** A test-wide transaction cannot do it:
+  a converter built from connection data opens its own connection, so the fact's transaction never wraps
+  the converter's writes. Snapshot the rows (`to_jsonb`) before the first write, write them back in
+  `finally` keyed on the primary key, and assert that they equal the snapshot (bodyplan's
+  `Query.RowsJsonAsync` and `Modify.RestoreRowsAsync`). Remove scratch rows (`TST-*`, `ZZ-*`) before the
+  write and again in `finally`.
+- A fact that runs a whole import rewrites the base the same way the importer does, and no restore undoes
+  that. This is why the separate database is the guard and the restore is not.
+
+### A report says which database it describes
+Evidence written by a run (an importer's `reports/<timestamp>` dumps, a diagnostic fact's report) is
+evidence about **one database**. Before reading it as a statement about production, establish that
+production is the database it describes:
+
+- **Never deploy a build output's own run artifacts.** A development machine's importer `bin` holds the
+  reports of its runs against development databases. bodyplan's `Deploy.ps1` shipped that `reports/`
+  folder to the shared software directory. That mixed development runs into the server's evidence and
+  also stranded the destination's own reports in the deploy's temporary stash. Exclude such folders
+  from the sync (`SyncDirectory.ps1 -ExcludeDirectory`), as logs already are (bodyplan#48). An output that
+  writes run artifacts under names nobody fixed in advance needs an allowlist instead, because the next
+  folder escapes the list (`Coding - YOLO.md` §5, the Year Built runner's `scratch_train9`);
+  `-ExcludeFile` covers top-level file patterns.
+- **Check a surprising report against its neighbours before acting on it.** Two runs on one database
+  share every row they did not change. A dump whose untouched rows all carry different `confirmed_at`
+  values, or whose timestamps run backwards against an earlier run's, describes another database. Five
+  minutes of comparing two dumps would have spared bodyplan#47 its "the estate was corrupted" premise.
+
 ### Two databases per environment — Main and Storage
 `GISPostgreSQLConverterManager` builds each converter from one of two confs, and the tables are split
 between them:
@@ -299,6 +349,7 @@ through a temporary fact over Npgsql.
 - [ ] Queries use parameterization rather than string concatenation?
 - [ ] Dynamic identifiers resolved against the stored column list and quoted, never interpolated raw?
 - [ ] Any figure quoted about production measured through the API rather than through a `*.conf`?
+- [ ] Do the database facts connect through their own `*_Test.conf`, refuse one that names the host conf's database, and restore every row they write outside their scratch rows?
 - [ ] Whole-partition reads of wide tables in physical order, with bounded `ctid` windows?
 - [ ] Every table a statement names lives on the same database (Main vs Storage)?
 - [ ] A copied resolved-later column filters `NULL` sources and guards the update with `COALESCE`?

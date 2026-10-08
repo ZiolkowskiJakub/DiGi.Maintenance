@@ -296,7 +296,10 @@ production is the database it describes:
   reports of its runs against development databases. bodyplan's `Deploy.ps1` shipped that `reports/`
   folder to the shared software directory. That mixed development runs into the server's evidence and
   also stranded the destination's own reports in the deploy's temporary stash. Exclude such folders
-  from the sync (`SyncDirectory.ps1 -ExcludeDirectory`), as logs already are (bodyplan#48).
+  from the sync (`SyncDirectory.ps1 -ExcludeDirectory`), as logs already are (bodyplan#48). An output that
+  writes run artifacts under names nobody fixed in advance needs an allowlist instead, because the next
+  folder escapes the list (`Coding - YOLO.md` §5, the Year Built runner's `scratch_train9`);
+  `-ExcludeFile` covers top-level file patterns.
 - **Check a surprising report against its neighbours before acting on it.** Two runs on one database
   share every row they did not change. A dump whose untouched rows all carry different `confirmed_at`
   values, or whose timestamps run backwards against an earlier run's, describes another database. Five
