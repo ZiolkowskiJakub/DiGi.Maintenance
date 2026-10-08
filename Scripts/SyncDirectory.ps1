@@ -18,6 +18,10 @@
     output without being part of the deployment - a runner's 'scratch' folder of exported imagery
     reached 14 GB and was copied to every host - and excluding them here avoids copying what the
     caller would only delete again afterwards.
+
+.PARAMETER ExcludeFile
+    Wildcard patterns (-like) for top-level file names in the source that are not copied, such as
+    training inputs that a build copies into the output beside the deployable files.
 #>
 param (
     [Parameter(Mandatory=$true)]
@@ -26,7 +30,9 @@ param (
     [Parameter(Mandatory=$true)]
     [string]$Destination,
 
-    [string[]]$ExcludeDirectory = @()
+    [string[]]$ExcludeDirectory = @(),
+
+    [string[]]$ExcludeFile = @()
 )
 
 # Check if source directory exists
@@ -59,7 +65,14 @@ Write-Host "Copying files from $Source to $Destination..." -ForegroundColor Gree
 try {
     # The source's top-level entries rather than the folder itself, so the content lands directly in
     # the destination. -Force lists hidden entries too, matching what "$Source\*" used to copy.
-    $sourceItems = Get-ChildItem -Path $Source -Force | Where-Object { -not ($_.PSIsContainer -and $ExcludeDirectory -contains $_.Name) }
+    $sourceItems = Get-ChildItem -Path $Source -Force | Where-Object {
+        $item = $_
+        if ($item.PSIsContainer) {
+            -not ($ExcludeDirectory -contains $item.Name)
+        } else {
+            -not ($ExcludeFile | Where-Object { $item.Name -like $_ })
+        }
+    }
 
     if (-not $sourceItems) {
         Write-Host "Success: Synchronization complete (nothing to copy)." -ForegroundColor Yellow
