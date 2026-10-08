@@ -208,6 +208,11 @@ never in `files/`.** Both are copied to the build output by a `.csproj` target; 
   - **Generated output also belongs here.** Test reports, diagnostic dumps, benchmark logs and text
     logs written during a run go to `user files/reports/` — never to `files/`. In tests, resolve the
     folder with `assembly.ReportsDirectory()` rather than a hardcoded path (see §7).
+  - **`user files/` ships with the build.** `CopyUserFiles` flattens it into `bin` and `Deploy.ps1`
+    carries `bin` to the hosts, so it holds only what the deployed tool reads at runtime. Training inputs
+    (alternative weights, base weights, reference tables, training options and reports) live in a training
+    directory outside the workspace; the Year Built runner extension deploys from an allowlist, of `YOLO`
+    only `model.pt` (`Coding - General.md` §3–§4).
 
 **Overriding Rule:** In case of duplicate relative file paths between `files/` and `user files/`, assets from `user files/` MUST ALWAYS take precedence and override assets from `files/`. Specifying `AfterTargets="CopyFiles"` ensures `CopyUserFiles` runs strictly after `CopyFiles` to overwrite any duplicates.
 

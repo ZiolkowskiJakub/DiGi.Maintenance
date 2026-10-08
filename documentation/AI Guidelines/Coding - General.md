@@ -356,6 +356,14 @@ Never introduce arbitrary magic numbers (e.g. `0.001`, `1e-5`, `0.00001`) when i
   - Solution `.gitignore` MUST contain `[Uu]ser [Ff]iles/`. Verify with `git check-ignore -v "user files/file.conf"`.
   - PowerShell scripts requiring environment paths MUST read `.conf` files from `user files/`.
   - Automated test reports, diagnostic dumps, and text logs produced during test execution MUST be saved to `user files/reports/` (resolved via `assembly.ReportsDirectory()`).
+  - **`user files/` ships.** `CopyUserFiles` flattens it into `bin`, and `Deploy.ps1` carries `bin` to the
+    hosts, so it holds only what the deployed tool reads at runtime — its `*.conf`, and for the Year Built
+    runner the production weights `YOLO/models/model.pt`. Training inputs live in a **training directory
+    outside the workspace** on the training machine: earlier or alternative weights, ONNX exports, pretrained
+    base weights, legacy reference tables, training and experiment options, training reports. The options
+    kept there name those inputs (and any `ScratchDirectory`) by absolute path and are passed to the runner
+    explicitly (`--dataset <path>`, `--train <path>`). DiGi.GIS.YOLO.UI's `user files/` once carried 1.17 GB
+    of model variants plus `Data_2025.05.27.tsv` to every deploy (§4, *The Other `extensions\` Folder*).
   - **Do not print a `user files/` conf to inspect it — not even "redacted" — until the redaction is proven.**
     A pattern that does not match fails silently and prints the secret in clear text. A
     `sed -E 's/(Password|pwd)=[^;]*/…/'` written for a `Key=value;` connection string matched nothing in a
@@ -485,6 +493,23 @@ loaded into the tray application. `DiGi.GIS.YOLO.UI.ConsoleApp` is the first of 
   is deleted by that one's sync, and the ordering of `$SyncList` silently becomes load-bearing. Assembled
   into `bin` first, the extension travels to the host as part of the application, and a workspace checkout
   and a deployed machine then resolve it by the same path.
+- **Assemble it from an allowlist, never a blocklist.** The runner's `bin` is also where its runs and its
+  training land. `Deploy.ps1` once excluded `scratch` by name; a labelling run then wrote
+  `scratch_train9` (235 042 files, 3.4 GB), which went to the host and the synced software directory, and
+  the deploy slowed to a crawl. `Deploy.ps1` now copies:
+  - the root files, minus `Data_*.tsv`, `YOLOTraining*Options*.json`, `*.hold` and `*.log`
+    (`SyncDirectory.ps1 -ExcludeFile`);
+  - `runtimes` and the satellite resource folders — no subfolders, nothing but `*.resources.dll`
+    (`Test-DeployableDirectory`);
+  - of `YOLO`, only `YOLO\models\model.pt` (the `IncludePath` entry). It is the one detector the runner
+    predicts with; `model.onnx` is not read by it and is not deployed.
+
+  Every deploy prints `Year Built prediction extension: N file(s), X MB. Not deployed: …` — about 212 files /
+  268 MB — and warns above 1 000 files or 1 GB, or when `model.pt` is missing. The flip side of an allowlist:
+  a new runtime folder the runner needs is left out **silently** until it is added to
+  `Test-DeployableDirectory` or `IncludePath`; the `Not deployed:` list is where it shows. Keep run
+  artifacts out of `bin` in the first place: a training or labelling run's `ScratchDirectory` points at the
+  training directory (§3).
 - **Do not drop a plugin assembly in it expecting it to be loaded.** Nothing resolves assemblies from these
   folders.
 
