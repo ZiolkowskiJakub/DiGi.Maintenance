@@ -559,7 +559,7 @@ also mirrored per repository as a skill under `.agents/skills/<skill-name>/SKILL
 | `Coding - Automatic Tests.md` | Writing xUnit tests, shared fixtures, or test report output. |
 | `Coding - Geometry.md` | Orienting, closing, triangulating, hashing or sweeping geometry — `SunDirection` points away from the sun, `Vector3D.Unit` is never null, `IsClosed` is not monotonic in tolerance, sub-tolerance corners hang `Triangulate`, symmetric fixtures cannot catch a mirror. |
 | `Coding - ComputeSharp.md` | Writing or changing a ComputeSharp `IComputeShader` — never combine an odd root constant count (`ConstantBufferSize / 4`) with an odd resource count (silently wrong results on NVIDIA RTX 5090); reorder or pad fields, then update the layout guard fact. |
-| `Coding - YOLO.md` | YOLO Year Built detector — runner modes, `model.pt` resolution, detector/regressor pairing, training data and training scratch outside the workspace (never in `user files/`), deploying the runner extension from an allowlist (only `model.pt`). |
+| `Coding - YOLO.md` | YOLO Year Built detector — runner modes, `model.pt` resolution, the first-detection year built predictor, training data and training scratch outside the workspace (never in `user files/`), deploying the runner extension from an allowlist (only `model.pt`). |
 | `Coding - Templates.md` | Scaffolding a solution/project from `templates/`. |
 | `Coding - WebAPI GLTF.md` | Building or extending a Web API on the `DiGi.GLTF` 3D framework. |
 | `Coding - WebAPI Contracts.md` | Changing a WebAPI route/parameter, or writing an HTTP client of one; adding a controller constructor (exactly one public) or returning a DiGi object (`Content(Core.Convert.ToSystem_String(x), "application/json")`, never `Ok(x)`); client timeouts. |

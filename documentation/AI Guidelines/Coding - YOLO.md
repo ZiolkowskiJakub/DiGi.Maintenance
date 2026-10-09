@@ -26,10 +26,16 @@ deployed. Every rule below exists because breaking it once cost a run, a deploy 
 - **Prediction runs on the CPython path with `model.pt`.** Every inference host needs the ultralytics version
   the weights were trained with (8.4.165 for `train9_fresh`; YOLO26 does not load under 8.3.130), and the
   runner's preflight refuses an older one (DiGi.GIS.YOLO.UI#23).
-- **Detector and regressor ship as a pair.** `OrtoBuildingDetectionModel.mlnet` (DiGi.GIS.ML, copied beside
-  the runner) is fitted to one detector's features. A regressor fitted to `train9_fresh` detections must
-  never score a county whose stored detections still come from `train8` — the feature-coverage guard does
-  not catch it, because the columns are populated, just by the wrong detector (DiGi.GIS.YOLO.UI#23).
+- **The detector dates every building directly — there is no regressor in the scoring path.** Since
+  DiGi.GIS.ML#15, `Query.PredictedYearBuilts` predicts the first year `model.pt` detected the building with
+  confidence ≥ 0.5, falling back to its first detection at all, and leaves out a building never detected; the
+  runner stamps `first-confident-detection@0.5` as the `ModelId`. So the detector's quality is the year's
+  quality, and nothing downstream corrects a missed early detection. `OrtoBuildingDetectionModel.mlnet` stays
+  in DiGi.GIS.ML only as an evaluation baseline (DiGi.GIS.ML#17, parked): it memorised its training counties
+  — through coordinates and through each county's own pattern of orthophoto years — and dated a county it had
+  not seen years late (76–89 % after the first confident detection), while its labelled counties looked
+  healthy because they were fits. A model returns only by beating the heuristic on a held-out county; it is
+  fitted to one detector's features and must never score another detector's detections (DiGi.GIS.YOLO.UI#23).
 - **GPU inference through Emgu is not available.** `Emgu.CV.runtime.windows.cuda` stops at 4.4 on nuget.org
   while the workspace uses `Emgu.CV` 4.12, which is why `DiGi.YOLO.ONNX` uses ONNX Runtime and keeps Emgu for
   imaging only (`Coding - General.md` §4, *Before Adding One*).
@@ -148,5 +154,6 @@ assembly loaded into the tray application (`Coding - General.md` §4, *The Other
       inputs in the training directory?
 - [ ] After a deploy, is the extension about 212 files / 268 MB, with `scratch*`, `logs`, `reports` in
       `Not deployed:` and no warning?
-- [ ] When shipping a new detector: is `model.pt` replaced together with its regressor, the old weights kept
-      in the training directory, and the SHA-256 recorded on the issue?
+- [ ] When shipping a new detector: is `model.pt` replaced, the old weights kept in the training directory,
+      the SHA-256 recorded on the issue, and the year built re-measured with
+      `YearBuiltPredictionEvaluationConsoleApp` — the detector now dates every building directly?
