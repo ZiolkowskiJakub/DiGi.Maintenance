@@ -107,8 +107,25 @@ $DeploymentUnits = @(
 		Path    = "bodyplan\Tools\bodyplan.Importer\bin"
 		Recurse = $false
 		Ignore  = @()
+	},
+	@{
+		# The internal bodyplan test page (bodyplan.digiproject.uk) - an IIS-hosted ASP.NET Core application in the
+		# pattern of DiGi.GIS.WebAPI.UI, deployed to the web server through the Software folder by
+		# bodyplan\Scripts\Deploy.ps1. It builds into its own UI\bin, apart from the extension's Extensions\bin.
+		Name    = "bodyplan.WebAPI.UI"
+		Path    = "bodyplan\UI\bin"
+		Recurse = $false
+		Ignore  = @()
 	}
 )
+
+# A -Unit naming no deployment unit used to match nothing, audit nothing and report "No missing dependencies"
+# with exit code 0 - so a caller naming a unit before its entry existed here got a green check of nothing.
+if (-not [string]::IsNullOrWhiteSpace($Unit) -and -not ($DeploymentUnits | Where-Object { $_.Name -eq $Unit }))
+{
+	Write-Error "Unknown deployment unit '$Unit'. Known units: $(($DeploymentUnits | ForEach-Object { $_.Name }) -join ', ')."
+	exit 2
+}
 
 # Indexes every assembly of every installed shared framework (Microsoft.NETCore.App,
 # Microsoft.AspNetCore.App, Microsoft.WindowsDesktop.App). Those resolve at runtime without being

@@ -38,7 +38,9 @@ they share one probing set.
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1"
 
-# Audit a single deployment unit
+# Audit a single deployment unit (an unknown name exits with code 2 and lists the known units,
+# rather than auditing nothing and passing). Units include the bodyplan hosts bodyplan.Importer
+# and bodyplan.WebAPI.UI, deployed by bodyplan\Scripts\Deploy.ps1.
 PowerShell -ExecutionPolicy Bypass -File ".\CheckHostDependencies.ps1" -Unit "DiGi.GIS.WebAPI.UI"
 
 # Exit with code 1 when a gap is found (for use in automation)
