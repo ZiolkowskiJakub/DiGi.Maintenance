@@ -37,6 +37,10 @@ Write-Host "Using MSBuild at: $VsMsbuildPath"
 # --- Define solution order ---
 $solutionOrder = @(
 	"DiGi.Core\DiGi.Core.slnx",
+	# DiGi.Python depends on DiGi.Core only; DiGi.Laya reaches it by HintPath, and DiGi.YOLO will
+	# (DiGi.YOLO#23), so both stay ahead of DiGi.YOLO.
+	"DiGi.Python\DiGi.Python.slnx",
+	"DiGi.Laya\DiGi.Laya.slnx",
 	"DiGi.Unit\DiGi.Unit.slnx",
 	"DiGi.Math\DiGi.Math.slnx",
 	"DiGi.User\DiGi.User.slnx",
