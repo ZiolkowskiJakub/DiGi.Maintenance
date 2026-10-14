@@ -1,4 +1,3 @@
-# C:\Users\jakub\GitHub\DigiProject\DiGi.Maintenance\Scripts\SyncWiki.ps1
 param(
     [Parameter(Mandatory=$false)]
     [string]$RepoPath = (Resolve-Path "$PSScriptRoot\..").Path

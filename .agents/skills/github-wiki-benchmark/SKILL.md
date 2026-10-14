@@ -12,7 +12,7 @@ Standard specification for authoring `Benchmark.md` performance pages across DiG
 ## 1. Purpose & Scope
 
 - **Requirement:** Every number must originate from a committed `[Fact]` test in the repository's `*.xUnit` project (`Facts/` directory). Hand-typed or unverified figures are prohibited.
-- **Location:** `Benchmark.md` at wiki clone root (`DigiProject/wiki/<repo>.wiki/Benchmark.md`). Link from `Home.md`.
+- **Location:** `Benchmark.md` at wiki clone root (`DiGi/wiki/<repo>.wiki/Benchmark.md`). Link from `Home.md`.
 - **Method Qualification:** Method names in benchmark entries MUST be **fully namespace-qualified with parameter signatures**.
 
 ---

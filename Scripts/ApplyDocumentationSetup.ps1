@@ -1,5 +1,3 @@
-# C:\Users\jakub\GitHub\DigiProject\DiGi.Maintenance\Scripts\ApplyDocumentationSetup.ps1
-
 $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 $targetDirectories = Get-ChildItem -Path $baseDir -Directory -Filter "DiGi.*"
 
@@ -50,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
         continue-on-error: true
         with:
-          repository: ZiolkowskiJakub/DiGi.Maintenance
+          repository: ${{ github.repository_owner }}/DiGi.Maintenance
           path: DiGi.Maintenance
 
       # Only run sync script if DiGi.Maintenance was successfully checked out

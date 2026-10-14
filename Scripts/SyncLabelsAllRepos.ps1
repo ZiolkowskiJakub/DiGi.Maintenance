@@ -28,7 +28,7 @@ $ErrorActionPreference = "Stop"
 $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 
 # Determine GitHub owner from origin URL or fallback
-$owner = "ZiolkowskiJakub"
+$owner = "DiGi-Organization"
 $currentRepoRemote = git config --get remote.origin.url
 if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
     $owner = $Matches[1]

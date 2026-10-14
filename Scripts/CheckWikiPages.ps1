@@ -1,9 +1,7 @@
-# C:\Users\jakub\GitHub\DigiProject\DiGi.Maintenance\Scripts\CheckWikiPages.ps1
-
 $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 
 # Get the GitHub owner dynamically from the current repository's remote
-$owner = "ZiolkowskiJakub" # Fallback
+$owner = "DiGi-Organization" # Fallback
 $currentRepoRemote = git config --get remote.origin.url
 if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
     $owner = $Matches[1]

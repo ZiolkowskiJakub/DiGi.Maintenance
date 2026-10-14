@@ -15,7 +15,7 @@ In PowerShell (`pwsh`), the backtick (`` ` ``) is the escape character. An inlin
 Always write the formatted markdown body to a temporary/scratch `.md` file encoded as **UTF-8 without BOM**, and pass the file path via `--body-file` or `@<path>`:
 
 1. **Creating a New Issue (Mandatory Type + Priority + AI Complexity Labels + Default Assignee):**
-   Every new issue added to any repository **must** be assigned at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` complexity tier upon creation (tier criteria: `GitHub - AI Issue Classification.md`), **and must be assigned to `ZiolkowskiJakub` by default** (the repository owner) unless the user explicitly names a different assignee:
+   Every new issue added to any repository **must** be assigned at least one `type: *` label, one `priority: *` label, and exactly one `ai: *` complexity tier upon creation (tier criteria: `GitHub - AI Issue Classification.md`), **and must be assigned to `ZiolkowskiJakub` by default** (the maintainer) unless the user explicitly names a different assignee:
    ```bash
    gh issue create --repo <owner>/<repo> --title "<Title>" --body-file <path_to_markdown_file> --label "type: <type>,priority: <priority>,ai: <tier>" --assignee ZiolkowskiJakub
    ```
@@ -165,7 +165,7 @@ reasoning readable beneath the correction. Worked example: the `DiGi.Typology.Vi
 `DiGi.Typology` (#20, #21) and `DiGi.GIS.WebAPI.UI` (#16, #17, #19) had built on both, and one (#17) had a
 whole wire-format table and a `template` endpoint motivated by a generic `_type` that no longer existed.
 
-**Worked example.** [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2) asked for
+**Worked example.** [DiGi.Geometry#2](https://github.com/DiGi-Organization/DiGi.Geometry/issues/2) asked for
 spatial partitioning to cut a reported 15-60 s latency. `Difference.cs` already held an `STRtree`, and the
 `< 3.0 s` acceptance criterion was already met at ~1.3 s measured. The real defect was a crash on dense
 input. Implementing the issue as written would have added a second spatial index and two NuGet packages

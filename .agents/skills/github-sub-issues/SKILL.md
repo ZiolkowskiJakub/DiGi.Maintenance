@@ -8,8 +8,8 @@ description: "Use when creating sub-issues or sub-tasks, or breaking a feature i
 How sub-tasks are logged as GitHub sub-issues across the DiGi repositories.
 
 **Canonical example** — the *External Components Area* feature:
-- Parent (tracking issue): [DiGi.GIS.PostgreSQL #83](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/83)
-- Sub-issues: [DiGi.GIS.IO #11](https://github.com/ZiolkowskiJakub/DiGi.GIS.IO/issues/11) (column definitions) · [DiGi.GIS.PostgreSQL #82](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/82) (computation + domain task) · [DiGi.GIS.PostgreSQL.UI #12](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL.UI/issues/12) (UI task)
+- Parent (tracking issue): [DiGi.GIS.PostgreSQL #83](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL/issues/83)
+- Sub-issues: [DiGi.GIS.IO #11](https://github.com/DiGi-Organization/DiGi.GIS.IO/issues/11) (column definitions) · [DiGi.GIS.PostgreSQL #82](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL/issues/82) (computation + domain task) · [DiGi.GIS.PostgreSQL.UI #12](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL.UI/issues/12) (UI task)
 
 Whenever the user asks to create **sub-issues** or **sub-tasks** for a feature, use this pattern — do not create a flat pile of independent issues.
 

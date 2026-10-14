@@ -82,7 +82,7 @@ description: "Use whenever writing or editing C# code in this workspace - naming
    - **Tag:** `TODO [MarkerName]:` where `MarkerName` is PascalCase and names the **migration**, not the issue (`[ReferenceFormat]`, `[ReferencedObjectIndexes]`). Reuse the one tag at every site belonging to that migration, so `grep -rn "MarkerName"` returns the complete deletion checklist rather than a sample of it.
    - **State the removal condition** — the observable fact that makes deletion safe ("once every storage archive has been rewritten", "once every deployed database has run this DDL at least once"), not merely that the code is temporary. A marker without one cannot be acted on and never gets removed. Name the tracking issue when there is one.
    - **Placement:** an inline comment at the site; a file header above the `using` block when the whole file is temporary (`DiGi.Core/Query/TryParseLegacy.cs`); `[TEMPORARY]` as the first token of the XML `<summary>` when a whole public member is provisional and removing it is a public-API change (`DiGi.GIS.WebAPI.UI/Controllers/SolarController.cs`).
-   - **A workaround for a defect in another DiGi repository is temporary code too.** Name the marker after the workaround, and make the removal condition the upstream fix, naming its issue. `DiGi.GIS.WebAPI.UI`'s `TerrainCuttingMaxBuildingCount = 250` silently skipped terrain footprint cutting above 250 buildings to dodge a `DiGi.Geometry` crash. It said *"Temporary limitation ... until spatial batching optimization is implemented"* in prose but carried no grep-able tag, so no sweep could collect it; it outlived its cause and was found only by reading the call site while investigating something else. Correct form: `TODO [TerrainCuttingCap]: remove once ZiolkowskiJakub/DiGi.Geometry#2 ships the triangulator fix.`
+   - **A workaround for a defect in another DiGi repository is temporary code too.** Name the marker after the workaround, and make the removal condition the upstream fix, naming its issue. `DiGi.GIS.WebAPI.UI`'s `TerrainCuttingMaxBuildingCount = 250` silently skipped terrain footprint cutting above 250 buildings to dodge a `DiGi.Geometry` crash. It said *"Temporary limitation ... until spatial batching optimization is implemented"* in prose but carried no grep-able tag, so no sweep could collect it; it outlived its cause and was found only by reading the call site while investigating something else. Correct form: `TODO [TerrainCuttingCap]: remove once DiGi-Organization/DiGi.Geometry#2 ships the triangulator fix.`
    - **Mark only what is actually temporary.** Permanent code shipped in the same change must not carry the tag, or the sweep stops being a checklist.
 13. **Hand-Fixes To Generated Code Are Lost On Regeneration — Put Them In The Generator.** Files produced by
    a tool (ML.NET Model Builder's `*.consumption.cs` / `*.evaluate.cs` / `*.training.cs`, the `mlnet` CLI's
@@ -128,7 +128,7 @@ description: "Use whenever writing or editing C# code in this workspace - naming
      renders every line as changed through no fault of the edit.
    - **The working tree and the committed blob can disagree, and the `git add` flag decides which bytes land in the blob.** With `core.autocrlf=true` and no `.gitattributes`, checkout materialises an LF blob as a CRLF working tree — so the working tree alone does not reveal what the repository stores; read the stored convention from the **blob** (`git cat-file -p HEAD:<path>`, byte-level). And the same CRLF working tree commits an **LF** blob under the default `autocrlf=true` (normalised on the way in) but a **CRLF** blob under `-c core.autocrlf=false` (verbatim). The flag is therefore a choice about the *stored* convention: to keep a stored-LF file LF, commit with the **default**, not `-c core.autocrlf=false`.
    - **The convention can split within one repository.** In these repos `README.md` is stored LF while `.agents/AGENTS.md` and `SKILL.md` are stored CRLF, so a sync script regenerating one set must not assume the other set's ending. A guard that skips (with a warning) when a generated file's line ending would differ from the blob it replaces is the tripwire that catches such a regression before it produces dozens of whole-file rewrites.
-   - **Worked example.** `UpdateReadmes.ps1` forced every `README.md` to CRLF *and* committed with `-c core.autocrlf=false`, so CRLF bytes landed verbatim in a blob every repo stored as LF — a full-file rewrite across all 66 repos on a run whose real change was five lines ([DiGi.Maintenance#11](https://github.com/ZiolkowskiJakub/DiGi.Maintenance/issues/11)). The fix detects the stored ending from the blob, emits in that convention, and guards against a mismatch.
+   - **Worked example.** `UpdateReadmes.ps1` forced every `README.md` to CRLF *and* committed with `-c core.autocrlf=false`, so CRLF bytes landed verbatim in a blob every repo stored as LF — a full-file rewrite across all 66 repos on a run whose real change was five lines ([DiGi.Maintenance#11](https://github.com/DiGi-Organization/DiGi.Maintenance/issues/11)). The fix detects the stored ending from the blob, emits in that convention, and guards against a mismatch.
    - This is the source-file half of the `\r\r\n` trap in [GitHub - Issues.md](GitHub%20-%20Issues.md) §1,
      which governs the markdown bodies sent to GitHub rather than the files in the tree.
    - **A diff that is only `\ No newline at end of file` is editor noise — revert it.** An IDE that trims
@@ -409,7 +409,7 @@ currently in use.
 - **Check the target framework the consuming project actually builds for.** `DiGi.Geometry` is
   `netstandard2.0`; a type found in a package's `netstandard2.1` folder is not automatically present in the
   `netstandard2.0` one. Verify against the right `lib/<tfm>/` folder before designing around it.
-- **Worked example.** [DiGi.Geometry#2](https://github.com/ZiolkowskiJakub/DiGi.Geometry/issues/2) carried
+- **Worked example.** [DiGi.Geometry#2](https://github.com/DiGi-Organization/DiGi.Geometry/issues/2) carried
   two proposals: add `Clipper2` + `Cutear`, or hand-write ~200 lines of ear clipping with hole bridging.
   Both were for a triangulator that keeps the polygon's own vertices and supports holes.
   `NetTopologySuite` 2.6.0 — already referenced — ships exactly that as
@@ -608,7 +608,7 @@ Classes requiring JSON persistence, cloning, or polymorphic deserialization MUST
      (`ToJsonObject` → `new T(JsonObject)`, no text parse) throws
      `InvalidOperationException: A value of type 'System.Object' cannot be converted to a 'System.Double'`
      because `Query.Value` asks the CLR-backed node for a `double` it does not hold
-     ([DiGi.Core#6](https://github.com/ZiolkowskiJakub/DiGi.Core/issues/6)). Until #6 ships: never key or
+     ([DiGi.Core#6](https://github.com/DiGi-Organization/DiGi.Core/issues/6)). Until #6 ships: never key or
      compare an `object` member with `Equals` (render it through an invariant, width-agnostic key — §1.19),
      and `SerializationCheck` such a type with a string value, marking the deferred numeric check
      `TODO [ObjectMemberClone]` so the sweep finds it when #6 closes.

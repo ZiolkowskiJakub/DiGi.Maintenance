@@ -9,5 +9,5 @@ echo 'export PATH="$PATH:$HOME/.dotnet/tools"' >> ~/.bashrc
 # Read-only clones of shared repos (select a repo at session start for push access)
 for repo in DiGi.Maintenance DiGi.Test; do
   [ -d "/home/user/$repo" ] || \
-    GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 "https://github.com/ZiolkowskiJakub/$repo" "/home/user/$repo"
+    GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 "https://github.com/DiGi-Organization/$repo" "/home/user/$repo"
 done

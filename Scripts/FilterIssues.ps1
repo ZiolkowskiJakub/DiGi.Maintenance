@@ -8,7 +8,7 @@
     compactly to save tokens, and supports JSON output and detailed inspection when needed.
 
 .PARAMETER Repo
-    Optional target repository name (e.g. 'DiGi.Core', 'DiGi.GIS.PostgreSQL', or 'ZiolkowskiJakub/DiGi.Core').
+    Optional target repository name (e.g. 'DiGi.Core', 'DiGi.GIS.PostgreSQL', or 'DiGi-Organization/DiGi.Core').
     If omitted or set to 'all', searches across all repositories belonging to the owner.
 
 .PARAMETER Labels
@@ -97,7 +97,7 @@ param (
 $ErrorActionPreference = "Stop"
 
 # Determine GitHub owner from origin URL or fallback
-$owner = "ZiolkowskiJakub"
+$owner = "DiGi-Organization"
 $currentRepoRemote = git config --get remote.origin.url 2>$null
 if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
     $owner = $Matches[1]

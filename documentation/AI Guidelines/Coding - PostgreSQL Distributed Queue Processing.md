@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_{tableName}_claimed_at
 ### DDL Ownership — Every Path Runs It
 The DDL method in `Create/TableAsync.cs` is the migration, and a consumer may be the first path to reach a table that predates a schema change. **Every path that reads or writes the queue table — enqueue, claim, acknowledge — runs the DDL before its own statement**, not just the producer.
 
-`TableExistsAsync` is `SELECT to_regclass(...)`: it answers for the table and knows nothing about its columns. On a table created before `claimed_at` existed, the guard passes and the claim then raises `42703` on the column the migration was supposed to add — the failure behind `ZiolkowskiJakub/DiGi.GIS.PostgreSQL#46`, which made the deployed download task report Failed. Because every DDL statement is conditional (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`), running it from every path costs a catalog lookup and is exactly what the enqueue path already does.
+`TableExistsAsync` is `SELECT to_regclass(...)`: it answers for the table and knows nothing about its columns. On a table created before `claimed_at` existed, the guard passes and the claim then raises `42703` on the column the migration was supposed to add — the failure behind `DiGi-Organization/DiGi.GIS.PostgreSQL#46`, which made the deployed download task report Failed. Because every DDL statement is conditional (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`), running it from every path costs a catalog lookup and is exactly what the enqueue path already does.
 
 ---
 
@@ -228,7 +228,7 @@ The standard guard has three parts:
    Every retired reference is logged at error level with enough identity (partition + reference) to file a data defect — a permanently failing reference is a problem worth a ticket, never a silent drop.
 3. **Retirement is not acknowledgment.** Acknowledgment retires rows whose work was **stored**; retirement discards rows whose work **provably failed** its ceiling of attempts. Both are explicit deletions, but they answer different questions, and only the former belongs inside the worker loop.
 
-> **Current state:** the `orto_datas_building_2d_reference_update` queue predates this standard and carries no attempt counter yet — adoption is tracked in `ZiolkowskiJakub/DiGi.GIS.PostgreSQL#48`. The samples in sections 2–4 reflect the queue as it exists today; this subsection is the target for new queues.
+> **Current state:** the `orto_datas_building_2d_reference_update` queue predates this standard and carries no attempt counter yet — adoption is tracked in `DiGi-Organization/DiGi.GIS.PostgreSQL#48`. The samples in sections 2–4 reflect the queue as it exists today; this subsection is the target for new queues.
 
 ---
 

@@ -15,7 +15,7 @@
 # (or BuildAll.ps1 -CheckDependencies, which calls this script for you).
 
 param(
-	[string]$Root = "$PSScriptRoot\..\..",  # DigiProject workspace root
+	[string]$Root = "$PSScriptRoot\..\..",  # DiGi workspace root
 	[string]$Unit = "",                     # Optional single deployment unit name filter
 	[switch]$FailOnMissing                  # Exit 1 when a genuine gap is found
 )

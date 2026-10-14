@@ -1,4 +1,3 @@
-# C:\Users\jakub\GitHub\DigiProject\DiGi.Maintenance\Scripts\SetSecretsAllRepos.ps1
 # Requires GitHub CLI (gh) installed and authenticated.
 # Install: winget install --id GitHub.cli
 # Authenticate: gh auth login
@@ -11,7 +10,7 @@ param(
 $baseDir = (Resolve-Path "$PSScriptRoot\..\..").Path
 
 # Get the GitHub owner dynamically from the current repository's remote
-$owner = "ZiolkowskiJakub" # Fallback
+$owner = "DiGi-Organization" # Fallback
 $currentRepoRemote = git config --get remote.origin.url
 if ($currentRepoRemote -match 'github\.com[:/]([^/]+)/') {
     $owner = $Matches[1]

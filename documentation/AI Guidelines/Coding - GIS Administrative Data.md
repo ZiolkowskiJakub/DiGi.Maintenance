@@ -7,7 +7,7 @@
 18 of Poland's 380 counties have disconnected territory and are stored as **several rows sharing one
 code**. Resolving a code to "the" county picks one of them, and everything filed under the losing row
 reads back `404` / `204` with no error anywhere. Full evidence:
-[DiGi.GIS.PostgreSQL#1](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/1).
+[DiGi.GIS.PostgreSQL#1](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL/issues/1).
 
 ---
 
@@ -115,7 +115,7 @@ re-filed each building under the part its footprint lies in and deleted the copi
 ```
 
 The union per code is unchanged — 44 810 / 42 588 / 51 740 — so no building lost its last row. Full
-account in [DiGi.GIS.PostgreSQL#1](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/1).
+account in [DiGi.GIS.PostgreSQL#1](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL/issues/1).
 
 Still true, and still worth knowing:
 - A `reference` is **not unique** in `building_2d`; it is unique only per `county_id`. The repair
@@ -132,7 +132,7 @@ That repair removed **copies**. It skipped, deliberately, every reference held b
 *"Held by one part only - whether that is the right part is a question for the import, not for a repair
 that exists to remove copies."* For twelve codes that one part is the wrong one, and the part holding
 the territory reads back empty. Full evidence, including the audit method, in
-[DiGi.GIS.PostgreSQL#68](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/68).
+[DiGi.GIS.PostgreSQL#68](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL/issues/68).
 
 Audited 2026-09-06 against the deployed API, every multi-part code, footprint centroids against each
 part polygon:
@@ -182,7 +182,7 @@ because the sweep covers every child table, not because it had anything to move.
 distribution exactly (all 18 codes), `building_model` answers under the destination part, and the
 `building` partitions the first run left are the blocked-duplicate / orphan rows the task leaves for a
 person by design. The union per code is unchanged - no building lost its last row. Full per-part
-before/after in the [#68 comment](https://github.com/ZiolkowskiJakub/DiGi.GIS.PostgreSQL/issues/68).
+before/after in the [#68 comment](https://github.com/DiGi-Organization/DiGi.GIS.PostgreSQL/issues/68).
 
 `0662` keeps its 2: they are **not misfiled**. The geometry decision places them on 17371 and three
 consecutive runs agree 0662 has zero misfiled buildings. `countypartmismatches` counts box-outside as a

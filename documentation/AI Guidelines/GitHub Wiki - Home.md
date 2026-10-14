@@ -26,16 +26,16 @@ Template structure, compilation order, and parsing rules for repository `Home.md
 [Custom Content Block - Preserved across syncs]
 
 ### 🔗 Dependencies
-*   [[DependencyRepoName1|https://github.com/ZiolkowskiJakub/[DependencyRepoName1]/wiki]]
-*   [[DependencyRepoName2|https://github.com/ZiolkowskiJakub/[DependencyRepoName2]/wiki]]
+*   [[DependencyRepoName1|https://github.com/DiGi-Organization/[DependencyRepoName1]/wiki]]
+*   [[DependencyRepoName2|https://github.com/DiGi-Organization/[DependencyRepoName2]/wiki]]
 
 ---
 
 ## 🌐 DiGi Ecosystem
-* **Foundational:** [DiGi.Core](https://github.com/ZiolkowskiJakub/DiGi.Core/wiki) | [DiGi.Math](https://github.com/ZiolkowskiJakub/DiGi.Math/wiki) | [DiGi.Unit](https://github.com/ZiolkowskiJakub/DiGi.Unit/wiki) | [DiGi.Log](https://github.com/ZiolkowskiJakub/DiGi.Log/wiki)
-* **Geometry & Graphics:** [DiGi.Geometry](https://github.com/ZiolkowskiJakub/DiGi.Geometry/wiki) | [DiGi.GLTF](https://github.com/ZiolkowskiJakub/DiGi.GLTF/wiki) | [DiGi.Rhino](https://github.com/ZiolkowskiJakub/DiGi.Rhino/wiki)
-* **GIS & Data:** [DiGi.GIS](https://github.com/ZiolkowskiJakub/DiGi.GIS/wiki) | [DiGi.OSM](https://github.com/ZiolkowskiJakub/DiGi.OSM/wiki) | [DiGi.BDOT10k](https://github.com/ZiolkowskiJakub/DiGi.BDOT10k/wiki)
-* **Simulation:** [DiGi.Analytical](https://github.com/ZiolkowskiJakub/DiGi.Analytical/wiki) | [DiGi.Solar](https://github.com/ZiolkowskiJakub/DiGi.Solar/wiki) | [DiGi.Tas](https://github.com/ZiolkowskiJakub/DiGi.Tas/wiki)
+* **Foundational:** [DiGi.Core](https://github.com/DiGi-Organization/DiGi.Core/wiki) | [DiGi.Math](https://github.com/DiGi-Organization/DiGi.Math/wiki) | [DiGi.Unit](https://github.com/DiGi-Organization/DiGi.Unit/wiki) | [DiGi.Log](https://github.com/DiGi-Organization/DiGi.Log/wiki)
+* **Geometry & Graphics:** [DiGi.Geometry](https://github.com/DiGi-Organization/DiGi.Geometry/wiki) | [DiGi.GLTF](https://github.com/DiGi-Organization/DiGi.GLTF/wiki) | [DiGi.Rhino](https://github.com/DiGi-Organization/DiGi.Rhino/wiki)
+* **GIS & Data:** [DiGi.GIS](https://github.com/DiGi-Organization/DiGi.GIS/wiki) | [DiGi.OSM](https://github.com/DiGi-Organization/DiGi.OSM/wiki) | [DiGi.BDOT10k](https://github.com/DiGi-Organization/DiGi.BDOT10k/wiki)
+* **Simulation:** [DiGi.Analytical](https://github.com/DiGi-Organization/DiGi.Analytical/wiki) | [DiGi.Solar](https://github.com/DiGi-Organization/DiGi.Solar/wiki) | [DiGi.Tas](https://github.com/DiGi-Organization/DiGi.Tas/wiki)
 
 *Part of the DiGi software suite for BIM and CAD integrations.*
 ```
@@ -50,6 +50,6 @@ To protect custom content (Block 3) and prevent duplicated sections during synch
 2. **Line Omissions:** Discards lines matching `^# .*Wiki` or `Welcome to the .* wiki!`.
 3. **Legacy Section Cleanups:** Filters legacy generated lines from custom content:
    - Target Framework labels: `^\s*\*\s+\*\*Target\s+Frameworks?:\*\*`
-   - Ecosystem links: `^\s*\*\s+\[DiGi\.[A-Za-z0-9\.]+\]\(https://github\.com/ZiolkowskiJakub/`
+   - Ecosystem links: `^\s*\*\s+\[DiGi\.[A-Za-z0-9\.]+\]\(https://github\.com/(DiGi-Organization|ZiolkowskiJakub)/` (the old owner is still matched so pages generated before the 2026-10-14 transfer parse)
    - Category labels: `^\s*\*\s+\*\*Foundational:\*\*`, `^\s*\*\s+\*\*Geometry\s+&\s+Graphics:\*\*`, etc.
    - Ecosystem attribution line: `^\s*\*Part of the DiGi software suite`

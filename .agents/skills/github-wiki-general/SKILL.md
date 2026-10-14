@@ -1,6 +1,6 @@
 ---
 name: github-wiki-general
-description: "Use when editing any GitHub wiki page - repo layout, local clones under DigiProject/wiki/, hand-authored vs auto-generated pages, and CI sync mechanics."
+description: "Use when editing any GitHub wiki page - repo layout, local clones under DiGi/wiki/, hand-authored vs auto-generated pages, and CI sync mechanics."
 ---
 
 # GitHub Wiki — General Guidelines
@@ -11,12 +11,12 @@ Structure, local layout, CI synchronization, and editing workflows for DiGi repo
 
 ## 1. Wiki Architecture & Repository Layout
 
-- **Wiki Remote:** Separate Git repository at `https://github.com/ZiolkowskiJakub/<repo>.wiki.git` (default branch: **`master`**).
+- **Wiki Remote:** Separate Git repository at `https://github.com/DiGi-Organization/<repo>.wiki.git` (default branch: **`master`**).
 - **Page Routing:** Page URL corresponds to `.md` filename without extension (`Home.md` → landing page).
-- **Local Location:** Cloned under `DigiProject/wiki/<repo>.wiki` (e.g., `DigiProject/wiki/DiGi.Core.wiki/`). Each clone is a standalone repository.
+- **Local Location:** Cloned under `DiGi/wiki/<repo>.wiki` (e.g., `DiGi/wiki/DiGi.Core.wiki/`). Each clone is a standalone repository.
   ```bash
-  # Clone a missing wiki (from DigiProject workspace root):
-  git clone https://github.com/ZiolkowskiJakub/<repo>.wiki.git "wiki/<repo>.wiki"
+  # Clone a missing wiki (from the DiGi workspace root):
+  git clone https://github.com/DiGi-Organization/<repo>.wiki.git "wiki/<repo>.wiki"
   ```
 
 ---
@@ -46,7 +46,7 @@ Workflow `.github/workflows/sync-wiki.yml` triggers on push to `main`/`master`:
 
 ## 4. Manual & AI Editing Workflow
 
-1. Open wiki clone: `cd DigiProject/wiki/<repo>.wiki`.
+1. Open wiki clone: `cd DiGi/wiki/<repo>.wiki`.
 2. Fetch latest changes: `git pull`.
 3. Edit **hand-authored** pages only (`Home.md`, `Benchmark.md`).
 4. Cross-link related pages using markdown filenames.

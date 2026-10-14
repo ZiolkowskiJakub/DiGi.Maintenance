@@ -1,0 +1,150 @@
+# GitHub - Workspace Setup
+
+> [!IMPORTANT]
+> **Portability Rule:** this file uses relative paths and `%USERPROFILE%`-style placeholders only. Never add an
+> absolute user path to it.
+
+How the local GitHub folder is organised, how to set it up on a new machine, and what the
+2026-10-14 reorganisation changed.
+
+## 1. Convention: one folder per GitHub owner
+
+Every repository lives in the folder named after the GitHub owner it belongs to, directly under the
+GitHub root folder (typically `%USERPROFILE%\GitHub`):
+
+| Local folder | GitHub owner | Contents |
+|---|---|---|
+| `DiGi\` | [DiGi-Organization](https://github.com/DiGi-Organization) | Every `DiGi.*` library, plus the workspace files (below) |
+| `DiGi\templates\` | DiGi-Organization | `DiGi.Template`, `DiGi.WebAPI.GLTF.Template` |
+| `DiGi\wiki\` | DiGi-Organization | `<repo>.wiki` clones (on demand, see `AI Guidelines/GitHub Wiki - General.md`) |
+| `DigiProject\` | [DigiProject-Organization](https://github.com/DigiProject-Organization) | Client projects: `bodyplan`, `Uponor`, `TimGreatrexArchitect`, `EtexGroup` |
+| `ZiolkowskiJakub\` | [ZiolkowskiJakub](https://github.com/ZiolkowskiJakub) | The personal repositories that are worked on locally |
+| `SAM-BIM\` | [SAM-BIM](https://github.com/SAM-BIM) | SAM repositories (managed separately) |
+
+"All DiGi repositories" therefore means every repository directly inside `DiGi\`; the Maintenance scripts
+(`DiGi.Maintenance/Scripts/*AllRepos.ps1`, `UpdateAgents.ps1`, `UpdateReadmes.ps1`, `BuildAll.ps1`, ...) treat
+the parent of `DiGi.Maintenance` as the workspace root and process its `DiGi.*` folders.
+
+Rules that follow from the layout:
+
+- **DiGi repositories must stay siblings.** Every DiGi project references the others through relative
+  `HintPath`s such as `..\..\DiGi.Core\bin\DiGi.Core.dll`, so `DiGi.*` folders never move into sub-folders.
+- **Projects outside `DiGi\` reach DiGi through the GitHub root.** From
+  `DigiProject\bodyplan\<Folder>\<Project>\<Project>.csproj` a DiGi assembly is
+  `..\..\..\..\DiGi\DiGi.Core\bin\DiGi.Core.dll`.
+- **The workspace root (`DiGi\`) holds only AI-app configuration and shared clones:**
+  `CLAUDE.md` (Claude Code), `AGENTS.md` (LM Studio Bionic, also read by AGENTS.md-aware tools),
+  `opencode.jsonc` + `.opencode/` (OpenCode), `.claude/` (Claude Code launch configurations and permissions),
+  `templates/` and `wiki/`. Reports, dumps and scratch files belong in a repository's git-ignored
+  `user files/`, never at the workspace root.
+
+## 2. New machine
+
+### 2.1 Prerequisites
+
+- Git for Windows (with Git Bash) and the GitHub CLI.
+- `gh auth login` as a member of **both** organizations. Check with
+  `gh repo list DiGi-Organization --limit 5` and `gh repo list DigiProject-Organization --limit 5`; if an
+  organization restricts OAuth apps, grant the GitHub CLI access to it.
+- Visual Studio 2026 and the .NET SDK used by the solutions (`dotnet --list-sdks`).
+
+### 2.2 Clone everything
+
+Get `SetupWorkspace.ps1` either by cloning DiGi.Maintenance first or by downloading the script on its own,
+then run it with the GitHub root:
+
+```powershell
+New-Item -ItemType Directory "$env:USERPROFILE\GitHub\DiGi" -Force | Out-Null
+git clone https://github.com/DiGi-Organization/DiGi.Maintenance.git "$env:USERPROFILE\GitHub\DiGi\DiGi.Maintenance"
+& "$env:USERPROFILE\GitHub\DiGi\DiGi.Maintenance\Scripts\SetupWorkspace.ps1" -WhatIf
+& "$env:USERPROFILE\GitHub\DiGi\DiGi.Maintenance\Scripts\SetupWorkspace.ps1"
+```
+
+`SetupWorkspace.ps1` creates the owner folders and clones every repository of both organizations (the two
+templates into `DiGi\templates\`) plus the personal repositories listed in `$personalRepositories` inside the
+script. It never re-clones an existing folder, so it is safe to re-run after a new repository is created on
+GitHub. Options:
+
+| Parameter | Effect |
+|---|---|
+| `-WhatIf` | Prints what would be cloned or changed, touches nothing |
+| `-IncludeWikis` | Also clones the wiki of every DiGi repository that has one into `DiGi\wiki\<repo>.wiki` |
+| `-UpdateRemotes` | Points `origin` of existing clones (and of existing `DiGi\wiki\*.wiki` clones) at the current owner |
+| `-Only <names>` | Restricts the run to the named repositories |
+| `-Root <path>` | GitHub root folder; defaults to the parent of the `DiGi` folder the script runs from |
+
+Then check out the newest version branch in every repository - see
+`AI Guidelines/GitHub - Branch Pull.md` (`Scripts/PullBranchesAllRepos.ps1`).
+
+### 2.3 Restore the git-ignored `user files/`
+
+Connection strings, API keys and machine-specific paths live in git-ignored `user files/` folders and are
+**not** cloned. Restore them from the backup made with `Scripts/CopyUserFiles.ps1`:
+
+1. Copy `DiGi.Maintenance/files/Directories.conf` to `DiGi.Maintenance/user files/Directories.conf` and set
+   `USER_FILES_BACKUP_DIRECTORY` (and `SOFTWARE_DIRECTORY` if this machine deploys).
+2. Run `Scripts/CopyUserFiles.ps1 -Restore`.
+
+Without a backup, recreate the files by hand. The ones in use:
+
+| Repository | `user files/` |
+|---|---|
+| DiGi.Maintenance | `Directories.conf`, `GitHub.conf` (`URL` = `https://github.com/DiGi-Organization`; its token needs access to the organization) |
+| DiGi.GIS.PostgreSQL, DiGi.GIS.UI | `GIS_PostgreSQL_Main.conf`, `GIS_PostgreSQL_Storage.conf` |
+| DiGi.GIS.PostgreSQL.UI | the two above, `GIS_WebAPI_Client.conf`, `User_PostgreSQL_Main.conf` |
+| DiGi.GIS.WebAPI | `GIS_PostgreSQL_Main.conf`, `GIS_PostgreSQL_Storage.conf`, `GIS_WebAPI.conf` |
+| DiGi.GIS.YOLO.UI | `GIS_WebAPI_Client.conf`, `YearBuiltPredictionPipelineOptions*.json` |
+| DiGi.User.PostgreSQL, DiGi.User.WebAPI | `User_PostgreSQL_Main.conf` |
+| DiGi.WebAPI, DiGi.WebAPI.WindowsService | `WebAPI_Diagnostics.conf` |
+| DiGi.Test | the `*_Test.conf` connection files plus `PostgreSQL_*.conf`, `DiGi.YOLO_Preflight.conf`, `DiGi.YOLO.ONNX_Parity.conf` (see `AI Guidelines/Coding - PostgreSQL.md` §6 - test confs never name a production database) |
+
+### 2.4 Build
+
+Build in dependency order with `Scripts/BuildAll.ps1` (it starts from `DiGi.Core`); a library must be built
+before anything that references it through a `HintPath` (`AI Guidelines/Coding - General.md` §4).
+
+### 2.5 AI apps
+
+- **Claude Code:** start sessions in the `DiGi\` folder so `CLAUDE.md` and `.claude/` load automatically.
+  Claude's memory is stored per launch folder, so a session started elsewhere does not see it.
+- **OpenCode:** `opencode.jsonc` in `DiGi\` loads `CLAUDE.md` and `DiGi.Maintenance/.agents/AGENTS.md`.
+- **Per-repository agents:** `.agents/` in every DiGi repository is generated by `Scripts/UpdateAgents.ps1`.
+
+## 3. Migrating an existing machine (pre-2026-10-14 layout)
+
+Before the reorganisation every repository was owned by `ZiolkowskiJakub` and the DiGi repositories lived in
+`GitHub\DigiProject\` together with the project repositories.
+
+1. Close Visual Studio, terminals and anything else with a file open in the workspace. Stop the git
+   filesystem monitors, which keep watch handles on working trees, by running
+   `git -C <repo> fsmonitor--daemon stop` in each repository.
+2. Rename `GitHub\DigiProject` to `GitHub\DiGi`.
+3. Create `GitHub\DigiProject` and move `bodyplan`, `Uponor` and `TimGreatrexArchitect` into it. Create
+   `GitHub\ZiolkowskiJakub` and move the personal repositories into it.
+4. Run `SetupWorkspace.ps1 -UpdateRemotes` from `GitHub\DiGi\DiGi.Maintenance\Scripts`. It points every
+   `origin` at the new owner and clones the repositories that are missing (EtexGroup and the DiGi repositories
+   that were never cloned).
+5. Pull. The commits that moved the `bodyplan` HintPaths to `..\..\..\..\DiGi\` and replaced the owner in
+   every link and workflow are on the current branches.
+6. Fix the local, git-ignored configuration: `DiGi.Maintenance/user files/GitHub.conf` `URL`, and any
+   personal tool configuration that names `GitHub\DigiProject\DiGi...` paths.
+
+## 4. What the 2026-10-14 reorganisation changed
+
+| Change | Detail |
+|---|---|
+| Repositories transferred | 73 `DiGi.*` repositories → DiGi-Organization; `bodyplan`, `Uponor`, `TimGreatrexArchitect`, `EtexGroup` → DigiProject-Organization. Everything else stayed on `ZiolkowskiJakub`. |
+| Preserved by GitHub | Issues, pull requests, wikis, stars, Actions secrets (`WIKI_SYNC_PAT`), issue dependencies and assignees. Old `github.com/ZiolkowskiJakub/<repo>` URLs redirect for the web and for git, until a repository of the same name is created on the personal account again. |
+| Local layout | `GitHub\DigiProject` (which held the DiGi repositories) renamed to `GitHub\DiGi`; project repositories moved to a new `GitHub\DigiProject`; personal ones to `GitHub\ZiolkowskiJakub`. |
+| References | Owner replaced in every link, issue reference and workflow (`ZiolkowskiJakub/DiGi.*` → `DiGi-Organization/DiGi.*`). `sync-wiki.yml` now checks out `${{ github.repository_owner }}/DiGi.Maintenance`, so it never names an owner again. The Maintenance scripts' owner fallback is `DiGi-Organization`. The default issue assignee is still `ZiolkowskiJakub`. |
+| Paths | `DigiProject/...` workspace paths in guidelines, generated skills and READMEs → `DiGi/...`; absolute script header comments removed; `bodyplan` HintPaths → `..\..\..\..\DiGi\`. |
+| New tooling | `Scripts/SetupWorkspace.ps1` and this document. |
+
+Not covered by the reorganisation, still to check:
+
+- **`WIKI_SYNC_PAT`** is used only by a `sync-wiki.yml` run on `main`/`master`. If that token is a
+  fine-grained token scoped to the personal account, the first such run after the transfer fails at the wiki
+  push. Replace it with a token whose resource owner is DiGi-Organization, ideally as one organization-level
+  secret.
+- **Claude Code cloud environment:** paste the updated `documentation/Claude Cloud Enviroment Script.txt`
+  into the environment settings on claude.ai (the old clone URL keeps working through the redirect meanwhile).

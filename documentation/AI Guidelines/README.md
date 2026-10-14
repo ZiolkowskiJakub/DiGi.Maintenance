@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > **Portability Rule:** All markdown files must use **relative paths** for file references. Do not include absolute machine paths (e.g. `C:\Users\...`).
 
-Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). The files in this directory contain detailed task instructions and must be **read on demand**.
+Entry point: `DiGi/CLAUDE.md` (universal coding rules + routing table). The files in this directory contain detailed task instructions and must be **read on demand**.
 
 ## Priorities
 
@@ -51,6 +51,7 @@ Entry point: `DigiProject/CLAUDE.md` (universal coding rules + routing table). T
 | [GitHub - Labels.md](GitHub%20-%20Labels.md) | Standardized GitHub label taxonomy (type, priority, status, ai), color standard, mandatory Type + Priority + AI Complexity on new issues, and multi-repo sync. |
 | [GitHub - Plan Files.md](GitHub%20-%20Plan%20Files.md) | Keeping the repository free of plan files — plans live in the local plans folder outside the working tree, a pre-commit sweep keeps plan/scratch `*.md` out of every commit and push, and the default is deleting the temporary implementation plan when the issue closes (no archiving into the repo; explicit user instruction wins). |
 | [GitHub - Sub-Issues.md](GitHub%20-%20Sub-Issues.md) | Creating sub-issues / sub-tasks for a feature — the tracking-issue pattern: a parent tracking issue with a mandatory Sub-issues table, one self-contained sub-issue per repository (own Context/Scope/Tests/Acceptance), cross-referencing, `blocked_by` dependencies between siblings, creation workflow, lifecycle, anti-patterns (canonical example: DiGi.GIS.PostgreSQL #83). |
+| [../GitHub - Workspace Setup.md](../GitHub%20-%20Workspace%20Setup.md) | Local folder layout (one folder per GitHub owner: `DiGi\` = DiGi-Organization, `DigiProject\` = DigiProject-Organization, `ZiolkowskiJakub\`), new-machine setup with `Scripts/SetupWorkspace.ps1`, restoring `user files/`, and migrating a machine from the pre-2026-10-14 layout. |
 | [GitHub Wiki - General.md](GitHub%20Wiki%20-%20General.md) | Editing GitHub wiki pages — repo structure, local clones, CI sync. |
 | [GitHub Wiki - Home.md](GitHub%20Wiki%20-%20Home.md) | Structuring/updating wiki `Home.md` landing page. |
 | [GitHub Wiki - Benchmark.md](GitHub%20Wiki%20-%20Benchmark.md) | Authoring/updating wiki `Benchmark.md` performance pages. |
@@ -76,7 +77,7 @@ A new or changed rule stops at the source unless these are updated by hand as we
 | `DiGi.Maintenance/files/README - Coding Guidelines.md` | The README block. A condensed parallel document, **not** a concatenation — new rules must be written into it. Its first line must stay the `## 💻 Coding Guidelines…` marker (`UpdateReadmes.ps1` hard-fails otherwise). |
 | `DiGi.Maintenance/.agents/AGENTS.md` | The skill routing list. |
 | `$descriptions` in `UpdateAgents.ps1` | The `description:` frontmatter of each generated `SKILL.md`, keyed by skill name. A missing key only warns and falls back to `"Use for tasks related to <skill-name>."`, so a new guideline ships to every repo with a useless description. |
-| `DigiProject/CLAUDE.md` | The Claude Code condensation (re-sync it whenever it disagrees with this folder). |
+| `DiGi/CLAUDE.md` | The Claude Code condensation (re-sync it whenever it disagrees with this folder). |
 
 Run scripts after changing guidelines:
 ```powershell
