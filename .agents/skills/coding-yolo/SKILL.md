@@ -91,13 +91,38 @@ paragraph when it does.
 ## 4. Scratch Folders
 
 - **`ScratchDirectory` is resolved against the current directory — the runner's own `bin`** — so a relative
-  value writes exported imagery into the deployable folder. A county folder holds `images/`, the scripts and
-  `results.bbrf`.
+  value writes exported imagery into the deployable folder. A county folder holds `chunks/`, the scripts and
+  `results.bbrf` (a folder written before DiGi.GIS.YOLO.UI#30 holds a flat `images/` instead, still read as
+  written when the export is off).
+- **No image folder may hold a whole county.** Each folder is bounded by `ChunkSize` buildings (default 5000,
+  about 55 000 files). The buildings are sorted ordinally and split into `chunks/<index>/`. Each chunk is
+  exported, detected into `chunks/<index>.bbrf`, recorded by a marker `chunks/<index>.json`, and then has its
+  imagery removed. `results.bbrf` is the chunk results joined in order, rewritten only after the last chunk.
+  The flat folder was a defect on a stock machine, not a matter of size alone. For m. st. Warszawa (55417,
+  1.72 M images) the measurements were:
+
+  | Condition | Export rate |
+  |---|---|
+  | Up to about 0.8 M files in one folder, 8.3 short names on | 185–215 images/s |
+  | About 1.38 M files, 8.3 on | 6.5–8 images/s |
+  | Same run after `fsutil 8dot3name set C: 1` | 204 images/s |
+  | 100 000 files created flat, 8.3 off | 6 218 files/s |
+
+  The 8.3 setting needs an administrator and is per machine, and it was back on within days, so the code must
+  not depend on it. Two premises were measured and refuted:
+  - The per-reference resume scan (`EnumerateFiles(dir, "{reference}_*.jpeg")`) is not quadratic: 0.09 ms per
+    reference over 1.72 M files, because NTFS answers a name prefix from its sorted index.
+  - Folder size does not limit the detector: a flat 110 images/s from 0.6 M to 1.7 M files, with 0.7 core and
+    about half the GPU busy. The limit is the `predict.py` loop.
+- **A chunk marker carries the weights' SHA-256 and `Confidence`.** With `Resume`, a chunk is stepped over only
+  when its marker matches the chunk's buildings, the weights and the threshold. A marker that named only the
+  buildings would let an earlier detector's results stand in for the current `model.pt`, which is replaced in
+  place.
 - **`CleanScratchDirectory` (default `true`) removes a county's folder once it finished without a failed
   step;** a failed county keeps it, so a re-run costs seconds rather than repeating the export and inference.
   Set it to `false` only for a run whose scratch you will read afterwards.
 - **`Resume` is passed to the image export**, which then skips images already on disk. With `RunPrediction`
-  on, the detector always runs again. With it off (a score-only run), the county's `results.bbrf` in scratch
+  on, the detector runs again over every chunk without a matching marker (see above). With it off (a score-only run), the county's `results.bbrf` in scratch
   **is** the input — the stored detection columns are never read back — so a scratch folder left by an
   earlier detector is scored as if it were the current one. Delete scratch from a replaced detector rather
   than keeping it "for resume".
@@ -157,6 +182,8 @@ assembly loaded into the tray application (`Coding - General.md` §4, *The Other
 - [ ] Does `user files/` hold only what the deployed runner reads (conf, prediction options, `model.pt`)?
 - [ ] Does every training or labelling options file name an absolute `ScratchDirectory` and absolute
       inputs in the training directory?
+- [ ] Does any new code that writes imagery for a county write it into bounded chunk folders, rather than one
+      flat folder whose size grows with the county?
 - [ ] After a deploy, is the extension about 212 files / 268 MB, with `scratch*`, `logs`, `reports` in
       `Not deployed:` and no warning?
 - [ ] When shipping a new detector: is `model.pt` replaced, the old weights kept in the training directory,
