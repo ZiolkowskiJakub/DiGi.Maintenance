@@ -136,10 +136,14 @@ PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1"
 PowerShell -ExecutionPolicy Bypass -File ".\UpdateReadmes.ps1" -NoCommit
 ```
 
-### Set Secrets Across All Repositories
-Sets secret (e.g. `WIKI_SYNC_PAT`) across all GitHub repositories.
+### Set the Wiki Sync Secret
+Sets `WIKI_SYNC_PAT` once as a **DiGi-Organization** secret (visibility: all), which every repository's `sync-wiki.yml` uses to push the API pages to its wiki - `GITHUB_TOKEN` cannot push to a wiki. Use a classic personal access token with the `public_repo` scope. The script checks the token with the GitHub API before storing it and takes it from a hidden prompt or the clipboard, never from the command line. Needs `gh auth refresh -h github.com -s admin:org`.
 ```powershell
-PowerShell -ExecutionPolicy Bypass -File ".\SetSecretsAllRepos.ps1" -PatToken "<PAT_TOKEN>"
+# Copy the token, then:
+pwsh -File ".\SetSecretsAllRepos.ps1" -FromClipboard
+
+# Also delete stale repository-level copies, which would override the organization secret
+pwsh -File ".\SetSecretsAllRepos.ps1" -FromClipboard -RemoveRepositorySecrets
 ```
 
 ### Sync GitHub Workflows to Main

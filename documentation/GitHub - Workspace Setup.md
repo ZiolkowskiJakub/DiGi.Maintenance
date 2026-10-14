@@ -144,15 +144,42 @@ Before the reorganisation every repository was owned by `ZiolkowskiJakub` and th
 | Repositories transferred | 73 `DiGi.*` repositories → DiGi-Organization; `bodyplan`, `Uponor`, `TimGreatrexArchitect`, `EtexGroup` → DigiProject-Organization. Everything else stayed on `ZiolkowskiJakub`. |
 | Preserved by GitHub | Issues, pull requests, wikis, stars, Actions secrets (`WIKI_SYNC_PAT`), issue dependencies and assignees. Old `github.com/ZiolkowskiJakub/<repo>` URLs redirect for the web and for git, until a repository of the same name is created on the personal account again. |
 | Local layout | `GitHub\DigiProject` (which held the DiGi repositories) renamed to `GitHub\DiGi`; project repositories moved to a new `GitHub\DigiProject`; personal ones to `GitHub\ZiolkowskiJakub`. |
-| References | Owner replaced in every link, issue reference and workflow (`ZiolkowskiJakub/DiGi.*` → `DiGi-Organization/DiGi.*`). Each repository's `sync-wiki.yml` checks out `DiGi-Organization/DiGi.Maintenance`; the templates that write it (`GitHub Actions/sync-wiki-template.yml`, `ApplyDocumentationSetup.ps1`, `SyncWorkflowToMain.ps1`) use `${{ github.repository_owner }}/DiGi.Maintenance`, so a regenerated workflow never names an owner. The Maintenance scripts' owner fallback is `DiGi-Organization`. The default issue assignee is still `ZiolkowskiJakub`. |
+| References | Owner replaced in every link, issue reference and workflow (`ZiolkowskiJakub/DiGi.*` → `DiGi-Organization/DiGi.*`). Every repository's `sync-wiki.yml` - and the templates that write it (`GitHub Actions/sync-wiki-template.yml`, `ApplyDocumentationSetup.ps1`, `SyncWorkflowToMain.ps1`) - checks out `${{ github.repository_owner }}/DiGi.Maintenance`, so the workflow never names an owner. The Maintenance scripts' owner fallback is `DiGi-Organization`. The default issue assignee is still `ZiolkowskiJakub`. |
 | Paths | `DigiProject/...` workspace paths in guidelines, generated skills and READMEs → `DiGi/...`; absolute script header comments removed; `bodyplan` HintPaths and theme copy → `..\..\..\..\DiGi\`, bodyplan `Deploy.ps1 -Root` → `..\..\..\DiGi`, bodyplan units in `CheckHostDependencies.ps1` → `..\DigiProject\bodyplan\`. |
+| Wiki sync secret | The per-repository `WIKI_SYNC_PAT` copies were replaced by one **organization** secret with a new token (see §5). |
 | New tooling | `Scripts/SetupWorkspace.ps1` and this document. |
 
 Not covered by the reorganisation, still to check:
 
-- **`WIKI_SYNC_PAT`** is used only by a `sync-wiki.yml` run on `main`/`master`. If that token is a
-  fine-grained token scoped to the personal account, the first such run after the transfer fails at the wiki
-  push. Replace it with a token whose resource owner is DiGi-Organization, ideally as one organization-level
-  secret.
 - **Claude Code cloud environment:** paste the updated `documentation/Claude Cloud Enviroment Script.txt`
   into the environment settings on claude.ai (the old clone URL keeps working through the redirect meanwhile).
+
+## 5. Wiki sync secret (`WIKI_SYNC_PAT`)
+
+Every DiGi repository's `sync-wiki.yml` pushes the generated API pages (`documentation/API/`) to the
+repository's wiki on a push to `main`/`master`, authenticating with
+`${{ secrets.WIKI_SYNC_PAT || secrets.GITHUB_TOKEN }}`. `GITHUB_TOKEN` cannot push to a wiki, so the
+secret is required.
+
+- **One organization secret.** `WIKI_SYNC_PAT` is a DiGi-Organization Actions secret with visibility
+  *all*. Repositories hold no copy of their own: a repository-level secret would override the organization
+  one and keep failing after the token is renewed. A new repository needs nothing.
+- **The token** is a classic personal access token with the `public_repo` scope (40 characters, `ghp_...`).
+  Every DiGi repository with a wiki is public, and on GitHub Free an organization secret does not reach
+  private repositories anyway. It has an expiry date: when it lapses, every wiki push fails with
+  *Invalid username or token*.
+- **Renewing it:** regenerate the token on GitHub, copy it with the copy button, then run
+  `Scripts/SetSecretsAllRepos.ps1 -FromClipboard` (needs `gh auth refresh -h github.com -s admin:org`). The
+  script checks the token with the GitHub API and refuses to store one GitHub does not accept - a partially
+  pasted value fails exactly like an expired one. `-RemoveRepositorySecrets` deletes stale repository-level
+  copies.
+- **A new repository's wiki** exists only after its first page is created in the GitHub web UI (*Wiki* tab
+  → *Create the first page*). Until then its `main` wiki sync fails with *Repository not found*.
+
+Symptoms and causes:
+
+| Error in the *Run Wiki Sync Script* step | Cause |
+|---|---|
+| `Repository not found` on clone | The wiki has no first page yet |
+| `Permission to ... denied to github-actions[bot]` (403) | No `WIKI_SYNC_PAT` reached the job, so `GITHUB_TOKEN` was used |
+| `Invalid username or token` | The secret's value is not a valid token (expired, revoked or pasted incompletely) |
