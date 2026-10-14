@@ -1,3 +1,5 @@
+is:issue state:open archived:false assignee:@me sort:updated-desc org:DiGi-Organization -org:"DigiProject-Organization"-label:"status: parked"
+
 ##START
 
 Investigate issue XXX. Create implementation plan if still valid. Make sure plan is aligned with guidelines "GitHub\DiGi\DiGi.Maintenance\documentation\AI Guidelines\README.md"
