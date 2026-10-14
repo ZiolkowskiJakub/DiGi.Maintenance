@@ -103,8 +103,10 @@ $DeploymentUnits = @(
 		# executable, deployed to the database server through the Software folder by bodyplan\Scripts\Deploy.ps1
 		# rather than DiGi.Maintenance's own Deploy.ps1 (which does not carry bodyplan). Every tool of bodyplan's Tools group
 		# builds into its own bin, so this folder is the importer's alone.
+		# bodyplan is a DigiProject-Organization repository, so it lives in the DigiProject folder beside the DiGi
+		# workspace rather than inside it (DiGi.Maintenance/documentation/GitHub - Workspace Setup.md).
 		Name    = "bodyplan.Importer"
-		Path    = "bodyplan\Tools\bodyplan.Importer\bin"
+		Path    = "..\DigiProject\bodyplan\Tools\bodyplan.Importer\bin"
 		Recurse = $false
 		Ignore  = @()
 	},
@@ -113,7 +115,7 @@ $DeploymentUnits = @(
 		# pattern of DiGi.GIS.WebAPI.UI, deployed to the web server through the Software folder by
 		# bodyplan\Scripts\Deploy.ps1. It builds into its own UI\bin, apart from the extension's Extensions\bin.
 		Name    = "bodyplan.WebAPI.UI"
-		Path    = "bodyplan\UI\bin"
+		Path    = "..\DigiProject\bodyplan\UI\bin"
 		Recurse = $false
 		Ignore  = @()
 	}

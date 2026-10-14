@@ -90,6 +90,14 @@ function Confirm-Directory([string]$Path) {
     }
 }
 
+# "owner/name" of a GitHub remote URL in any of its forms (https or ssh, with or without .git), or $null
+function Get-RemoteKey([string]$Url) {
+    if ($Url -match 'github\.com[:/]+([^/]+)/(.+?)(\.git)?/?$') {
+        return "$($Matches[1])/$($Matches[2])".ToLowerInvariant()
+    }
+    return $null
+}
+
 function Sync-Clone([string]$Url, [string]$Target, [string]$Label) {
     if (Test-Path $Target) {
         if (-not (Test-Path (Join-Path $Target ".git"))) {
@@ -99,11 +107,26 @@ function Sync-Clone([string]$Url, [string]$Target, [string]$Label) {
         }
 
         $currentUrl = git -C $Target config --get remote.origin.url
-        if ($UpdateRemotes -and $currentUrl -ne $Url) {
-            if ($PSCmdlet.ShouldProcess($Target, "Set origin to $Url (was $currentUrl)")) {
-                git -C $Target remote set-url origin $Url
+        # Compare owner/name rather than the literal URL, so a clone using ssh or a URL without '.git' is
+        # not rewritten for nothing - and when it is rewritten, it keeps its protocol.
+        if ($UpdateRemotes -and (Get-RemoteKey $currentUrl) -ne (Get-RemoteKey $Url)) {
+            $newUrl = $Url
+            if ($currentUrl -match '^(ssh://)?git@github\.com[:/]') {
+                $newUrl = $Url -replace '^https://github\.com/', 'git@github.com:'
             }
-            Write-Host "  ~ $Label - origin -> $Url" -ForegroundColor Cyan
+            if ($PSCmdlet.ShouldProcess($Target, "Set origin to $newUrl (was $currentUrl)")) {
+                if ([string]::IsNullOrWhiteSpace($currentUrl)) {
+                    git -C $Target remote add origin $newUrl
+                }
+                else {
+                    git -C $Target remote set-url origin $newUrl
+                }
+                if ($LASTEXITCODE -ne 0) {
+                    $failed.Add("$Label (could not set origin, git exit code $LASTEXITCODE)")
+                    return
+                }
+            }
+            Write-Host "  ~ $Label - origin -> $newUrl" -ForegroundColor Cyan
             $updated.Add($Label)
             return
         }
@@ -131,7 +154,6 @@ foreach ($ownerInfo in $owners) {
     $owner = $ownerInfo.Owner
     $ownerDir = Join-Path $Root $ownerInfo.Folder
     Write-Host "`n[$owner] -> $ownerDir" -ForegroundColor Cyan
-    Confirm-Directory $ownerDir
 
     $repositories = gh repo list $owner --limit 1000 --json name,hasWikiEnabled | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0) {
@@ -144,6 +166,10 @@ foreach ($ownerInfo in $owners) {
     if ($Only) {
         $repositories = $repositories | Where-Object { $Only -contains $_.name }
     }
+    if (-not $repositories) {
+        continue
+    }
+    Confirm-Directory $ownerDir
 
     foreach ($repository in ($repositories | Sort-Object name)) {
         $name = $repository.name
