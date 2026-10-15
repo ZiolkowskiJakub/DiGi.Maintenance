@@ -521,7 +521,7 @@ older than the `.exe` itself; the one that shipped this was four days stale.
   references and therefore gets its own, correct manifest. Neither can the script below.
 
 ### Build-Time Symptoms Of The Same Opacity
-The sections above are about what a deployed host fails to load. The same `HintPath` opacity produces three
+The sections above are about what a deployed host fails to load. The same `HintPath` opacity produces four
 compile-time failures in the workspace, each of which looks like a defect in the change you just made.
 
 - **`CS0012` from overload resolution — fix the `.csproj`, never the call site.** To resolve an overloaded
@@ -547,6 +547,13 @@ compile-time failures in the workspace, each of which looks like a defect in the
   one. **Count first:** `ls <lib>/bin/*.dll | wc -l` — one or two is a plain library, twenty is a deployment
   closure, and taking what you need inline (a column needs only its name) beats taking the reference. This
   one is stable across rebuilds, unlike the race above.
+- **`--no-incremental` on a solution can delete the `HintPath` target it then compiles against.** A
+  solution whose xUnit project reaches `DiGi.Core` through `DiGi.Core.xUnit`'s `ProjectReference`, while its
+  library reaches `DiGi.Core` by `HintPath`, cleans `DiGi.Core\bin` (DiGi.Core, .Parameter, .Relation,
+  .Drawing) as part of the rebuild and then fails to compile the library before those are rebuilt —
+  `dotnet build DiGi.Python.slnx --no-incremental`, 2026-10-15 (DiGi.Maintenance#14). Rebuild such a
+  solution incrementally, or rebuild `DiGi.Core` first. The `deps.json` advice above is per executable
+  `.csproj`, not per solution.
 
 ### The Check
 Run after building; it inspects compiled output, not project files.
