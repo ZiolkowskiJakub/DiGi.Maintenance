@@ -21,7 +21,8 @@ deployed. Every rule below exists because breaking it once cost a run, a deploy 
 
 | Repository / project | Role |
 |----------------------|------|
-| `DiGi.YOLO` | The CPython (ultralytics) wrapper: prediction, `train.py` / `val.py`, `Modify.Train` / `Modify.Validate`, the environment preflight (`YOLOEnvironmentResult`). |
+| `DiGi.Python` | The CPython process interop DiGi.YOLO and DiGi.Laya share: `Query.ExecuteProcess` (→ `PythonProcessResult`, inactivity stall, process-tree kill), `Query.PythonPath` / `PythonPaths`, `Query.MarkedJson`, `Query.FileSHA256`, `Query.NormalizedPath`, `Modify.WriteScripts`. DiGi.YOLO keeps none of these itself (DiGi.YOLO#23). It reaches the library by `HintPath`, so every project that compiles against these members re-declares the reference, and each host carries `DiGi.Python.dll`: the runner, the tray and the facts. |
+| `DiGi.YOLO` | The CPython (ultralytics) wrapper: prediction, `train.py` / `val.py`, `Modify.Train` / `Modify.Validate`, the environment preflight (`YOLOEnvironmentResult`). It runs its scripts through DiGi.Python and keeps only the YOLO side: the scripts, their marker pairs (`Constants.Marker`) and the `Modify.WriteScripts(string?)` file list. `YOLOEnvironmentResult` stays a plain `SerializableResult`. Deriving it from `PythonEnvironmentResult` would add `"Packages": null` and reorder the stored JSON. |
 | `DiGi.YOLO.ONNX` | In-process ONNX inference through `Microsoft.ML.OnnxRuntime.Managed`. **Not** the pipeline default — the in-process engine was closed as not planned (DiGi.GIS.YOLO.UI#1), and `model.onnx` is kept in sync with `model.pt` by DiGi.YOLO.ONNX#2. |
 | `DiGi.GIS.YOLO` | `Create.Building2DYearBuiltPredictions` — turns a detector's bounding-box result into per-building predictions. |
 | `DiGi.GIS.YOLO.UI` | The pipeline library: options classes, `Modify.RunYearBuiltPredictionsAsync`, dataset build and training orchestration. |
