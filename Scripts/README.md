@@ -11,6 +11,9 @@ Copy `files/Directories.conf` to `user files/Directories.conf` and configure the
 - `SOFTWARE_DIRECTORY`: Target directory for software output binary synchronization (used by `Deploy.ps1`).
 - `USER_FILES_BACKUP_DIRECTORY`: Target directory for copying and restoring repository `user files` folders (used by `CopyUserFiles.ps1`).
 - `GLOBAL_AGENTS_FILE`: Path to a machine-global `AGENTS.md` outside the workspace, refreshed from the AI Guidelines by `UpdateAgents.ps1`. Leave empty to skip that step.
+- `INCLUDE_YEAR_BUILT_PREDICTION_EXTENSION`: Opt-in (`true`, `1` or `yes`; anything else is off). Assembles the Year Built prediction runner and its `model.pt` into the tray application's bin (`Deploy.ps1`). Set it only on a machine that deploys to an ML-capable host.
+- `INCLUDE_LAYA_MODELS`: Opt-in, parsed the same way. Deploys the Laya runtime package and released checkpoints to `SOFTWARE_DIRECTORY\DiGi.Laya` with `DeployLaya.ps1` after the software syncs (`Deploy.ps1`).
+- `LAYA_MODELS_DIRECTORY`: Released Laya checkpoints on this machine, outside the workspace — one subfolder per model, with an optional `<name>.calibration.json` beside it.
 
 ---
 
@@ -19,7 +22,9 @@ Copy `files/Directories.conf` to `user files/Directories.conf` and configure the
 ### Build All Solutions
 Builds all DiGi solution repositories in Release configuration. Pass `-CheckDependencies` to run
 `CheckHostDependencies.ps1` against the produced output once every solution has built, failing when
-a host is missing an assembly its libraries reference.
+a host is missing an assembly its libraries reference. Rebuilding a single solution with
+`--no-incremental` can delete `DiGi.Core\bin` before compiling against it (`Coding - General.md` §4,
+*Build-Time Symptoms*): build incrementally, or `DiGi.Core` first.
 ```powershell
 PowerShell -NoProfile -ExecutionPolicy Bypass -File ".\BuildAll.ps1" -Configuration Release
 
@@ -61,6 +66,28 @@ PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1" -Configuration Debug
 
 # Sync directories preserving log files
 PowerShell -ExecutionPolicy Bypass -File ".\Deploy.ps1" -RemoveLogs:$false
+```
+
+### Deploy Laya Models
+Deploys the Laya runtime package (`requirements.txt`, `InstallPythonEnvironment.ps1`) and released checkpoints to `<SoftwareDirectory>\DiGi.Laya\`. `Deploy.ps1` calls it when `INCLUDE_LAYA_MODELS` is set; consumer deploy scripts (bodyplan) call it directly. Each checkpoint is copied from an allowlist of the checkpoint layout (everything else is printed on the `Not deployed:` line), its `<name>.calibration.json` is copied beside it, and `models\<name>.manifest.json` is written beside the folder - never inside it, because DiGi.Laya identifies a checkpoint by the SHA-256 of its whole folder. An unchanged model is skipped; a deployed model is removed only by `-Remove`. Exits with code 1 when a model failed. See `Coding - Laya.md`.
+```powershell
+# Deploy every model in the released checkpoints directory
+PowerShell -ExecutionPolicy Bypass -File ".\DeployLaya.ps1" -SoftwareDirectory "<SoftwareDirectory>" -ModelsDirectory "<LayaModelsDirectory>"
+
+# Deploy one model and remove another from the software directory
+PowerShell -ExecutionPolicy Bypass -File ".\DeployLaya.ps1" -SoftwareDirectory "<SoftwareDirectory>" -ModelsDirectory "<LayaModelsDirectory>" -ModelNames "recipe_classification" -Remove "recipe_classification_old"
+```
+
+### Install the Laya Python Environment (on a host)
+Run on each host that runs Laya - never by `Deploy.ps1`. Creates the virtual environment, installs torch from the PyTorch CPU or CUDA (`cu128` by default) wheel index, then `requirements.txt`, and writes `environment.json`. A re-run with the same requirements and torch variant is a no-op. Put the environment **outside** the synced software directory: it is several GB and specific to the host.
+
+Host procedure:
+1. Install CPython 3.10 or newer, readable and executable by the account of the service that runs the consumer (`DiGi.WebAPI.WindowsService` on the database server).
+2. Run the script below from the deployed `DiGi.Laya` folder.
+3. Set the consumer's conf: `PythonPath` = the printed venv `python.exe`, `ModelPath` = `<SoftwareDirectory>\DiGi.Laya\models\<name>`, `CalibrationPath` = `<SoftwareDirectory>\DiGi.Laya\models\<name>.calibration.json`.
+4. Run the consumer's preflight (`Query.LayaEnvironmentResult`, e.g. bodyplan's `--check`).
+```powershell
+PowerShell -ExecutionPolicy Bypass -File ".\InstallPythonEnvironment.ps1" -PythonPath "<python.exe>" -RequirementsPath ".\requirements.txt" -Destination "<VenvDirectoryOutsideSoftwareDirectory>" -Torch cpu
 ```
 
 ### Copy User Files

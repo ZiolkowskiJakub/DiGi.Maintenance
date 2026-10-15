@@ -22,6 +22,12 @@
     - because the tray's Year Built runs write their 'scratch' folder there. Every other directory is listed on
     the "not deployed" line.
 
+    The Laya models are opt-in too. Set INCLUDE_LAYA_MODELS=true and LAYA_MODELS_DIRECTORY (released checkpoints,
+    outside the workspace) and, after the software syncs, DeployLaya.ps1 deploys the Laya runtime package and every
+    checkpoint to SOFTWARE_DIRECTORY\DiGi.Laya - its own top-level destination, never synchronized as a whole. An
+    unchanged checkpoint is skipped, and a deployed one is never removed by this script. The Python environment is
+    created on each host with InstallPythonEnvironment.ps1, never here.
+
 .PARAMETER Configuration
     Build configuration passed to BuildAll.ps1.
 
@@ -72,6 +78,8 @@ if (-not $SkipBuild) {
 $confPath = Join-Path $PSScriptRoot "..\user files\Directories.conf"
 $softwareDir = ""
 $includeYearBuiltPredictionExtension = $false
+$includeLayaModels = $false
+$layaModelsDir = ""
 
 if (Test-Path $confPath) {
     foreach ($line in Get-Content $confPath) {
@@ -91,6 +99,12 @@ if (Test-Path $confPath) {
                 # Anything but an explicit true leaves the runner out. A value nobody can read must not mean
                 # "ship the models to a database host that will never score anything".
                 $includeYearBuiltPredictionExtension = ($val -match '^(?i:true|1|yes)$')
+            }
+            if ($key -eq "INCLUDE_LAYA_MODELS") {
+                $includeLayaModels = ($val -match '^(?i:true|1|yes)$')
+            }
+            if ($key -eq "LAYA_MODELS_DIRECTORY") {
+                $layaModelsDir = $val
             }
         }
     }
@@ -302,6 +316,25 @@ foreach ($Pair in $SyncList) {
     }
     
     Write-Host "-------------------------------------------"
+}
+
+# The Laya models, opt-in per machine. Deployed AFTER the software syncs and by DeployLaya.ps1 alone, never as a
+# $SyncList entry: SyncDirectory.ps1 clears a destination before copying, which would recopy 1.3 GB per checkpoint
+# on every deploy and delete every model a host still depends on. Left unset, an existing DiGi.Laya folder is not
+# touched - unlike the Year Built runner, it is not carried inside another application's bin.
+if ($includeLayaModels) {
+    if ([string]::IsNullOrWhiteSpace($softwareDir)) {
+        Write-Warning "INCLUDE_LAYA_MODELS is set but SOFTWARE_DIRECTORY is not - the Laya models are not deployed."
+    } elseif ([string]::IsNullOrWhiteSpace($layaModelsDir) -or -not (Test-Path $layaModelsDir)) {
+        Write-Warning "INCLUDE_LAYA_MODELS is set but LAYA_MODELS_DIRECTORY ('$layaModelsDir') does not exist - the Laya models are not deployed."
+    } else {
+        Write-Host "Deploying Laya models: $layaModelsDir -> $softwareDir\DiGi.Laya" -ForegroundColor White
+        & (Join-Path $PSScriptRoot "DeployLaya.ps1") -SoftwareDirectory $softwareDir -ModelsDirectory $layaModelsDir
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "DeployLaya.ps1 reported a failure (exit code $LASTEXITCODE) - see the Laya lines above."
+        }
+        Write-Host "-------------------------------------------"
+    }
 }
 
 Write-Host "All tasks completed." -ForegroundColor Yellow
