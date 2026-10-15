@@ -14,11 +14,24 @@
   - **Block-Bodied (`false:silent`):** Methods, constructors, operators, local functions.
   - **Expression-Bodied (`true:silent`):** Single-line properties, indexers, accessors (get/set), lambdas.
 - **Modern Features:** C# 13 `System.Threading.Lock` (`csharp_prefer_system_threading_lock = true:suggestion`), range operators (`1..3`), UTF-8 literals (`"text"u8`).
-- **Diagnostic Overrides:** `IDE0130 = none` (logical namespaces), `CA1707 = none` (underscores in conversion methods `To[TargetArea]_[TargetType]`), `CS1591 = none`, `IDE0290 = none`.
+- **Diagnostic Overrides:** `IDE0130 = none` (logical namespaces), `CA1707 = none` (underscores in conversion methods `To[TargetArea]_[TargetType]` and in `_`-suffixed variable/parameter names), `CS1591 = none`, `IDE0290 = none`, `IDE1006 = none`, `CA1016 = none`, `CA1711 = none`.
 
 ---
 
 ## 2. Standardized Baseline `.editorconfig`
+
+> [!IMPORTANT]
+> **A property above the first `[section]` header applies to no file.** Only `root = true` belongs
+> there. Every `dotnet_diagnostic.*` override sits under `[*.cs]` (or `[*.{cs,vb}]`), as below. Placed
+> in the preamble it is silently ignored — no warning from Visual Studio or MSBuild — and the analyzer
+> default comes back: with `AnalysisLevel latest-recommended` + `TreatWarningsAsErrors`, a parameter
+> named `fileNames_KeepExisting` fails the build with `CA1707`. `templates/DiGi.Template` shipped this
+> layout until 2026-10-15 and eight repositories inherited it (`DiGi-Organization/DiGi.Python#1`). To audit, list any
+> `key = value` line before the first `[` in each `.editorconfig`:
+>
+> ```bash
+> for f in */.editorconfig; do awk '/^\[/{exit} /^[a-z_]+\.[^=]*=/{print FILENAME": "$0}' "$f"; done
+> ```
 
 ```ini
 root = true
